@@ -140,8 +140,25 @@ investment_tracker/
 │   ├── database/
 │   │   ├── app_database.dart
 │   │   ├── connection/
+│   │   │   └── connection.dart
+│   │   ├── precision/
+│   │   │   └── financial_precision.dart
 │   │   ├── tables/
+│   │   │   ├── financial_categories.dart
+│   │   │   ├── financial_accounts.dart
+│   │   │   ├── financial_items.dart
+│   │   │   ├── transactions.dart
+│   │   │   ├── valuation_history.dart
+│   │   │   ├── recurring_transactions.dart
+│   │   │   └── app_settings.dart
 │   │   └── daos/
+│   │       ├── categories_dao.dart
+│   │       ├── accounts_dao.dart
+│   │       ├── financial_items_dao.dart
+│   │       ├── transactions_dao.dart
+│   │       ├── valuations_dao.dart
+│   │       ├── recurring_transactions_dao.dart
+│   │       └── app_settings_dao.dart
 │   │
 │   ├── domain/
 │   │   ├── entities/
@@ -231,15 +248,17 @@ Avoid putting business logic directly inside widgets.
 
 ## 8. Database Access
 
-Drift should be the single persistence layer.
+Drift is the single, local SQLite persistence layer.
 
 Requirements:
 
-- Use typed tables.
-- Use DAOs for database queries.
-- Use database migrations.
-- Use transactions for multi-table operations.
-- Add indexes to frequently queried fields.
+- Use typed tables organized under `lib/database/tables/`.
+- Use specialized DAOs under `lib/database/daos/` for all database interactions.
+- Zero floating point drift: Store amounts in 64-bit integer minor units (Paise), units in micro-units ($10^{-6}$), NAV in micro-paise ($10^{-6}$ INR), and rates in basis points ($10^{-4}$).
+- Riverpod integration: Access `AppDatabase` and DAOs via `database_provider.dart` (`databaseProvider`, `categoriesDaoProvider`, `accountsDaoProvider`, `financialItemsDaoProvider`, `transactionsDaoProvider`, `valuationsDaoProvider`, `recurringTransactionsDaoProvider`, `appSettingsDaoProvider`).
+- Foreign key enforcement: `PRAGMA foreign_keys = ON;` in SQLite connection initialization.
+- Use composite unique key constraints (e.g. `{financialItemId, valuationDate}`) and Drift `DoUpdate` targeting composite keys for atomic upserts.
+- Use transactions and batching for multi-row operations.
 - Avoid direct SQL scattered across features.
 
 ## 9. NAV Synchronization Architecture

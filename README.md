@@ -47,9 +47,29 @@ lib/
 ├── core/
 │   ├── constants/                # AppConstants (INR, sync intervals, keys)
 │   ├── formatting/               # CurrencyFormatter & DateFormatter
-│   ├── providers/                # Global state providers (themeModeProvider)
+│   ├── providers/                # Global state providers (theme, database, DAOs)
 │   ├── theme/                    # AppColors, AppTypography, AppSpacing, AppTheme
 │   └── widgets/                  # FinCard, StatCard, StatusBadge, SectionHeader, EmptyStateView
+├── database/
+│   ├── app_database.dart         # Drift AppDatabase with schema version 1 & migrations
+│   ├── connection/               # Native SQLite connection via drift_flutter
+│   ├── precision/                # FinancialPrecision (Paise, micro-units, micro-paise)
+│   ├── tables/                   # Drift table definitions (7 normalized tables)
+│   │   ├── financial_categories.dart
+│   │   ├── financial_accounts.dart
+│   │   ├── financial_items.dart
+│   │   ├── transactions.dart
+│   │   ├── valuation_history.dart
+│   │   ├── recurring_transactions.dart
+│   │   └── app_settings.dart
+│   └── daos/                     # Data Access Objects (7 specialized DAOs)
+│       ├── categories_dao.dart
+│       ├── accounts_dao.dart
+│       ├── financial_items_dao.dart
+│       ├── transactions_dao.dart
+│       ├── valuations_dao.dart
+│       ├── recurring_transactions_dao.dart
+│       └── app_settings_dao.dart
 └── features/
     ├── navigation/               # MainScaffold with 5-tab NavigationBar
     ├── overview/                 # Net Worth summary & monthly commitments
@@ -96,7 +116,7 @@ make clean
 ## 5. Implementation Roadmap
 
 - [x] **Milestone 1 — Project Foundation:** Scaffolding, Riverpod, Design System, Theme Tokens, 5-Tab Navigation (`Overview`, `Assets`, `Liabilities`, `Activity`, `Settings`), Makefile, Documentation.
-- [ ] **Milestone 2 — Drift Database Layer:** Schema definition (Assets, Liabilities, Schemes, NAVHistory, Transactions, Settings), DAOs, migrations.
+- [x] **Milestone 2 — Drift Database Layer:** Schema definition (7 normalized tables: Categories, Accounts, Items, Transactions, Valuations, Recurring Schedules, Settings), 7 specialized DAOs with reactive streams, integer precision engine (Paise/micro-units/micro-paise), foreign keys with cascade/restrict, default category seeding, and in-memory test suite.
 - [ ] **Milestone 3 — Mutual Fund & NAV Integration:** Provider adapters (MFapi.in & TIGZIG), search, local NAV caching.
 - [ ] **Milestone 4 — SIP & Commitment Scheduling:** Independent date generator, leap year & month-end handlers, duplicate prevention.
 - [ ] **Milestone 5 — Transaction & Valuation Engine:** Simulated installments, lump-sum purchases, redemptions, unit calculations.

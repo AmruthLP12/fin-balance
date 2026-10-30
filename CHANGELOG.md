@@ -5,6 +5,38 @@ All notable changes to the FinBalance application will be documented in this fil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-10-30
+
+### Added
+- **Drift SQLite Database Layer:**
+  - Implemented offline-first local persistence using `drift: ^2.24.2` and `drift_flutter: ^0.2.4`.
+  - Configured platform SQLite connection with foreign keys enabled (`PRAGMA foreign_keys = ON;`).
+  - Implemented automatic initial seed of essential financial categories across 4 classifications (Asset, Liability, Income, Expense).
+- **Normalized Schema Architecture (7 Tables):**
+  - `FinancialCategories`: Hierarchical category classification for assets, liabilities, income, and expenses.
+  - `FinancialAccounts`: Bank accounts, cash reserves, Demat portfolios, and loan accounts.
+  - `FinancialItems`: Unified storage for assets (mutual funds, stocks, FDs, gold) and liabilities (home loans, vehicle loans, credit cards).
+  - `Transactions`: Immutable double-entry ledger tracking purchases, redemptions, loan payments, transfers, and cash flows.
+  - `ValuationHistory`: Daily NAV and asset valuation time-series with composite unique constraint `(financial_item_id, valuation_date)`.
+  - `RecurringTransactions`: Execution schedules for simulated SIP investments and loan EMI payments.
+  - `AppSettings`: Typed key-value configuration store for application settings and synchronization states.
+- **Data Access Objects (7 DAOs):**
+  - `CategoriesDao`, `AccountsDao`, `FinancialItemsDao`, `TransactionsDao`, `ValuationsDao`, `RecurringTransactionsDao`, `AppSettingsDao`.
+  - Reactive `Stream` watchers for UI consumption and atomic `Future` mutations.
+  - Atomic upsert support for `ValuationHistory` using Drift `DoUpdate` targeting composite keys.
+- **Financial Precision Engine:**
+  - `FinancialPrecision` utility module preventing floating-point representation drift.
+  - Currency stored as 64-bit integer Paise ($₹1 = 100\text{ paise}$).
+  - Mutual fund / stock units stored as 64-bit integer micro-units ($1\text{ unit} = 1,000,000\text{ micro-units}$).
+  - NAV stored as 64-bit integer micro-paise ($₹1 = 1,000,000\text{ micro-paise}$) for 4-decimal-place AMFI precision.
+  - Interest rates stored in basis points ($1\% = 100\text{ bps}$).
+- **Riverpod Database Providers:**
+  - Registered `databaseProvider` and individual DAO providers (`categoriesDaoProvider`, `financialItemsDaoProvider`, etc.).
+- **Automated In-Memory Test Suite:**
+  - Added unit test suite `test/unit/financial_precision_test.dart` for mathematical precision and edge-case conversions.
+  - Added comprehensive database integration tests `test/database/app_database_test.dart` running against in-memory SQLite (`NativeDatabase.memory()`).
+  - Verified default category seeding, asset/liability classification queries, foreign key cascading, transactions ledger, schedule updates, and valuation uniqueness constraints.
+
 ## [0.1.0] - 2026-10-30
 
 ### Added

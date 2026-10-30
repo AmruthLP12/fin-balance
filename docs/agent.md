@@ -68,6 +68,14 @@ Keep API-specific response parsing isolated inside provider adapters.
 
 Avoid unnecessary abstraction and excessive layers.
 
+### 4.1 Database Layer Rules
+
+1. **Integer Precision:** Never store monetary amounts, investment units, or NAV as floating-point numbers in SQLite. Always use `FinancialPrecision` utilities (Paise for currency, micro-units for unit balances, micro-paise for NAV/share prices).
+2. **Access via DAOs:** Direct table access outside of DAOs is forbidden. All queries and mutations must be encapsulated within the appropriate DAO in `lib/database/daos/`.
+3. **Dependency Injection:** Consume DAOs and `AppDatabase` via Riverpod providers in `lib/core/providers/database_provider.dart`.
+4. **Relational Constraints:** Always maintain SQLite foreign key enforcement (`PRAGMA foreign_keys = ON;`). Use `CASCADE` for dependent historical records and `RESTRICT` for referenced classification categories.
+5. **Upserts:** Always specify conflict targets explicitly (e.g. `DoUpdate((_) => entry, target: [table.itemId, table.date])`) when handling composite key tables like `ValuationHistory`.
+
 ## 5. UI/UX Requirements
 
 The application must have a distinctive, polished financial dashboard.
