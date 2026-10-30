@@ -15,26 +15,26 @@ help:
 	@echo "  make clean         - Clean Flutter build artifacts"
 
 get:
-	$(FLUTTER) pub get
+	flutter pub get
 
 analyze:
-	$(FLUTTER) analyze
+	flutter analyze
 
 format:
 	$(DART) format --set-exit-if-changed lib test
 
 test:
-	$(FLUTTER) test
+	flutter test
 
 run:
-	$(FLUTTER) run
+	flutter run
 
 build-debug:
-	$(FLUTTER) build apk --debug
+	flutter build apk --debug
 
 build-release:
-	$(FLUTTER) build apk --release
+	flutter build apk --release
 
 clean:
-	$(FLUTTER) clean
+	flutter clean
 

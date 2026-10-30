@@ -9,10 +9,9 @@ import '../../../core/widgets/section_header.dart';
 import '../../../core/widgets/stat_card.dart';
 import '../../../core/widgets/status_badge.dart';
 
-/// Dashboard screen displaying Net Worth, Total Assets, Total Liabilities,
-/// and upcoming SIP & financial commitments.
-class DashboardScreen extends StatelessWidget {
-  const DashboardScreen({super.key});
+/// FinBalance Overview / Net Worth Dashboard.
+class OverviewScreen extends StatelessWidget {
+  const OverviewScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -58,7 +57,7 @@ class DashboardScreen extends StatelessWidget {
       body: ListView(
         padding: AppSpacing.screenPadding,
         children: [
-          // Net Worth & Portfolio Hero Card
+          // Net Worth Hero Card
           FinCard(
             backgroundColor:
                 isDark ? AppColors.darkSurfaceElevated : AppColors.lightSurface,
@@ -238,7 +237,7 @@ class DashboardScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Your simulated SIPs, mutual funds, and transactions will appear here.',
+                    'Your simulated SIPs, mutual funds, and liabilities will appear here.',
                     style: AppTypography.bodyMedium.copyWith(
                       color: isDark
                           ? AppColors.darkTextMuted

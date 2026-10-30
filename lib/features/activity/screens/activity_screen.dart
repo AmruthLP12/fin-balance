@@ -8,9 +8,10 @@ import '../../../core/widgets/fin_card.dart';
 import '../../../core/widgets/section_header.dart';
 import '../../../core/widgets/status_badge.dart';
 
-/// Mutual Funds screen for searching funds, tracking schemes, and managing holdings.
-class MutualFundsScreen extends StatelessWidget {
-  const MutualFundsScreen({super.key});
+/// Activity & Cash Flow screen for tracking transactions, simulated SIP installments,
+/// loan EMI payments, and adjustments.
+class ActivityScreen extends StatelessWidget {
+  const ActivityScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -19,16 +20,16 @@ class MutualFundsScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Mutual Funds'),
+        title: const Text('Activity & Cash Flow'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.search_rounded),
-            tooltip: 'Search Schemes',
+            icon: const Icon(Icons.filter_list_rounded),
+            tooltip: 'Filter Activity',
             onPressed: () {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content:
-                      Text('Mutual fund scheme search arrives in Milestone 3'),
+                  content: Text(
+                      'Transaction filters will be enabled with the database layer'),
                   duration: Duration(seconds: 2),
                 ),
               );
@@ -39,7 +40,7 @@ class MutualFundsScreen extends StatelessWidget {
       body: ListView(
         padding: AppSpacing.screenPadding,
         children: [
-          // Portfolio Value Header Card
+          // Monthly Flow Summary Card
           FinCard(
             backgroundColor:
                 isDark ? AppColors.darkSurfaceElevated : AppColors.lightSurface,
@@ -50,7 +51,7 @@ class MutualFundsScreen extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'MUTUAL FUND HOLDINGS',
+                      'PROJECTED MONTHLY FLOW',
                       style: AppTypography.labelSmall.copyWith(
                         color: isDark
                             ? AppColors.darkTextMuted
@@ -60,8 +61,8 @@ class MutualFundsScreen extends StatelessWidget {
                       ),
                     ),
                     const StatusBadge(
-                      label: '0 Funds',
-                      type: BadgeType.asset,
+                      label: 'Cash Flow',
+                      type: BadgeType.scheduled,
                     ),
                   ],
                 ),
@@ -76,7 +77,7 @@ class MutualFundsScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: AppSpacing.xs),
                 Text(
-                  'Invested: ${CurrencyFormatter.format(0.0)} • Returns: +0.00%',
+                  'SIP Outflows: ${CurrencyFormatter.format(0.0)} • Debt EMIs: ${CurrencyFormatter.format(0.0)}',
                   style: AppTypography.bodyMedium.copyWith(
                     color: isDark
                         ? AppColors.darkTextSecondary
@@ -88,42 +89,43 @@ class MutualFundsScreen extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.lg),
 
-          // Category Chips Row
+          // Filter Chips Row
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
-                _buildFilterChip('All Plans', isSelected: true, isDark: isDark),
+                _buildFilterChip('All Activity',
+                    isSelected: true, isDark: isDark),
                 const SizedBox(width: AppSpacing.sm),
-                _buildFilterChip('Direct - Growth',
+                _buildFilterChip('Simulated SIPs',
                     isSelected: false, isDark: isDark),
                 const SizedBox(width: AppSpacing.sm),
-                _buildFilterChip('Equity Funds',
+                _buildFilterChip('Debt Payments',
                     isSelected: false, isDark: isDark),
                 const SizedBox(width: AppSpacing.sm),
-                _buildFilterChip('Debt Funds',
+                _buildFilterChip('Manual Purchases',
                     isSelected: false, isDark: isDark),
                 const SizedBox(width: AppSpacing.sm),
-                _buildFilterChip('Hybrid / Index',
+                _buildFilterChip('Redemptions',
                     isSelected: false, isDark: isDark),
               ],
             ),
           ),
           const SizedBox(height: AppSpacing.lg),
 
-          const SectionHeader(title: 'Saved Schemes & Holdings'),
+          const SectionHeader(title: 'Transaction Timeline'),
           const SizedBox(height: AppSpacing.md),
           EmptyStateView(
-            icon: Icons.pie_chart_outline_rounded,
-            title: 'No Mutual Funds Tracked',
+            icon: Icons.receipt_long_rounded,
+            title: 'No Recorded Activity',
             description:
-                'Search 40,000+ Indian mutual funds or add manual investments to track your estimated portfolio offline.',
-            actionLabel: 'Search Mutual Funds',
+                'Scheduled SIP contributions, debt repayments, and manual adjustments will appear in this unified financial ledger.',
+            actionLabel: 'Record Manual Entry',
             onAction: () {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text(
-                      'Mutual Fund scheme catalogue will be integrated in Milestone 3'),
+                      'Transaction recording form will arrive in Milestone 5'),
                   duration: Duration(seconds: 2),
                 ),
               );

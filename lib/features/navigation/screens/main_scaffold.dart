@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
-import '../../analytics/screens/analytics_screen.dart';
-import '../../dashboard/screens/dashboard_screen.dart';
-import '../../mutual_funds/screens/mutual_funds_screen.dart';
+import '../../activity/screens/activity_screen.dart';
+import '../../assets/screens/assets_screen.dart';
+import '../../liabilities/screens/liabilities_screen.dart';
+import '../../overview/screens/overview_screen.dart';
 import '../../settings/screens/settings_screen.dart';
-import '../../sip/screens/sip_screen.dart';
 
 /// Main navigation shell hosting the 5 primary application tabs:
-/// 1. Dashboard
-/// 2. Mutual Funds
-/// 3. SIPs
-/// 4. Analytics
+/// 1. Overview
+/// 2. Assets
+/// 3. Liabilities
+/// 4. Activity
 /// 5. Settings
 class MainScaffold extends StatefulWidget {
   const MainScaffold({super.key});
@@ -22,10 +22,10 @@ class _MainScaffoldState extends State<MainScaffold> {
   int _currentIndex = 0;
 
   static const List<Widget> _screens = <Widget>[
-    DashboardScreen(),
-    MutualFundsScreen(),
-    SipScreen(),
-    AnalyticsScreen(),
+    OverviewScreen(),
+    AssetsScreen(),
+    LiabilitiesScreen(),
+    ActivityScreen(),
     SettingsScreen(),
   ];
 
@@ -45,24 +45,24 @@ class _MainScaffoldState extends State<MainScaffold> {
         },
         destinations: const [
           NavigationDestination(
-            icon: Icon(Icons.dashboard_outlined),
-            selectedIcon: Icon(Icons.dashboard_rounded),
-            label: 'Dashboard',
+            icon: Icon(Icons.account_balance_wallet_outlined),
+            selectedIcon: Icon(Icons.account_balance_wallet_rounded),
+            label: 'Overview',
           ),
           NavigationDestination(
-            icon: Icon(Icons.show_chart_rounded),
-            selectedIcon: Icon(Icons.show_chart_rounded),
-            label: 'Mutual Funds',
+            icon: Icon(Icons.trending_up_rounded),
+            selectedIcon: Icon(Icons.trending_up_rounded),
+            label: 'Assets',
           ),
           NavigationDestination(
-            icon: Icon(Icons.calendar_month_outlined),
-            selectedIcon: Icon(Icons.calendar_month_rounded),
-            label: 'SIPs',
+            icon: Icon(Icons.credit_card_outlined),
+            selectedIcon: Icon(Icons.credit_card_rounded),
+            label: 'Liabilities',
           ),
           NavigationDestination(
-            icon: Icon(Icons.insights_outlined),
-            selectedIcon: Icon(Icons.insights_rounded),
-            label: 'Analytics',
+            icon: Icon(Icons.receipt_long_outlined),
+            selectedIcon: Icon(Icons.receipt_long_rounded),
+            label: 'Activity',
           ),
           NavigationDestination(
             icon: Icon(Icons.tune_outlined),

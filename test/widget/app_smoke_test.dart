@@ -16,31 +16,31 @@ void main() {
     expect(find.text('FinBalance'), findsOneWidget);
 
     // Verify 5 navigation bar destinations
-    expect(find.text('Dashboard'), findsOneWidget);
-    expect(find.text('Mutual Funds'), findsOneWidget);
-    expect(find.text('SIPs'), findsOneWidget);
-    expect(find.text('Analytics'), findsOneWidget);
+    expect(find.text('Overview'), findsOneWidget);
+    expect(find.text('Assets'), findsOneWidget);
+    expect(find.text('Liabilities'), findsOneWidget);
+    expect(find.text('Activity'), findsOneWidget);
     expect(find.text('Settings'), findsOneWidget);
 
-    // Verify Dashboard default content
+    // Verify Overview default content
     expect(find.text('TOTAL NET WORTH'), findsOneWidget);
     expect(find.text('Total Assets'), findsOneWidget);
     expect(find.text('Total Liabilities'), findsOneWidget);
 
-    // Tap on Mutual Funds tab
-    await tester.tap(find.text('Mutual Funds'));
+    // Tap on Assets tab
+    await tester.tap(find.text('Assets'));
     await tester.pumpAndSettle();
-    expect(find.text('MUTUAL FUND HOLDINGS'), findsOneWidget);
+    expect(find.text('Assets & Holdings'), findsOneWidget);
 
-    // Tap on SIPs tab
-    await tester.tap(find.text('SIPs'));
+    // Tap on Liabilities tab
+    await tester.tap(find.text('Liabilities'));
     await tester.pumpAndSettle();
-    expect(find.text('SIP Management'), findsOneWidget);
+    expect(find.text('Liabilities & Debt'), findsOneWidget);
 
-    // Tap on Analytics tab
-    await tester.tap(find.text('Analytics'));
+    // Tap on Activity tab
+    await tester.tap(find.text('Activity'));
     await tester.pumpAndSettle();
-    expect(find.text('Financial Analytics'), findsOneWidget);
+    expect(find.text('Activity & Cash Flow'), findsOneWidget);
 
     // Tap on Settings tab
     await tester.tap(find.text('Settings'));

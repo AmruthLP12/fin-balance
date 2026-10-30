@@ -8,9 +8,9 @@ import '../../../core/widgets/fin_card.dart';
 import '../../../core/widgets/section_header.dart';
 import '../../../core/widgets/status_badge.dart';
 
-/// SIP screen for managing SIP configurations, pause/resume, and scheduled installments.
-class SipScreen extends StatelessWidget {
-  const SipScreen({super.key});
+/// Liabilities screen for managing loans, credit lines, and repayment obligations.
+class LiabilitiesScreen extends StatelessWidget {
+  const LiabilitiesScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -19,16 +19,16 @@ class SipScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('SIP Management'),
+        title: const Text('Liabilities & Debt'),
         actions: [
           IconButton(
             icon: const Icon(Icons.add_circle_outline_rounded),
-            tooltip: 'Create SIP',
+            tooltip: 'Add Liability',
             onPressed: () {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text(
-                      'SIP creation form will be available in Milestone 4'),
+                      'Liability tracking forms will be available in subsequent milestones'),
                   duration: Duration(seconds: 2),
                 ),
               );
@@ -39,7 +39,7 @@ class SipScreen extends StatelessWidget {
       body: ListView(
         padding: AppSpacing.screenPadding,
         children: [
-          // SIP Overview Card
+          // Debt Overview Card
           FinCard(
             backgroundColor:
                 isDark ? AppColors.darkSurfaceElevated : AppColors.lightSurface,
@@ -50,7 +50,7 @@ class SipScreen extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'TOTAL MONTHLY SIP COMMITMENT',
+                      'TOTAL OUTSTANDING DEBT',
                       style: AppTypography.labelSmall.copyWith(
                         color: isDark
                             ? AppColors.darkTextMuted
@@ -60,8 +60,8 @@ class SipScreen extends StatelessWidget {
                       ),
                     ),
                     const StatusBadge(
-                      label: '0 Active SIPs',
-                      type: BadgeType.scheduled,
+                      label: '0 Active Debts',
+                      type: BadgeType.liability,
                     ),
                   ],
                 ),
@@ -69,12 +69,12 @@ class SipScreen extends StatelessWidget {
                 Text(
                   CurrencyFormatter.format(0.0),
                   style: AppTypography.heroAmount.copyWith(
-                    color: AppColors.scheduled,
+                    color: AppColors.liability,
                   ),
                 ),
                 const SizedBox(height: AppSpacing.xs),
                 Text(
-                  'Upcoming installment: None scheduled',
+                  'Monthly EMI Commitments: ${CurrencyFormatter.format(0.0)}',
                   style: AppTypography.bodyMedium.copyWith(
                     color: isDark
                         ? AppColors.darkTextSecondary
@@ -91,35 +91,41 @@ class SipScreen extends StatelessWidget {
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
-                _buildFilterChip('All SIPs', isSelected: true, isDark: isDark),
+                _buildFilterChip('All Liabilities',
+                    isSelected: true, isDark: isDark),
                 const SizedBox(width: AppSpacing.sm),
-                _buildFilterChip('Active', isSelected: false, isDark: isDark),
-                const SizedBox(width: AppSpacing.sm),
-                _buildFilterChip('Paused', isSelected: false, isDark: isDark),
-                const SizedBox(width: AppSpacing.sm),
-                _buildFilterChip('Completed',
+                _buildFilterChip('Home Loans',
                     isSelected: false, isDark: isDark),
                 const SizedBox(width: AppSpacing.sm),
-                _buildFilterChip('Upcoming Calendar',
+                _buildFilterChip('Vehicle Loans',
+                    isSelected: false, isDark: isDark),
+                const SizedBox(width: AppSpacing.sm),
+                _buildFilterChip('Education Loans',
+                    isSelected: false, isDark: isDark),
+                const SizedBox(width: AppSpacing.sm),
+                _buildFilterChip('Credit Cards',
+                    isSelected: false, isDark: isDark),
+                const SizedBox(width: AppSpacing.sm),
+                _buildFilterChip('Personal Loans',
                     isSelected: false, isDark: isDark),
               ],
             ),
           ),
           const SizedBox(height: AppSpacing.lg),
 
-          const SectionHeader(title: 'Active Systematic Plans'),
+          const SectionHeader(title: 'Active Obligations'),
           const SizedBox(height: AppSpacing.md),
           EmptyStateView(
-            icon: Icons.calendar_month_rounded,
-            title: 'No Active SIPs',
+            icon: Icons.credit_score_rounded,
+            title: 'No Debt Recorded',
             description:
-                'Set up your monthly, weekly, or quarterly SIPs. FinBalance will automatically project scheduled contributions and simulate investment allocations.',
-            actionLabel: 'Configure First SIP',
+                'Track your loans, monthly EMIs, and debt payoff progress privately without linking bank credentials.',
+            actionLabel: 'Add First Liability',
             onAction: () {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text(
-                      'SIP configuration engine will be implemented in Milestone 4'),
+                  content:
+                      Text('Liability configuration form is in development'),
                   duration: Duration(seconds: 2),
                 ),
               );
@@ -136,12 +142,12 @@ class SipScreen extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
         color: isSelected
-            ? AppColors.scheduled
+            ? AppColors.liability
             : (isDark ? AppColors.darkSurface : AppColors.lightSurface),
         borderRadius: AppSpacing.borderRadiusPill,
         border: Border.all(
           color: isSelected
-              ? AppColors.scheduled
+              ? AppColors.liability
               : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
         ),
       ),
