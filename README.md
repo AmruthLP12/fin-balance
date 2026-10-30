@@ -63,7 +63,7 @@ lib/
 
 ## 4. Development Commands
 
-The repository provides a `Makefile` for standard development tasks:
+The repository provides a `Makefile` configured to use the verified system Flutter binary (`FLUTTER := /snap/bin/flutter`):
 
 ```bash
 # Display available commands
@@ -81,10 +81,10 @@ make format
 # Run automated tests
 make test
 
-# Build Android debug APK
+# Build Android debug APK (/snap/bin/flutter build apk --debug)
 make build-debug
 
-# Build Android release APK
+# Build Android release APK (/snap/bin/flutter build apk --release)
 make build-release
 
 # Clean build artifacts

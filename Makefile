@@ -1,5 +1,5 @@
-FLUTTER ?= $(shell which flutter 2>/dev/null || test -x /snap/bin/flutter && echo /snap/bin/flutter || echo flutter)
-DART ?= $(shell which dart 2>/dev/null || test -x /snap/bin/dart && echo /snap/bin/dart || echo dart)
+FLUTTER := /snap/bin/flutter
+DART := /snap/bin/dart
 
 .PHONY: help get analyze format test run build-debug build-release clean
 
@@ -15,26 +15,25 @@ help:
 	@echo "  make clean         - Clean Flutter build artifacts"
 
 get:
-	flutter pub get
+	$(FLUTTER) pub get
 
 analyze:
-	flutter analyze
+	$(FLUTTER) analyze
 
 format:
 	$(DART) format --set-exit-if-changed lib test
 
 test:
-	flutter test
+	$(FLUTTER) test
 
 run:
-	flutter run
+	$(FLUTTER) run
 
 build-debug:
-	flutter build apk --debug
+	$(FLUTTER) build apk --debug
 
 build-release:
-	flutter build apk --release
+	$(FLUTTER) build apk --release
 
 clean:
-	flutter clean
-
+	$(FLUTTER) clean
