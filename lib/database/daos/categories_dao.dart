@@ -18,7 +18,8 @@ class CategoriesDao extends DatabaseAccessor<AppDatabase>
       ..where((tbl) => tbl.isArchived.equals(false));
 
     if (profileId != null) {
-      query.where((tbl) => tbl.profileId.isNull() | tbl.profileId.equals(profileId));
+      query.where(
+          (tbl) => tbl.profileId.isNull() | tbl.profileId.equals(profileId));
     } else {
       query.where((tbl) => tbl.profileId.isNull());
     }
@@ -50,7 +51,8 @@ class CategoriesDao extends DatabaseAccessor<AppDatabase>
           tbl.isArchived.equals(false));
 
     if (profileId != null) {
-      query.where((tbl) => tbl.profileId.isNull() | tbl.profileId.equals(profileId));
+      query.where(
+          (tbl) => tbl.profileId.isNull() | tbl.profileId.equals(profileId));
     }
 
     query.orderBy([(t) => OrderingTerm.asc(t.name)]);
@@ -68,7 +70,8 @@ class CategoriesDao extends DatabaseAccessor<AppDatabase>
           tbl.isArchived.equals(false));
 
     if (profileId != null) {
-      query.where((tbl) => tbl.profileId.isNull() | tbl.profileId.equals(profileId));
+      query.where(
+          (tbl) => tbl.profileId.isNull() | tbl.profileId.equals(profileId));
     }
 
     query.orderBy([(t) => OrderingTerm.asc(t.name)]);

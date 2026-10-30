@@ -9,31 +9,47 @@ class RecurringTransactionsDao extends DatabaseAccessor<AppDatabase>
     with _$RecurringTransactionsDaoMixin {
   RecurringTransactionsDao(super.db);
 
-  /// Watch all active recurring schedules.
-  Stream<List<RecurringTransaction>> watchActiveSchedules() {
-    return (select(recurringTransactions)
-          ..where((tbl) => tbl.status.equals('active')))
-        .watch();
+  /// Watch active recurring schedules for a specific profile.
+  Stream<List<RecurringTransaction>> watchActiveSchedulesByProfile(
+    int profileId, {
+    String? recurringType,
+  }) {
+    final query = select(recurringTransactions)
+      ..where((tbl) =>
+          tbl.profileId.equals(profileId) & tbl.status.equals('active'));
+    if (recurringType != null) {
+      query.where((tbl) => tbl.recurringType.equals(recurringType));
+    }
+    query.orderBy([(t) => OrderingTerm.asc(t.name)]);
+    return query.watch();
   }
 
-  /// Get active schedules by recurring type ('sip_investment', 'loan_emi', etc.).
-  Future<List<RecurringTransaction>> getActiveSchedulesByType(
-      String recurringType) {
-    return (select(recurringTransactions)
-          ..where((tbl) =>
-              tbl.recurringType.equals(recurringType) &
-              tbl.status.equals('active')))
-        .get();
+  /// Get active schedules for a specific profile.
+  Future<List<RecurringTransaction>> getActiveSchedulesByProfile(
+    int profileId, {
+    String? recurringType,
+  }) {
+    final query = select(recurringTransactions)
+      ..where((tbl) =>
+          tbl.profileId.equals(profileId) & tbl.status.equals('active'));
+    if (recurringType != null) {
+      query.where((tbl) => tbl.recurringType.equals(recurringType));
+    }
+    query.orderBy([(t) => OrderingTerm.asc(t.name)]);
+    return query.get();
   }
 
-  /// Watch active schedules by type.
-  Stream<List<RecurringTransaction>> watchActiveSchedulesByType(
-      String recurringType) {
-    return (select(recurringTransactions)
-          ..where((tbl) =>
-              tbl.recurringType.equals(recurringType) &
-              tbl.status.equals('active')))
-        .watch();
+  /// Watch active schedules across all profiles (household level).
+  Stream<List<RecurringTransaction>> watchHouseholdActiveSchedules({
+    String? recurringType,
+  }) {
+    final query = select(recurringTransactions)
+      ..where((tbl) => tbl.status.equals('active'));
+    if (recurringType != null) {
+      query.where((tbl) => tbl.recurringType.equals(recurringType));
+    }
+    query.orderBy([(t) => OrderingTerm.asc(t.name)]);
+    return query.watch();
   }
 
   /// Get schedule by ID.
@@ -42,10 +58,15 @@ class RecurringTransactionsDao extends DatabaseAccessor<AppDatabase>
         .getSingleOrNull();
   }
 
-  /// Get schedules for a specific financial item.
-  Future<List<RecurringTransaction>> getSchedulesByItem(int financialItemId) {
+  /// Get schedules for a specific financial item within a profile.
+  Future<List<RecurringTransaction>> getSchedulesByItem(
+    int profileId,
+    int financialItemId,
+  ) {
     return (select(recurringTransactions)
-          ..where((tbl) => tbl.financialItemId.equals(financialItemId)))
+          ..where((tbl) =>
+              tbl.profileId.equals(profileId) &
+              tbl.financialItemId.equals(financialItemId)))
         .get();
   }
 

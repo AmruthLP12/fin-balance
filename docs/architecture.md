@@ -144,6 +144,7 @@ investment_tracker/
 │   │   ├── precision/
 │   │   │   └── financial_precision.dart
 │   │   ├── tables/
+│   │   │   ├── financial_profiles.dart
 │   │   │   ├── financial_categories.dart
 │   │   │   ├── financial_accounts.dart
 │   │   │   ├── financial_items.dart
@@ -152,6 +153,7 @@ investment_tracker/
 │   │   │   ├── recurring_transactions.dart
 │   │   │   └── app_settings.dart
 │   │   └── daos/
+│   │       ├── profiles_dao.dart
 │   │       ├── categories_dao.dart
 │   │       ├── accounts_dao.dart
 │   │       ├── financial_items_dao.dart

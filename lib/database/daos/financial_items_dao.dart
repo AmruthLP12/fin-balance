@@ -9,40 +9,88 @@ class FinancialItemsDao extends DatabaseAccessor<AppDatabase>
     with _$FinancialItemsDaoMixin {
   FinancialItemsDao(super.db);
 
-  /// Watch all active financial items.
-  Stream<List<FinancialItem>> watchAllItems() {
-    return (select(financialItems)..where((tbl) => tbl.status.equals('active')))
-        .watch();
+  /// Watch items for a specific profile (optionally filtered by itemType and status).
+  Stream<List<FinancialItem>> watchItemsByProfile(
+    int profileId, {
+    String? itemType,
+    String status = 'active',
+  }) {
+    final query = select(financialItems)
+      ..where((tbl) => tbl.profileId.equals(profileId));
+
+    if (itemType != null) {
+      query.where((tbl) => tbl.itemType.equals(itemType));
+    }
+    if (status.isNotEmpty) {
+      query.where((tbl) => tbl.status.equals(status));
+    }
+    query.orderBy([(t) => OrderingTerm.asc(t.name)]);
+    return query.watch();
   }
 
-  /// Watch items by itemType ('asset' or 'liability').
-  Stream<List<FinancialItem>> watchItemsByType(String itemType) {
-    return (select(financialItems)
-          ..where((tbl) =>
-              tbl.itemType.equals(itemType) & tbl.status.equals('active')))
-        .watch();
+  /// Get items for a specific profile.
+  Future<List<FinancialItem>> getItemsByProfile(
+    int profileId, {
+    String? itemType,
+    String status = 'active',
+  }) {
+    final query = select(financialItems)
+      ..where((tbl) => tbl.profileId.equals(profileId));
+
+    if (itemType != null) {
+      query.where((tbl) => tbl.itemType.equals(itemType));
+    }
+    if (status.isNotEmpty) {
+      query.where((tbl) => tbl.status.equals(status));
+    }
+    query.orderBy([(t) => OrderingTerm.asc(t.name)]);
+    return query.get();
   }
 
-  /// Get all items by itemType ('asset' or 'liability').
-  Future<List<FinancialItem>> getItemsByType(String itemType) {
+  /// Watch active assets for a profile.
+  Stream<List<FinancialItem>> watchAssetsByProfile(int profileId) {
+    return watchItemsByProfile(profileId, itemType: 'asset', status: 'active');
+  }
+
+  /// Watch active liabilities for a profile.
+  Stream<List<FinancialItem>> watchLiabilitiesByProfile(int profileId) {
+    return watchItemsByProfile(profileId,
+        itemType: 'liability', status: 'active');
+  }
+
+  /// Watch all active financial items across all profiles (household scope).
+  Stream<List<FinancialItem>> watchHouseholdItems({String? itemType}) {
+    final query = select(financialItems)
+      ..where((tbl) => tbl.status.equals('active'));
+    if (itemType != null) {
+      query.where((tbl) => tbl.itemType.equals(itemType));
+    }
+    query.orderBy([(t) => OrderingTerm.asc(t.name)]);
+    return query.watch();
+  }
+
+  /// Get items by subType (e.g. 'mutual_fund', 'home_loan') for a profile.
+  Future<List<FinancialItem>> getItemsBySubType(
+    int profileId,
+    String subType,
+  ) {
     return (select(financialItems)
           ..where((tbl) =>
-              tbl.itemType.equals(itemType) & tbl.status.equals('active')))
+              tbl.profileId.equals(profileId) &
+              tbl.subType.equals(subType) &
+              tbl.status.equals('active')))
         .get();
   }
 
-  /// Get items by subType (e.g. 'mutual_fund', 'home_loan').
-  Future<List<FinancialItem>> getItemsBySubType(String subType) {
+  /// Find an item by external code within a profile.
+  Future<FinancialItem?> getItemByExternalCode(
+    int profileId,
+    String externalCode,
+  ) {
     return (select(financialItems)
           ..where((tbl) =>
-              tbl.subType.equals(subType) & tbl.status.equals('active')))
-        .get();
-  }
-
-  /// Find an item by external code (e.g. scheme code).
-  Future<FinancialItem?> getItemByExternalCode(String externalCode) {
-    return (select(financialItems)
-          ..where((tbl) => tbl.externalCode.equals(externalCode)))
+              tbl.profileId.equals(profileId) &
+              tbl.externalCode.equals(externalCode)))
         .getSingleOrNull();
   }
 
@@ -92,5 +140,56 @@ class FinancialItemsDao extends DatabaseAccessor<AppDatabase>
   /// Hard delete an item.
   Future<int> deleteItem(int id) {
     return (delete(financialItems)..where((tbl) => tbl.id.equals(id))).go();
+  }
+
+  /// Calculate net worth for a specific profile (Total Assets - Total Liabilities) in Paise.
+  Future<int> calculateNetWorthForProfile(int profileId) async {
+    final assetValuationSum = financialItems.currentValuationPaise.sum();
+    final assetQuery = selectOnly(financialItems)
+      ..addColumns([assetValuationSum])
+      ..where(financialItems.profileId.equals(profileId) &
+          financialItems.itemType.equals('asset') &
+          financialItems.status.equals('active'));
+    final assetResult =
+        await assetQuery.map((row) => row.read(assetValuationSum)).getSingle();
+    final totalAssets = assetResult ?? 0;
+
+    final liabilityValuationSum = financialItems.currentValuationPaise.sum();
+    final liabilityQuery = selectOnly(financialItems)
+      ..addColumns([liabilityValuationSum])
+      ..where(financialItems.profileId.equals(profileId) &
+          financialItems.itemType.equals('liability') &
+          financialItems.status.equals('active'));
+    final liabilityResult = await liabilityQuery
+        .map((row) => row.read(liabilityValuationSum))
+        .getSingle();
+    final totalLiabilities = liabilityResult ?? 0;
+
+    return totalAssets - totalLiabilities;
+  }
+
+  /// Calculate combined household net worth in Paise.
+  Future<int> calculateHouseholdNetWorth() async {
+    final assetValuationSum = financialItems.currentValuationPaise.sum();
+    final assetQuery = selectOnly(financialItems)
+      ..addColumns([assetValuationSum])
+      ..where(financialItems.itemType.equals('asset') &
+          financialItems.status.equals('active'));
+    final totalAssets = (await assetQuery
+            .map((row) => row.read(assetValuationSum))
+            .getSingle()) ??
+        0;
+
+    final liabilityValuationSum = financialItems.currentValuationPaise.sum();
+    final liabilityQuery = selectOnly(financialItems)
+      ..addColumns([liabilityValuationSum])
+      ..where(financialItems.itemType.equals('liability') &
+          financialItems.status.equals('active'));
+    final totalLiabilities = (await liabilityQuery
+            .map((row) => row.read(liabilityValuationSum))
+            .getSingle()) ??
+        0;
+
+    return totalAssets - totalLiabilities;
   }
 }

@@ -1,7 +1,5 @@
 import 'package:drift/drift.dart';
 
-import 'financial_profiles.dart';
-
 /// Table representing financial accounts such as bank accounts, cash wallets,
 /// demat accounts, and credit lines scoped to a specific financial profile.
 @TableIndex(name: 'idx_account_type', columns: {#accountType})

@@ -1,7 +1,5 @@
 import 'package:drift/drift.dart';
 
-import 'financial_profiles.dart';
-
 /// Table representing financial categories and subcategories across assets,
 /// liabilities, income, and expenses.
 ///

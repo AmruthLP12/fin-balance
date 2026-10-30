@@ -1,7 +1,5 @@
 import 'package:drift/drift.dart';
 
-import 'financial_profiles.dart';
-
 /// Table representing trackable financial items scoped to a profile:
 /// - Assets (+): Mutual funds, stocks, ETFs, fixed deposits, gold, PPF, EPF, NPS, bonds.
 /// - Liabilities (-): Home loans, vehicle loans, education loans, personal loans, credit card debt.

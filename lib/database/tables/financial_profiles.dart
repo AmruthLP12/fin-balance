@@ -18,9 +18,8 @@ class FinancialProfiles extends Table {
   TextColumn get description => text().nullable()();
 
   /// Relationship to primary user: 'self', 'father', 'mother', 'spouse', 'child', 'other'
-  TextColumn get relationship => text()
-      .withLength(min: 1, max: 50)
-      .withDefault(const Constant('self'))();
+  TextColumn get relationship =>
+      text().withLength(min: 1, max: 50).withDefault(const Constant('self'))();
 
   /// Color accent hex string for UI chips and avatars (e.g. '#10B981')
   TextColumn get colorHex => text()
@@ -33,11 +32,9 @@ class FinancialProfiles extends Table {
   /// Whether the profile is archived (hidden from everyday dashboard, but records preserved)
   BoolColumn get isArchived => boolean().withDefault(const Constant(false))();
 
-  /// Creation timestamp (Unix seconds)
-  IntColumn get createdAt =>
-      integer().withDefault(currentDateAndTimeInSeconds)();
+  /// Creation timestamp
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 
-  /// Last updated timestamp (Unix seconds)
-  IntColumn get updatedAt =>
-      integer().withDefault(currentDateAndTimeInSeconds)();
+  /// Last updated timestamp
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
 }

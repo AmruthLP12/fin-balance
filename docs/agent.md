@@ -75,6 +75,7 @@ Avoid unnecessary abstraction and excessive layers.
 3. **Dependency Injection:** Consume DAOs and `AppDatabase` via Riverpod providers in `lib/core/providers/database_provider.dart`.
 4. **Relational Constraints:** Always maintain SQLite foreign key enforcement (`PRAGMA foreign_keys = ON;`). Use `CASCADE` for dependent historical records and `RESTRICT` for referenced classification categories.
 5. **Upserts:** Always specify conflict targets explicitly (e.g. `DoUpdate((_) => entry, target: [table.itemId, table.date])`) when handling composite key tables like `ValuationHistory`.
+6. **Multi-Profile Data Scoping:** All financial queries (accounts, assets, liabilities, transactions, recurring commitments) must be strictly scoped by `profile_id` (the active profile). Never allow records from one profile to leak into another profile's dashboard. Transactions and recurring schedules must validate that referenced accounts and items belong to the same profile. Combined family/household totals must only be calculated via dedicated aggregate queries.
 
 ## 5. UI/UX Requirements
 

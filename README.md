@@ -54,7 +54,8 @@ lib/
 │   ├── app_database.dart         # Drift AppDatabase with schema version 1 & migrations
 │   ├── connection/               # Native SQLite connection via drift_flutter
 │   ├── precision/                # FinancialPrecision (Paise, micro-units, micro-paise)
-│   ├── tables/                   # Drift table definitions (7 normalized tables)
+│   ├── tables/                   # Drift table definitions (8 normalized tables)
+│   │   ├── financial_profiles.dart
 │   │   ├── financial_categories.dart
 │   │   ├── financial_accounts.dart
 │   │   ├── financial_items.dart
@@ -62,7 +63,8 @@ lib/
 │   │   ├── valuation_history.dart
 │   │   ├── recurring_transactions.dart
 │   │   └── app_settings.dart
-│   └── daos/                     # Data Access Objects (7 specialized DAOs)
+│   └── daos/                     # Data Access Objects (8 specialized DAOs)
+│       ├── profiles_dao.dart
 │       ├── categories_dao.dart
 │       ├── accounts_dao.dart
 │       ├── financial_items_dao.dart
@@ -116,7 +118,7 @@ make clean
 ## 5. Implementation Roadmap
 
 - [x] **Milestone 1 — Project Foundation:** Scaffolding, Riverpod, Design System, Theme Tokens, 5-Tab Navigation (`Overview`, `Assets`, `Liabilities`, `Activity`, `Settings`), Makefile, Documentation.
-- [x] **Milestone 2 — Drift Database Layer:** Schema definition (7 normalized tables: Categories, Accounts, Items, Transactions, Valuations, Recurring Schedules, Settings), 7 specialized DAOs with reactive streams, integer precision engine (Paise/micro-units/micro-paise), foreign keys with cascade/restrict, default category seeding, and in-memory test suite.
+- [x] **Milestone 2 — Drift Database Layer:** Schema definition (8 normalized tables: Profiles, Categories, Accounts, Items, Transactions, Valuations, Recurring Schedules, Settings), multi-profile family finance data isolation, 8 specialized DAOs with reactive streams, integer precision engine (Paise/micro-units/micro-paise), foreign keys with cascade/restrict, default profile & category seeding, and in-memory test suite.
 - [ ] **Milestone 3 — Mutual Fund & NAV Integration:** Provider adapters (MFapi.in & TIGZIG), search, local NAV caching.
 - [ ] **Milestone 4 — SIP & Commitment Scheduling:** Independent date generator, leap year & month-end handlers, duplicate prevention.
 - [ ] **Milestone 5 — Transaction & Valuation Engine:** Simulated installments, lump-sum purchases, redemptions, unit calculations.

@@ -10,4 +10,3 @@ class AppSettings extends Table {
   @override
   Set<Column> get primaryKey => {key};
 }
-

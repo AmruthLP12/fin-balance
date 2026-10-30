@@ -1,7 +1,5 @@
 import 'package:drift/drift.dart';
 
-import 'financial_profiles.dart';
-
 /// Table representing recurring schedules for SIP contributions, loan EMIs,
 /// recurring salary, subscriptions, and rent scoped to a profile.
 @TableIndex(name: 'idx_recurring_profile', columns: {#profileId})

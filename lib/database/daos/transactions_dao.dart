@@ -9,35 +9,61 @@ class TransactionsDao extends DatabaseAccessor<AppDatabase>
     with _$TransactionsDaoMixin {
   TransactionsDao(super.db);
 
-  /// Watch recent transactions ordered descending by date.
-  Stream<List<Transaction>> watchRecentTransactions({int limit = 50}) {
+  /// Watch recent transactions for a specific profile.
+  Stream<List<Transaction>> watchRecentTransactionsForProfile(
+    int profileId, {
+    int limit = 50,
+  }) {
+    return (select(transactions)
+          ..where((tbl) => tbl.profileId.equals(profileId))
+          ..orderBy([(t) => OrderingTerm.desc(t.transactionDate)])
+          ..limit(limit))
+        .watch();
+  }
+
+  /// Watch household recent transactions across all profiles.
+  Stream<List<Transaction>> watchHouseholdRecentTransactions({int limit = 50}) {
     return (select(transactions)
           ..orderBy([(t) => OrderingTerm.desc(t.transactionDate)])
           ..limit(limit))
         .watch();
   }
 
-  /// Get transactions for a specific financial item (e.g. mutual fund holdings or loan payments).
-  Future<List<Transaction>> getTransactionsByItem(int financialItemId) {
+  /// Get transactions for a specific profile and item.
+  Future<List<Transaction>> getTransactionsByItem(
+    int profileId,
+    int financialItemId,
+  ) {
     return (select(transactions)
-          ..where((tbl) => tbl.financialItemId.equals(financialItemId))
+          ..where((tbl) =>
+              tbl.profileId.equals(profileId) &
+              tbl.financialItemId.equals(financialItemId))
           ..orderBy([(t) => OrderingTerm.asc(t.transactionDate)]))
         .get();
   }
 
-  /// Watch transactions for a specific item.
-  Stream<List<Transaction>> watchTransactionsByItem(int financialItemId) {
+  /// Watch transactions for a specific profile and item.
+  Stream<List<Transaction>> watchTransactionsByItem(
+    int profileId,
+    int financialItemId,
+  ) {
     return (select(transactions)
-          ..where((tbl) => tbl.financialItemId.equals(financialItemId))
+          ..where((tbl) =>
+              tbl.profileId.equals(profileId) &
+              tbl.financialItemId.equals(financialItemId))
           ..orderBy([(t) => OrderingTerm.desc(t.transactionDate)]))
         .watch();
   }
 
-  /// Get transactions by date range.
+  /// Get transactions by date range for a specific profile.
   Future<List<Transaction>> getTransactionsByDateRange(
-      DateTime start, DateTime end) {
+    int profileId,
+    DateTime start,
+    DateTime end,
+  ) {
     return (select(transactions)
           ..where((tbl) =>
+              tbl.profileId.equals(profileId) &
               tbl.transactionDate.isBiggerOrEqualValue(start) &
               tbl.transactionDate.isSmallerOrEqualValue(end))
           ..orderBy([(t) => OrderingTerm.asc(t.transactionDate)]))
@@ -50,8 +76,49 @@ class TransactionsDao extends DatabaseAccessor<AppDatabase>
         .getSingleOrNull();
   }
 
-  /// Insert a new transaction.
-  Future<int> insertTransaction(TransactionsCompanion transaction) {
+  /// Validate cross-profile relationship integrity.
+  /// Throws [ArgumentError] if the transaction references an account or item from a different profile.
+  Future<void> validateProfileIntegrity(
+      TransactionsCompanion transaction) async {
+    final profileId = transaction.profileId.value;
+
+    // Check financial item ownership
+    if (transaction.financialItemId.present &&
+        transaction.financialItemId.value != null) {
+      final item = await db.financialItemsDao
+          .getItemById(transaction.financialItemId.value!);
+      if (item != null && item.profileId != profileId) {
+        throw ArgumentError(
+            'Cross-profile violation: Financial item ${item.id} belongs to profile ${item.profileId}, but transaction belongs to profile $profileId.');
+      }
+    }
+
+    // Check fromAccount ownership
+    if (transaction.fromAccountId.present &&
+        transaction.fromAccountId.value != null) {
+      final account =
+          await db.accountsDao.getAccountById(transaction.fromAccountId.value!);
+      if (account != null && account.profileId != profileId) {
+        throw ArgumentError(
+            'Cross-profile violation: Account ${account.id} belongs to profile ${account.profileId}, but transaction belongs to profile $profileId.');
+      }
+    }
+
+    // Check toAccount ownership
+    if (transaction.toAccountId.present &&
+        transaction.toAccountId.value != null) {
+      final account =
+          await db.accountsDao.getAccountById(transaction.toAccountId.value!);
+      if (account != null && account.profileId != profileId) {
+        throw ArgumentError(
+            'Cross-profile violation: Account ${account.id} belongs to profile ${account.profileId}, but transaction belongs to profile $profileId.');
+      }
+    }
+  }
+
+  /// Insert a new transaction with profile integrity enforcement.
+  Future<int> insertTransaction(TransactionsCompanion transaction) async {
+    await validateProfileIntegrity(transaction);
     return into(transactions).insert(transaction);
   }
 

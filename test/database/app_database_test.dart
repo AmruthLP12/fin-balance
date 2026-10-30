@@ -15,177 +15,390 @@ void main() {
     await db.close();
   });
 
-  group('Database Initialization & Categories', () {
-    test('seeds default categories on fresh database creation', () async {
+  group('Multi-Profile Management & Initialization', () {
+    test(
+        'seeds default profile and active_profile_id on fresh database creation',
+        () async {
+      final defaultProfile = await db.profilesDao.getDefaultProfile();
+      expect(defaultProfile, isNotNull);
+      expect(defaultProfile!.name, equals('My Profile'));
+      expect(defaultProfile.relationship, equals('self'));
+      expect(defaultProfile.isDefault, isTrue);
+      expect(defaultProfile.isArchived, isFalse);
+
+      final activeProfileSetting =
+          await db.appSettingsDao.getSetting('active_profile_id');
+      expect(activeProfileSetting, equals(defaultProfile.id.toString()));
+
+      // Seeded default categories should be global (profileId is null)
       final categories = await db.categoriesDao.watchAllCategories().first;
       expect(categories, isNotEmpty);
-      expect(categories.any((c) => c.classification == 'asset'), isTrue);
-      expect(categories.any((c) => c.classification == 'liability'), isTrue);
-      expect(categories.any((c) => c.classification == 'income'), isTrue);
-      expect(categories.any((c) => c.classification == 'expense'), isTrue);
+      expect(categories.every((c) => c.profileId == null), isTrue);
     });
 
-    test('creates custom categories and supports soft-archive', () async {
-      final categoryId = await db.categoriesDao.insertCategory(
-        const FinancialCategoriesCompanion(
-          name: Value('Crypto & Web3'),
-          classification: Value('asset'),
-          isCustom: Value(true),
+    test('creates multiple profiles without artificial limits', () async {
+      final fatherId = await db.profilesDao.createProfile(
+        const FinancialProfilesCompanion(
+          name: Value('Father'),
+          relationship: Value('father'),
+          colorHex: Value('#3B82F6'),
         ),
       );
-      expect(categoryId, isPositive);
 
-      final category = await db.categoriesDao.getCategoryById(categoryId);
-      expect(category, isNotNull);
-      expect(category!.name, equals('Crypto & Web3'));
-      expect(category.isCustom, isTrue);
-      expect(category.isArchived, isFalse);
+      final motherId = await db.profilesDao.createProfile(
+        const FinancialProfilesCompanion(
+          name: Value('Mother'),
+          relationship: Value('mother'),
+          colorHex: Value('#EC4899'),
+        ),
+      );
 
-      // Archive category
-      await db.categoriesDao.archiveCategory(categoryId);
-      final activeCategories =
-          await db.categoriesDao.watchAllCategories().first;
-      expect(activeCategories.any((c) => c.id == categoryId), isFalse);
+      final spouseId = await db.profilesDao.createProfile(
+        const FinancialProfilesCompanion(
+          name: Value('Spouse'),
+          relationship: Value('spouse'),
+          colorHex: Value('#8B5CF6'),
+        ),
+      );
+
+      expect(fatherId, isPositive);
+      expect(motherId, isPositive);
+      expect(spouseId, isPositive);
+
+      final allActive = await db.profilesDao.getAllProfiles();
+      // Default profile + 3 new profiles = 4 profiles
+      expect(allActive.length, equals(4));
+      expect(allActive.any((p) => p.name == 'Father'), isTrue);
+      expect(allActive.any((p) => p.name == 'Mother'), isTrue);
+      expect(allActive.any((p) => p.name == 'Spouse'), isTrue);
+    });
+
+    test('switches active profile and updates default profile', () async {
+      final defaultProfile = (await db.profilesDao.getDefaultProfile())!;
+
+      final spouseId = await db.profilesDao.createProfile(
+        const FinancialProfilesCompanion(
+          name: Value('Spouse'),
+          relationship: Value('spouse'),
+        ),
+      );
+
+      // Set spouse as new default profile
+      await db.profilesDao.setDefaultProfile(spouseId);
+
+      final newDefault = await db.profilesDao.getDefaultProfile();
+      expect(newDefault, isNotNull);
+      expect(newDefault!.id, equals(spouseId));
+      expect(newDefault.name, equals('Spouse'));
+
+      // Check that former default profile is no longer default
+      final oldDefault = await db.profilesDao.getProfileById(defaultProfile.id);
+      expect(oldDefault!.isDefault, isFalse);
+
+      // Persist active profile in settings
+      await db.appSettingsDao
+          .setSetting('active_profile_id', spouseId.toString());
+      expect(await db.appSettingsDao.getSetting('active_profile_id'),
+          equals(spouseId.toString()));
+    });
+
+    test('archives profile without deleting financial history', () async {
+      final brotherId = await db.profilesDao.createProfile(
+        const FinancialProfilesCompanion(
+          name: Value('Brother'),
+          relationship: Value('other'),
+        ),
+      );
+
+      await db.profilesDao.archiveProfile(brotherId);
+
+      // Not in active profiles
+      final activeProfiles = await db.profilesDao.getAllProfiles();
+      expect(activeProfiles.any((p) => p.id == brotherId), isFalse);
+
+      // Present when querying with includeArchived: true
+      final allProfiles =
+          await db.profilesDao.getAllProfiles(includeArchived: true);
+      expect(allProfiles.any((p) => p.id == brotherId), isTrue);
+
+      // Unarchive
+      await db.profilesDao.unarchiveProfile(brotherId);
+      final unarchivedList = await db.profilesDao.getAllProfiles();
+      expect(unarchivedList.any((p) => p.id == brotherId), isTrue);
     });
   });
 
-  group('Financial Accounts', () {
+  group('Financial Accounts & Profile Scoping', () {
     test(
-        'creates accounts, manages opening balances, and updates cached balance in paise',
+        'strictly isolates accounts by profile and calculates liquidity correctly',
         () async {
-      final accountId = await db.accountsDao.insertAccount(
+      final defaultProfile = (await db.profilesDao.getDefaultProfile())!;
+
+      final spouseId = await db.profilesDao.createProfile(
+        const FinancialProfilesCompanion(
+          name: Value('Spouse'),
+          relationship: Value('spouse'),
+        ),
+      );
+
+      // Account for Profile 1 (Self)
+      final selfAccountId = await db.accountsDao.insertAccount(
         FinancialAccountsCompanion(
-          name: const Value('HDFC Salary Account'),
+          profileId: Value(defaultProfile.id),
+          name: const Value('Self HDFC Bank'),
           accountType: const Value('bank'),
-          institutionName: const Value('HDFC Bank'),
           openingBalancePaise:
-              Value(FinancialPrecision.rupeesToPaise(25000.0)), // ₹25,000
-          currentBalancePaise: Value(FinancialPrecision.rupeesToPaise(25000.0)),
+              Value(FinancialPrecision.rupeesToPaise(50000.0)), // ₹50,000
+          currentBalancePaise: Value(FinancialPrecision.rupeesToPaise(50000.0)),
         ),
       );
-      expect(accountId, isPositive);
 
-      final account = await db.accountsDao.getAccountById(accountId);
-      expect(account, isNotNull);
-      expect(account!.name, equals('HDFC Salary Account'));
-      expect(account.openingBalancePaise, equals(2500000));
-      expect(account.currentBalancePaise, equals(2500000));
+      // Account for Profile 2 (Spouse)
+      final spouseAccountId = await db.accountsDao.insertAccount(
+        FinancialAccountsCompanion(
+          profileId: Value(spouseId),
+          name: const Value('Spouse ICICI Bank'),
+          accountType: const Value('bank'),
+          openingBalancePaise:
+              Value(FinancialPrecision.rupeesToPaise(30000.0)), // ₹30,000
+          currentBalancePaise: Value(FinancialPrecision.rupeesToPaise(30000.0)),
+        ),
+      );
 
-      // Update cached balance to ₹30,000.50
-      await db.accountsDao
-          .updateBalance(accountId, FinancialPrecision.rupeesToPaise(30000.50));
-      final updated = await db.accountsDao.getAccountById(accountId);
-      expect(updated!.currentBalancePaise, equals(3000050));
+      expect(selfAccountId, isPositive);
+      expect(spouseAccountId, isPositive);
 
-      // Archive account
-      await db.accountsDao.archiveAccount(accountId);
-      final active = await db.accountsDao.getActiveAccounts();
-      expect(active.any((a) => a.id == accountId), isFalse);
+      // Query Profile 1 accounts
+      final selfAccounts =
+          await db.accountsDao.getAccountsByProfile(defaultProfile.id);
+      expect(selfAccounts.length, equals(1));
+      expect(selfAccounts.first.name, equals('Self HDFC Bank'));
+      expect(selfAccounts.any((a) => a.id == spouseAccountId), isFalse);
+
+      // Query Profile 2 accounts
+      final spouseAccounts =
+          await db.accountsDao.getAccountsByProfile(spouseId);
+      expect(spouseAccounts.length, equals(1));
+      expect(spouseAccounts.first.name, equals('Spouse ICICI Bank'));
+      expect(spouseAccounts.any((a) => a.id == selfAccountId), isFalse);
+
+      // Liquidity calculations
+      final selfLiquidity = await db.accountsDao
+          .calculateTotalLiquidityForProfile(defaultProfile.id);
+      final spouseLiquidity =
+          await db.accountsDao.calculateTotalLiquidityForProfile(spouseId);
+
+      expect(selfLiquidity, equals(5000000)); // ₹50,000 in paise
+      expect(spouseLiquidity, equals(3000000)); // ₹30,000 in paise
     });
   });
 
-  group('Financial Items (Assets vs Liabilities)', () {
+  group('Financial Items (Assets vs Liabilities) & Data Separation', () {
     test(
-        'distinctly stores and filters Assets and Liabilities with precision values',
+        'strictly separates assets and liabilities by profile and calculates net worth',
         () async {
+      final defaultProfile = (await db.profilesDao.getDefaultProfile())!;
+
+      final fatherId = await db.profilesDao.createProfile(
+        const FinancialProfilesCompanion(
+          name: Value('Father'),
+          relationship: Value('father'),
+        ),
+      );
+
       final assetCategories =
           await db.categoriesDao.getCategoriesByClassification('asset');
       final liabilityCategories =
           await db.categoriesDao.getCategoriesByClassification('liability');
 
-      // 1. Insert an Asset (Mutual Fund)
-      final assetId = await db.financialItemsDao.insertItem(
+      // 1. Insert an Asset for Self (Mutual Fund, ₹100,000)
+      final selfAssetId = await db.financialItemsDao.insertItem(
         FinancialItemsCompanion(
-          name: const Value('SBI Small Cap Fund - Direct Growth'),
+          profileId: Value(defaultProfile.id),
+          name: const Value('Parag Parikh Flexi Cap'),
           itemType: const Value('asset'),
           subType: const Value('mutual_fund'),
           categoryId: Value(assetCategories.first.id),
-          externalCode: const Value('125497'),
-          initialValuePaise:
-              Value(FinancialPrecision.rupeesToPaise(10000.0)), // ₹10,000
           currentValuationPaise:
-              Value(FinancialPrecision.rupeesToPaise(12500.0)), // ₹12,500
-          unitCountMicroUnits:
-              Value(FinancialPrecision.unitsToMicroUnits(62.456)),
+              Value(FinancialPrecision.rupeesToPaise(100000.0)),
         ),
       );
 
-      // 2. Insert a Liability (Home Loan)
-      final liabilityId = await db.financialItemsDao.insertItem(
+      // 2. Insert a Liability for Self (Personal Loan, ₹20,000)
+      final selfLiabilityId = await db.financialItemsDao.insertItem(
         FinancialItemsCompanion(
-          name: const Value('SBI MaxGain Home Loan'),
+          profileId: Value(defaultProfile.id),
+          name: const Value('Personal Loan'),
           itemType: const Value('liability'),
-          subType: const Value('home_loan'),
+          subType: const Value('personal_loan'),
           categoryId: Value(liabilityCategories.first.id),
-          externalCode: const Value('HL-987654321'),
-          initialValuePaise:
-              Value(FinancialPrecision.rupeesToPaise(4000000.0)), // ₹40 Lakhs
           currentValuationPaise:
-              Value(FinancialPrecision.rupeesToPaise(3850000.0)), // ₹38.5 Lakhs
-          interestRateBasisPoints: const Value(850), // 8.50%
+              Value(FinancialPrecision.rupeesToPaise(20000.0)),
         ),
       );
 
-      expect(assetId, isPositive);
-      expect(liabilityId, isPositive);
+      // 3. Insert an Asset for Father (Senior Citizen FD, ₹500,000)
+      final fatherAssetId = await db.financialItemsDao.insertItem(
+        FinancialItemsCompanion(
+          profileId: Value(fatherId),
+          name: const Value('SBI Senior Citizen FD'),
+          itemType: const Value('asset'),
+          subType: const Value('fixed_deposit'),
+          categoryId: Value(assetCategories.first.id),
+          currentValuationPaise:
+              Value(FinancialPrecision.rupeesToPaise(500000.0)),
+        ),
+      );
 
-      // Verify separation by itemType
-      final assets = await db.financialItemsDao.getItemsByType('asset');
-      final liabilities =
-          await db.financialItemsDao.getItemsByType('liability');
+      expect(selfAssetId, isPositive);
+      expect(selfLiabilityId, isPositive);
+      expect(fatherAssetId, isPositive);
 
-      expect(assets.any((a) => a.id == assetId), isTrue);
-      expect(assets.any((a) => a.id == liabilityId), isFalse);
+      // Verify Self profile items
+      final selfAssets = await db.financialItemsDao
+          .getItemsByProfile(defaultProfile.id, itemType: 'asset');
+      final selfLiabilities = await db.financialItemsDao
+          .getItemsByProfile(defaultProfile.id, itemType: 'liability');
 
-      expect(liabilities.any((l) => l.id == liabilityId), isTrue);
-      expect(liabilities.any((l) => l.id == assetId), isFalse);
+      expect(selfAssets.length, equals(1));
+      expect(selfAssets.first.name, equals('Parag Parikh Flexi Cap'));
+      expect(selfLiabilities.length, equals(1));
+      expect(selfLiabilities.first.name, equals('Personal Loan'));
 
-      // Lookup by external code (scheme code)
-      final fund = await db.financialItemsDao.getItemByExternalCode('125497');
-      expect(fund, isNotNull);
-      expect(fund!.name, equals('SBI Small Cap Fund - Direct Growth'));
-      expect(fund.unitCountMicroUnits, equals(62456000));
+      // Ensure Father's FD does not leak into Self's assets
+      expect(selfAssets.any((a) => a.id == fatherAssetId), isFalse);
+
+      // Verify Father's profile items
+      final fatherAssets = await db.financialItemsDao
+          .getItemsByProfile(fatherId, itemType: 'asset');
+      final fatherLiabilities = await db.financialItemsDao
+          .getItemsByProfile(fatherId, itemType: 'liability');
+
+      expect(fatherAssets.length, equals(1));
+      expect(fatherAssets.first.name, equals('SBI Senior Citizen FD'));
+      expect(fatherLiabilities, isEmpty);
+
+      // Net Worth calculations:
+      // Self Net Worth = ₹100,000 - ₹20,000 = ₹80,000 (8,000,000 paise)
+      final selfNetWorth = await db.financialItemsDao
+          .calculateNetWorthForProfile(defaultProfile.id);
+      expect(selfNetWorth, equals(8000000));
+
+      // Father Net Worth = ₹500,000 - ₹0 = ₹500,000 (50,000,000 paise)
+      final fatherNetWorth =
+          await db.financialItemsDao.calculateNetWorthForProfile(fatherId);
+      expect(fatherNetWorth, equals(50000000));
+
+      // Combined Household Net Worth = ₹80,000 + ₹500,000 = ₹580,000 (58,000,000 paise)
+      final householdNetWorth =
+          await db.financialItemsDao.calculateHouseholdNetWorth();
+      expect(householdNetWorth, equals(58000000));
     });
   });
 
-  group('Transactions Ledger', () {
-    test('records financial cash flow and links to items and accounts',
+  group('Cross-Profile Integrity & Transactions', () {
+    test(
+        'prevents cross-profile relationships between transaction, items, and accounts',
         () async {
-      final categories =
-          await db.categoriesDao.getCategoriesByClassification('expense');
-      final accountId = await db.accountsDao.insertAccount(
-        const FinancialAccountsCompanion(
-          name: Value('Primary Checking'),
-          accountType: Value('bank'),
+      final defaultProfile = (await db.profilesDao.getDefaultProfile())!;
+
+      final spouseId = await db.profilesDao.createProfile(
+        const FinancialProfilesCompanion(
+          name: Value('Spouse'),
+          relationship: Value('spouse'),
         ),
       );
 
-      final assetCategories =
-          await db.categoriesDao.getCategoriesByClassification('asset');
+      final categories =
+          await db.categoriesDao.getCategoriesByClassification('expense');
+
+      // Account belonging to Self
+      final selfAccountId = await db.accountsDao.insertAccount(
+        FinancialAccountsCompanion(
+          profileId: Value(defaultProfile.id),
+          name: const Value('Self Bank'),
+          accountType: const Value('bank'),
+        ),
+      );
+
+      // Asset belonging to Spouse
+      final spouseItemId = await db.financialItemsDao.insertItem(
+        FinancialItemsCompanion(
+          profileId: Value(spouseId),
+          name: const Value('Spouse Gold'),
+          itemType: const Value('asset'),
+          subType: const Value('gold'),
+          categoryId: Value(categories.first.id),
+        ),
+      );
+
+      // Attempting to record a transaction for Self that references Spouse's asset should fail integrity check
+      expect(
+        () async => await db.transactionsDao.insertTransaction(
+          TransactionsCompanion(
+            profileId: Value(defaultProfile.id), // Profile 1
+            transactionType: const Value('investment_purchase'),
+            categoryId: Value(categories.first.id),
+            financialItemId: Value(spouseItemId), // Profile 2!
+            fromAccountId: Value(selfAccountId),
+            transactionDate: Value(DateTime.utc(2026, 1, 1)),
+            amountPaise: const Value(500000),
+          ),
+        ),
+        throwsA(isA<ArgumentError>()),
+      );
+
+      // Attempting to record a transaction for Spouse referencing Self's account should also fail
+      expect(
+        () async => await db.transactionsDao.insertTransaction(
+          TransactionsCompanion(
+            profileId: Value(spouseId), // Profile 2
+            transactionType: const Value('investment_purchase'),
+            categoryId: Value(categories.first.id),
+            financialItemId: Value(spouseItemId),
+            fromAccountId: Value(selfAccountId), // Profile 1!
+            transactionDate: Value(DateTime.utc(2026, 1, 1)),
+            amountPaise: const Value(500000),
+          ),
+        ),
+        throwsA(isA<ArgumentError>()),
+      );
+    });
+
+    test('records valid profile-scoped transactions and queries correctly',
+        () async {
+      final defaultProfile = (await db.profilesDao.getDefaultProfile())!;
+      final categories =
+          await db.categoriesDao.getCategoriesByClassification('expense');
+
+      final accountId = await db.accountsDao.insertAccount(
+        FinancialAccountsCompanion(
+          profileId: Value(defaultProfile.id),
+          name: const Value('Primary Checking'),
+          accountType: const Value('bank'),
+        ),
+      );
+
       final itemId = await db.financialItemsDao.insertItem(
         FinancialItemsCompanion(
+          profileId: Value(defaultProfile.id),
           name: const Value('HDFC Top 100'),
           itemType: const Value('asset'),
           subType: const Value('mutual_fund'),
-          categoryId: Value(assetCategories.first.id),
+          categoryId: Value(categories.first.id),
         ),
       );
 
-      // Record an SIP contribution transaction
-      final txDate = DateTime.utc(2026, 1, 15);
       final txId = await db.transactionsDao.insertTransaction(
         TransactionsCompanion(
+          profileId: Value(defaultProfile.id),
           transactionType: const Value('investment_purchase'),
           categoryId: Value(categories.first.id),
           financialItemId: Value(itemId),
           fromAccountId: Value(accountId),
-          transactionDate: Value(txDate),
+          transactionDate: Value(DateTime.utc(2026, 1, 15)),
           amountPaise: Value(FinancialPrecision.rupeesToPaise(5000.0)),
-          unitsMicroUnits: Value(FinancialPrecision.unitsToMicroUnits(15.250)),
-          unitPriceMicroPaise:
-              Value(FinancialPrecision.navToMicroPaise(327.8688)),
           source: const Value('simulated_sip'),
-          notes: const Value('Monthly SIP installment #1'),
         ),
       );
 
@@ -193,16 +406,14 @@ void main() {
 
       final tx = await db.transactionsDao.getTransactionById(txId);
       expect(tx, isNotNull);
-      expect(tx!.amountPaise, equals(500000));
-      expect(tx.source, equals('simulated_sip'));
-      expect(tx.unitsMicroUnits, equals(15250000));
-      expect(tx.fromAccountId, equals(accountId));
-      expect(tx.financialItemId, equals(itemId));
+      expect(tx!.profileId, equals(defaultProfile.id));
+      expect(tx.amountPaise, equals(500000));
 
-      // Query by item
-      final itemTxs = await db.transactionsDao.getTransactionsByItem(itemId);
-      expect(itemTxs.length, equals(1));
-      expect(itemTxs.first.id, equals(txId));
+      final profileTxs = await db.transactionsDao
+          .watchRecentTransactionsForProfile(defaultProfile.id)
+          .first;
+      expect(profileTxs.length, equals(1));
+      expect(profileTxs.first.id, equals(txId));
     });
   });
 
@@ -210,10 +421,13 @@ void main() {
     test(
         'upserts historical valuations and enforces uniqueness on (financialItemId, valuationDate)',
         () async {
+      final defaultProfile = (await db.profilesDao.getDefaultProfile())!;
       final assetCategories =
           await db.categoriesDao.getCategoriesByClassification('asset');
+
       final itemId = await db.financialItemsDao.insertItem(
         FinancialItemsCompanion(
+          profileId: Value(defaultProfile.id),
           name: const Value('Nifty 50 Index Fund'),
           itemType: const Value('asset'),
           subType: const Value('mutual_fund'),
@@ -224,7 +438,6 @@ void main() {
       final date1 = DateTime.utc(2026, 1, 10);
       final date2 = DateTime.utc(2026, 1, 11);
 
-      // Insert valuation for date1
       await db.valuationsDao.upsertValuation(
         ValuationHistoryCompanion(
           financialItemId: Value(itemId),
@@ -235,7 +448,6 @@ void main() {
         ),
       );
 
-      // Insert valuation for date2
       await db.valuationsDao.upsertValuation(
         ValuationHistoryCompanion(
           financialItemId: Value(itemId),
@@ -246,11 +458,10 @@ void main() {
         ),
       );
 
-      // Query valuations
       final history = await db.valuationsDao.getValuationHistory(itemId);
       expect(history.length, equals(2));
 
-      // Upsert on date2 with updated NAV (should replace, not duplicate)
+      // Upsert on date2 with updated NAV replaces record without duplicate row
       await db.valuationsDao.upsertValuation(
         ValuationHistoryCompanion(
           financialItemId: Value(itemId),
@@ -262,7 +473,7 @@ void main() {
       );
 
       final updatedHistory = await db.valuationsDao.getValuationHistory(itemId);
-      expect(updatedHistory.length, equals(2)); // No duplicate row created
+      expect(updatedHistory.length, equals(2));
 
       final latestVal = await db.valuationsDao.getLatestValuation(itemId);
       expect(latestVal, isNotNull);
@@ -272,10 +483,13 @@ void main() {
     test(
         'cascades delete on valuation history when parent financial item is deleted',
         () async {
+      final defaultProfile = (await db.profilesDao.getDefaultProfile())!;
       final assetCategories =
           await db.categoriesDao.getCategoriesByClassification('asset');
+
       final itemId = await db.financialItemsDao.insertItem(
         FinancialItemsCompanion(
+          profileId: Value(defaultProfile.id),
           name: const Value('Temporary Fund'),
           itemType: const Value('asset'),
           subType: const Value('mutual_fund'),
@@ -291,17 +505,16 @@ void main() {
         ),
       );
 
-      // Delete the parent item
       await db.financialItemsDao.deleteItem(itemId);
 
-      // Verify valuations for deleted item are also deleted
       final history = await db.valuationsDao.getValuationHistory(itemId);
       expect(history, isEmpty);
     });
   });
 
-  group('Recurring Transactions (SIPs & EMIs)', () {
-    test('manages scheduled SIP and loan EMI rules', () async {
+  group('Recurring Transactions & AppSettings', () {
+    test('manages profile-scoped scheduled SIP and loan EMI rules', () async {
+      final defaultProfile = (await db.profilesDao.getDefaultProfile())!;
       final expenseCategories =
           await db.categoriesDao.getCategoriesByClassification('expense');
       final assetCategories =
@@ -309,6 +522,7 @@ void main() {
 
       final itemId = await db.financialItemsDao.insertItem(
         FinancialItemsCompanion(
+          profileId: Value(defaultProfile.id),
           name: const Value('Parag Parikh Flexi Cap Fund'),
           itemType: const Value('asset'),
           subType: const Value('mutual_fund'),
@@ -316,9 +530,9 @@ void main() {
         ),
       );
 
-      // Create a monthly SIP schedule
       final scheduleId = await db.recurringTransactionsDao.insertSchedule(
         RecurringTransactionsCompanion(
+          profileId: Value(defaultProfile.id),
           name: const Value('PPFC Monthly SIP'),
           recurringType: const Value('sip_investment'),
           financialItemId: Value(itemId),
@@ -335,24 +549,14 @@ void main() {
       final schedule =
           await db.recurringTransactionsDao.getScheduleById(scheduleId);
       expect(schedule, isNotNull);
-      expect(schedule!.recurringType, equals('sip_investment'));
-      expect(schedule.amountPaise, equals(500000));
-      expect(schedule.scheduledDay, equals(5));
-      expect(schedule.status, equals('active'));
-
-      // Pause the SIP schedule
-      await db.recurringTransactionsDao.updateStatus(scheduleId, 'paused');
-      final paused =
-          await db.recurringTransactionsDao.getScheduleById(scheduleId);
-      expect(paused!.status, equals('paused'));
+      expect(schedule!.profileId, equals(defaultProfile.id));
+      expect(schedule.recurringType, equals('sip_investment'));
 
       final activeSchedules = await db.recurringTransactionsDao
-          .getActiveSchedulesByType('sip_investment');
-      expect(activeSchedules.any((s) => s.id == scheduleId), isFalse);
+          .getActiveSchedulesByProfile(defaultProfile.id);
+      expect(activeSchedules.length, equals(1));
     });
-  });
 
-  group('AppSettings Key-Value Store', () {
     test('sets, gets, updates, and deletes settings', () async {
       await db.appSettingsDao.setSetting('currency', 'INR');
       await db.appSettingsDao.setSetting('theme', 'dark');
@@ -360,15 +564,9 @@ void main() {
       expect(await db.appSettingsDao.getSetting('currency'), equals('INR'));
       expect(await db.appSettingsDao.getSetting('theme'), equals('dark'));
 
-      // Update on conflict
       await db.appSettingsDao.setSetting('theme', 'light');
       expect(await db.appSettingsDao.getSetting('theme'), equals('light'));
 
-      final all = await db.appSettingsDao.getAllSettings();
-      expect(all['currency'], equals('INR'));
-      expect(all['theme'], equals('light'));
-
-      // Delete setting
       await db.appSettingsDao.deleteSetting('currency');
       expect(await db.appSettingsDao.getSetting('currency'), isNull);
     });

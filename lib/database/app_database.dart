@@ -4,6 +4,7 @@ import 'daos/accounts_dao.dart';
 import 'daos/app_settings_dao.dart';
 import 'daos/categories_dao.dart';
 import 'daos/financial_items_dao.dart';
+import 'daos/profiles_dao.dart';
 import 'daos/recurring_transactions_dao.dart';
 import 'daos/transactions_dao.dart';
 import 'daos/valuations_dao.dart';
@@ -11,6 +12,7 @@ import 'tables/app_settings.dart';
 import 'tables/financial_accounts.dart';
 import 'tables/financial_categories.dart';
 import 'tables/financial_items.dart';
+import 'tables/financial_profiles.dart';
 import 'tables/recurring_transactions.dart';
 import 'tables/transactions.dart';
 import 'tables/valuation_history.dart';
@@ -20,6 +22,7 @@ part 'app_database.g.dart';
 /// Central Drift SQLite database for FinBalance.
 @DriftDatabase(
   tables: [
+    FinancialProfiles,
     FinancialCategories,
     FinancialAccounts,
     FinancialItems,
@@ -29,6 +32,7 @@ part 'app_database.g.dart';
     AppSettings,
   ],
   daos: [
+    ProfilesDao,
     CategoriesDao,
     AccountsDao,
     FinancialItemsDao,
@@ -52,7 +56,7 @@ class AppDatabase extends _$AppDatabase {
     return MigrationStrategy(
       onCreate: (Migrator m) async {
         await m.createAll();
-        await _seedDefaultCategories();
+        await _seedInitialData();
       },
       beforeOpen: (details) async {
         await customStatement('PRAGMA foreign_keys = ON');
@@ -60,8 +64,28 @@ class AppDatabase extends _$AppDatabase {
     );
   }
 
-  /// Populate core default categories on fresh database creation.
-  Future<void> _seedDefaultCategories() async {
+  /// Populate core default profile, categories, and settings on fresh database creation.
+  Future<void> _seedInitialData() async {
+    // 1. Seed initial primary financial profile
+    final defaultProfileId = await into(financialProfiles).insert(
+      const FinancialProfilesCompanion(
+        name: Value('My Profile'),
+        relationship: Value('self'),
+        colorHex: Value('#10B981'),
+        isDefault: Value(true),
+        isArchived: Value(false),
+      ),
+    );
+
+    // 2. Set active profile in application settings
+    await into(appSettings).insert(
+      AppSettingsCompanion(
+        key: const Value('active_profile_id'),
+        value: Value(defaultProfileId.toString()),
+      ),
+    );
+
+    // 3. Seed global baseline categories
     final defaultCategories = <FinancialCategoriesCompanion>[
       // Asset categories
       const FinancialCategoriesCompanion(
@@ -165,4 +189,3 @@ class AppDatabase extends _$AppDatabase {
     });
   }
 }
-

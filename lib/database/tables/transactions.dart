@@ -1,12 +1,12 @@
 import 'package:drift/drift.dart';
 
-import 'financial_profiles.dart';
-
 /// Table representing all financial transactions and cash flows:
 /// income, expense, transfer, investment purchase/redemption, debt repayment, and adjustment.
 /// Every transaction is strictly scoped to a profile.
 @TableIndex(name: 'idx_transaction_profile', columns: {#profileId})
-@TableIndex(name: 'idx_transaction_profile_date', columns: {#profileId, #transactionDate})
+@TableIndex(
+    name: 'idx_transaction_profile_date',
+    columns: {#profileId, #transactionDate})
 @TableIndex(name: 'idx_transaction_date', columns: {#transactionDate})
 @TableIndex(name: 'idx_transaction_item', columns: {#financialItemId})
 @TableIndex(name: 'idx_transaction_type', columns: {#transactionType})

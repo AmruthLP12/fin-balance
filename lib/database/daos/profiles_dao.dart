@@ -101,7 +101,8 @@ class ProfilesDao extends DatabaseAccessor<AppDatabase>
       if (profile != null && profile.isDefault) {
         // Find another active profile to designate as default
         final alternative = await (select(financialProfiles)
-              ..where((tbl) => tbl.id.isNotValue(id) & tbl.isArchived.equals(false))
+              ..where(
+                  (tbl) => tbl.id.isNotValue(id) & tbl.isArchived.equals(false))
               ..limit(1))
             .getSingleOrNull();
         if (alternative != null) {

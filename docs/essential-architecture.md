@@ -27,10 +27,15 @@ Do not combine all these concepts into one monolithic table.
 
 ## 2. Database Schema (Drift / SQLite)
 
-The database schema is fully normalized into seven primary entities designed around a unified personal balance sheet:
+The database schema is fully normalized into eight primary entities designed around a unified personal and family balance sheet with multi-profile data isolation:
 
 ```mermaid
 erDiagram
+    FINANCIAL_PROFILES ||--o{ FINANCIAL_ACCOUNTS : "owns"
+    FINANCIAL_PROFILES ||--o{ FINANCIAL_ITEMS : "owns"
+    FINANCIAL_PROFILES ||--o{ TRANSACTIONS : "owns"
+    FINANCIAL_PROFILES ||--o{ RECURRING_TRANSACTIONS : "schedules"
+    FINANCIAL_PROFILES ||--o{ FINANCIAL_CATEGORIES : "customizes"
     FINANCIAL_CATEGORIES ||--o{ FINANCIAL_CATEGORIES : "parent of"
     FINANCIAL_CATEGORIES ||--o{ FINANCIAL_ITEMS : "categorizes"
     FINANCIAL_CATEGORIES ||--o{ TRANSACTIONS : "classifies"
@@ -47,7 +52,19 @@ erDiagram
     }
 ```
 
-### 2.1 Integer Precision Strategy (Zero Floating-Point Drift)
+### 2.1 Multi-Profile & Family Finance Architecture
+
+FinBalance supports managing finances for multiple individuals (e.g., Self, Father, Mother, Spouse, Children) on a single device with strict record isolation:
+- **Zero Artificial Limits:** Users can create as many profiles as needed.
+- **Strict Data Scoping:** Every account, asset, liability, transaction, and recurring schedule carries a `profile_id` foreign key.
+- **Cross-Profile Integrity:** Queries are scoped by `profile_id`. Transactions cannot cross-reference accounts or assets belonging to other profiles.
+- **Category Strategy:** Baseline pre-seeded categories are global (`profile_id IS NULL`), while user-created categories are scoped to the profile (`profile_id = ?`).
+- **Household-Ready Aggregations:** While individual dashboards strictly display only the active profile's data, the architecture includes aggregate queries for future combined family net worth, assets, and liabilities.
+- **Local Persistence:** Active profile selection is stored in `app_settings` under key `'active_profile_id'`. No internet, registration, or cloud accounts are required.
+
+---
+
+### 2.2 Integer Precision Strategy (Zero Floating-Point Drift)
 
 To guarantee 100% financial calculation accuracy and eliminate floating-point rounding errors:
 - **Currency Amounts:** Stored as 64-bit integer minor units (Paise for INR, where $₹1 = 100\text{ Paise}$). On 64-bit Android/Linux, Dart `int` supports up to $\approx 9.22 \times 10^{18}$ Paise ($> ₹92\text{ quadrillion}$), completely preventing overflow and float approximation.
@@ -59,11 +76,24 @@ Conversion utilities reside in `FinancialPrecision` (`lib/database/precision/fin
 
 ---
 
-### 2.2 Table Definitions
+### 2.3 Table Definitions
 
-#### A. `FinancialCategories` (`financial_categories`)
+#### A. `FinancialProfiles` (`financial_profiles`)
+Core entity for multi-person and family finance management.
+- `id` (INTEGER, PK, AutoIncrement)
+- `name` (TEXT, e.g. `'My Profile'`, `'Father'`, `'Spouse'`)
+- `avatar_path` (TEXT, Nullable, Avatar path/identifier)
+- `description` (TEXT, Nullable)
+- `relationship` (TEXT: `'self'`, `'father'`, `'mother'`, `'spouse'`, `'child'`, `'other'`)
+- `color_hex` (TEXT, Default: `'#10B981'`)
+- `is_default` (BOOLEAN, Default: `false`)
+- `is_archived` (BOOLEAN, Default: `false`)
+- `created_at` / `updated_at` (DATETIME)
+
+#### B. `FinancialCategories` (`financial_categories`)
 Taxonomy for classifying assets, liabilities, income, and expense activities.
 - `id` (INTEGER, PK, AutoIncrement)
+- `profile_id` (INTEGER, Nullable, FK $\to$ `financial_profiles.id` ON DELETE CASCADE — NULL for system baseline categories)
 - `name` (TEXT)
 - `classification` (TEXT: `asset`, `liability`, `income`, `expense`)
 - `parent_id` (INTEGER, Nullable, FK $\to$ `financial_categories.id` ON DELETE SET NULL)
@@ -71,11 +101,12 @@ Taxonomy for classifying assets, liabilities, income, and expense activities.
 - `color_hex` (TEXT, Default: `'#10B981'`)
 - `is_custom` (BOOLEAN, Default: `false`)
 - `is_archived` (BOOLEAN, Default: `false`)
-- `created_at` (INTEGER, Unix timestamp)
+- `created_at` / `updated_at` (DATETIME)
 
-#### B. `FinancialAccounts` (`financial_accounts`)
+#### C. `FinancialAccounts` (`financial_accounts`)
 Real or virtual institutions, wallets, bank accounts, or loan accounts holding positions.
 - `id` (INTEGER, PK, AutoIncrement)
+- `profile_id` (INTEGER, FK $\to$ `financial_profiles.id` ON DELETE CASCADE)
 - `name` (TEXT)
 - `account_type` (TEXT: `bank`, `cash`, `demat`, `wallet`, `loan_account`, `credit_card`)
 - `account_number_masked` (TEXT, Nullable, e.g. `'XX1234'`)
@@ -83,11 +114,12 @@ Real or virtual institutions, wallets, bank accounts, or loan accounts holding p
 - `opening_balance_paise` (INTEGER, Default: `0`)
 - `current_balance_paise` (INTEGER, Default: `0`)
 - `is_archived` (BOOLEAN, Default: `false`)
-- `created_at` / `updated_at` (INTEGER)
+- `created_at` / `updated_at` (DATETIME)
 
-#### C. `FinancialItems` (`financial_items`)
+#### D. `FinancialItems` (`financial_items`)
 First-class representations of individual assets (mutual funds, stocks, gold, FDs) and liabilities (home loans, vehicle loans, credit cards).
 - `id` (INTEGER, PK, AutoIncrement)
+- `profile_id` (INTEGER, FK $\to$ `financial_profiles.id` ON DELETE CASCADE)
 - `name` (TEXT, e.g. `'Parag Parikh Flexi Cap Fund - Direct Growth'`)
 - `item_type` (TEXT: `asset` vs `liability`)
 - `sub_type` (TEXT: `mutual_fund`, `stock`, `etf`, `fd`, `gold`, `ppf`, `epf`, `nps`, `home_loan`, `personal_loan`, `vehicle_loan`, `credit_card`, `other`)
@@ -105,54 +137,53 @@ First-class representations of individual assets (mutual funds, stocks, gold, FD
 - `metadata_json` (TEXT, Nullable, Extensible properties)
 - `created_at` / `updated_at` (INTEGER)
 
-#### D. `Transactions` (`transactions`)
+#### E. `Transactions` (`transactions`)
 Immutable financial ledger capturing double-entry movement, purchases, redemptions, loan payments, and income/expense flows.
 - `id` (INTEGER, PK, AutoIncrement)
+- `profile_id` (INTEGER, FK $\to$ `financial_profiles.id` ON DELETE CASCADE)
 - `transaction_type` (TEXT: `income`, `expense`, `transfer`, `investment_purchase`, `investment_redemption`, `debt_repayment`, `adjustment`)
 - `category_id` (INTEGER, FK $\to$ `financial_categories.id` ON DELETE RESTRICT)
-- `financial_item_id` (INTEGER, Nullable, FK $\to$ `financial_items.id` ON DELETE CASCADE)
+- `financial_item_id` (INTEGER, Nullable, FK $\to$ `financial_items.id` ON DELETE SET NULL)
 - `from_account_id` (INTEGER, Nullable, FK $\to$ `financial_accounts.id` ON DELETE SET NULL)
 - `to_account_id` (INTEGER, Nullable, FK $\to$ `financial_accounts.id` ON DELETE SET NULL)
-- `transaction_date` (INTEGER, Unix timestamp)
+- `transaction_date` (DATETIME)
 - `amount_paise` (INTEGER, Value in Paise)
 - `units_micro_units` (INTEGER, Nullable, Units bought/sold)
 - `unit_price_micro_paise` (INTEGER, Nullable, Price/NAV at transaction)
-- `fee_paise` / `tax_paise` (INTEGER, Default: `0`)
 - `source` (TEXT: `manual`, `simulated_sip`, `recurring_emi`, `csv_import`, `cas_import`)
 - `notes` (TEXT, Nullable)
-- `created_at` (INTEGER)
+- `created_at` / `updated_at` (DATETIME)
 
-#### E. `ValuationHistory` (`valuation_history`)
+#### F. `ValuationHistory` (`valuation_history`)
 Time-series of historical valuations and unit prices (daily NAVs, gold rates, stock prices).
 - `id` (INTEGER, PK, AutoIncrement)
 - `financial_item_id` (INTEGER, FK $\to$ `financial_items.id` ON DELETE CASCADE)
-- `valuation_date` (INTEGER, Normalized to start-of-day UTC)
+- `valuation_date` (DATETIME)
 - `valuation_paise` (INTEGER, Value in Paise)
 - `unit_price_micro_paise` (INTEGER, Nullable, NAV in micro-paise)
 - `source_provider` (TEXT, Nullable, e.g. `'mfapi'`, `'tigzig'`, `'manual'`)
-- `created_at` (INTEGER)
+- `created_at` (DATETIME)
 - **Unique Constraint:** `(financial_item_id, valuation_date)`
 
-#### F. `RecurringTransactions` (`recurring_transactions`)
+#### G. `RecurringTransactions` (`recurring_transactions`)
 Schedules and configurations for simulated SIP investments, loan EMIs, recurring deposits, and regular cash flows.
 - `id` (INTEGER, PK, AutoIncrement)
+- `profile_id` (INTEGER, FK $\to$ `financial_profiles.id` ON DELETE CASCADE)
 - `name` (TEXT, e.g. `'PPFCF Monthly SIP'`)
 - `recurring_type` (TEXT: `sip_investment`, `loan_emi`, `recurring_income`, `recurring_expense`)
-- `financial_item_id` (INTEGER, Nullable, FK $\to$ `financial_items.id` ON DELETE CASCADE)
+- `financial_item_id` (INTEGER, Nullable, FK $\to$ `financial_items.id` ON DELETE SET NULL)
 - `from_account_id` (INTEGER, Nullable, FK $\to$ `financial_accounts.id` ON DELETE SET NULL)
 - `to_account_id` (INTEGER, Nullable, FK $\to$ `financial_accounts.id` ON DELETE SET NULL)
-- `category_id` (INTEGER, Nullable, FK $\to$ `financial_categories.id` ON DELETE SET NULL)
+- `category_id` (INTEGER, FK $\to$ `financial_categories.id` ON DELETE RESTRICT)
 - `amount_paise` (INTEGER, Scheduled amount in Paise)
 - `frequency` (TEXT: `daily`, `weekly`, `fortnightly`, `monthly`, `quarterly`, `yearly`)
 - `scheduled_day` (INTEGER, Day of month `1..31` or day of week `1..7`)
-- `start_date` (INTEGER)
-- `end_date` (INTEGER, Nullable)
-- `next_execution_date` (INTEGER, Nullable)
-- `status` (TEXT: `active`, `paused`, `cancelled`, `completed`)
-- `auto_process` (BOOLEAN, Default: `true`)
-- `created_at` / `updated_at` (INTEGER)
+- `start_date` (DATETIME)
+- `end_date` (DATETIME, Nullable)
+- `status` (TEXT: `active`, `paused`, `completed`, `cancelled`)
+- `created_at` / `updated_at` (DATETIME)
 
-#### G. `AppSettings` (`app_settings`)
+#### H. `AppSettings` (`app_settings`)
 Simple, typed key-value configuration store for application-wide states.
 - `key` (TEXT, PK)
 - `value` (TEXT)
