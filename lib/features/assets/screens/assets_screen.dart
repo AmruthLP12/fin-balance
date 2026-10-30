@@ -7,6 +7,7 @@ import '../../../core/widgets/empty_state_view.dart';
 import '../../../core/widgets/fin_card.dart';
 import '../../../core/widgets/section_header.dart';
 import '../../../core/widgets/status_badge.dart';
+import 'mutual_fund_search_screen.dart';
 
 /// Assets screen for managing Mutual Funds, SIPs, Stocks, FDs, Gold, and other wealth holdings.
 class AssetsScreen extends StatelessWidget {
@@ -25,11 +26,9 @@ class AssetsScreen extends StatelessWidget {
             icon: const Icon(Icons.search_rounded),
             tooltip: 'Search Schemes',
             onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content:
-                      Text('Mutual fund scheme search arrives in Milestone 3'),
-                  duration: Duration(seconds: 2),
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const MutualFundSearchScreen(),
                 ),
               );
             },

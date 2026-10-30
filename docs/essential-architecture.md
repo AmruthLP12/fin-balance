@@ -27,7 +27,7 @@ Do not combine all these concepts into one monolithic table.
 
 ## 2. Database Schema (Drift / SQLite)
 
-The database schema is fully normalized into eight primary entities designed around a unified personal and family balance sheet with multi-profile data isolation:
+The database schema is fully normalized into ten primary entities designed around a unified personal and family balance sheet with multi-profile data isolation and global mutual fund reference caching:
 
 ```mermaid
 erDiagram
@@ -45,6 +45,8 @@ erDiagram
     FINANCIAL_ITEMS ||--o{ TRANSACTIONS : "receives"
     FINANCIAL_ITEMS ||--o{ VALUATION_HISTORY : "tracks"
     FINANCIAL_ITEMS ||--o{ RECURRING_TRANSACTIONS : "schedules"
+    MUTUAL_FUND_SCHEMES ||--o{ NAV_HISTORY : "historical_nav"
+    MUTUAL_FUND_SCHEMES ||..o{ FINANCIAL_ITEMS : "references_scheme_code"
     APP_SETTINGS {
         string key PK
         string value
@@ -189,26 +191,54 @@ Simple, typed key-value configuration store for application-wide states.
 - `value` (TEXT)
 - `updated_at` (INTEGER)
 
+#### I. `MutualFundSchemes` (`mutual_fund_schemes`)
+Global reference catalog caching discovered mutual fund schemes, fund houses, metadata, and latest NAV values.
+- `scheme_code` (INTEGER, PK)
+- `scheme_name` (TEXT)
+- `fund_house` (TEXT, Nullable)
+- `scheme_type` (TEXT, Nullable)
+- `scheme_category` (TEXT, Nullable)
+- `plan_type` (TEXT, Nullable: `'Direct'` / `'Regular'`)
+- `option_type` (TEXT, Nullable: `'Growth'` / `'IDCW'`)
+- `isin` (TEXT, Nullable)
+- `latest_nav_micro_paise` (INTEGER, Nullable)
+- `latest_nav_date` (DATETIME, Nullable)
+- `is_favorite` (BOOLEAN, Default: `false`)
+- `last_synced_at` (DATETIME, Nullable)
+- `created_at` / `updated_at` (DATETIME)
+
+#### J. `NavHistory` (`nav_history`)
+Global historical time-series of mutual fund NAVs fetched from external providers.
+- `id` (INTEGER, PK, AutoIncrement)
+- `scheme_code` (INTEGER, FK $\to$ `mutual_fund_schemes.scheme_code` ON DELETE CASCADE)
+- `nav_date` (DATETIME)
+- `nav_micro_paise` (INTEGER, NAV in micro-paise)
+- `source_provider` (TEXT: `'mfapi'`, `'tigzig'`, `'amfi'`, `'manual'`)
+- `created_at` (DATETIME)
+- **Unique Constraint:** `(scheme_code, nav_date)`
+
 ---
 
 ### 2.3 Data Access Objects (DAOs)
 
 Every table has a dedicated DAO exposing reactive Drift `Stream` queries and atomic `Future` mutations:
-1. `CategoriesDao`: Fetch active categories by classification, manage custom categories, query hierarchy.
-2. `AccountsDao`: Reactive balance watchers, account archiving, net liquidity aggregation.
-3. `FinancialItemsDao`: Watch assets vs. liabilities, query items by status/subtype, update holdings and valuations.
-4. `TransactionsDao`: Watch ledger with pagination, query date ranges, aggregate sums by category/item.
-5. `ValuationsDao`: Upsert daily valuations using `DoUpdate` targeting composite `(financialItemId, valuationDate)`, query date windows for charting.
-6. `RecurringTransactionsDao`: Track active schedules, retrieve due installments, update execution timestamps.
-7. `AppSettingsDao`: Key-value get, set, delete, and watcher streams.
+1. `ProfilesDao`: Manage multi-person profiles, switching, defaults, and archiving.
+2. `CategoriesDao`: Fetch active categories by classification, manage custom categories, query hierarchy.
+3. `AccountsDao`: Reactive balance watchers, account archiving, net liquidity aggregation.
+4. `FinancialItemsDao`: Watch assets vs. liabilities, query items by status/subtype, update holdings and valuations.
+5. `TransactionsDao`: Watch ledger with pagination, query date ranges, aggregate sums by category/item.
+6. `ValuationsDao`: Upsert daily valuations using `DoUpdate` targeting composite `(financialItemId, valuationDate)`, query date windows for charting.
+7. `RecurringTransactionsDao`: Track active schedules, retrieve due installments, update execution timestamps.
+8. `AppSettingsDao`: Key-value get, set, delete, and watcher streams.
+9. `MutualFundDao`: Local scheme search, favourites stream, NAV history upserts with deduplication, and automatic portfolio holdings valuation recalculation.
 
 ---
 
 ### 2.4 Integrity & Migrations
 
 - **Foreign Key Enforcement:** `PRAGMA foreign_keys = ON;` is explicitly executed in Drift's `beforeOpen` callback to enforce relational integrity in SQLite.
-- **Cascading Rules:** Deleting a `financial_item` automatically removes its linked `valuation_history` and `recurring_transactions` schedules via `CASCADE`.
-- **Schema Versioning:** Managed through Drift's `MigrationStrategy(schemaVersion: 1, onCreate: ..., onUpgrade: ...)`. New schema changes must be incremented with explicit migration steps and verified using in-memory and migration tests.
+- **Cascading Rules:** Deleting a `financial_item` automatically removes its linked `valuation_history` and `recurring_transactions` schedules via `CASCADE`. Deleting a `mutual_fund_schemes` record cascades to its `nav_history`.
+- **Schema Versioning:** Managed through Drift's `MigrationStrategy(schemaVersion: 2, onCreate: ..., onUpgrade: ...)`. Schema version 2 adds `mutual_fund_schemes` and `nav_history`.
 
 ## 4. SIP Scheduling Engine
 

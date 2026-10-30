@@ -4995,6 +4995,1093 @@ class AppSettingsCompanion extends UpdateCompanion<AppSetting> {
   }
 }
 
+class $MutualFundSchemesTable extends MutualFundSchemes
+    with TableInfo<$MutualFundSchemesTable, MutualFundScheme> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $MutualFundSchemesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _schemeCodeMeta =
+      const VerificationMeta('schemeCode');
+  @override
+  late final GeneratedColumn<int> schemeCode = GeneratedColumn<int>(
+      'scheme_code', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _schemeNameMeta =
+      const VerificationMeta('schemeName');
+  @override
+  late final GeneratedColumn<String> schemeName = GeneratedColumn<String>(
+      'scheme_name', aliasedName, false,
+      additionalChecks:
+          GeneratedColumn.checkTextLength(minTextLength: 1, maxTextLength: 300),
+      type: DriftSqlType.string,
+      requiredDuringInsert: true);
+  static const VerificationMeta _fundHouseMeta =
+      const VerificationMeta('fundHouse');
+  @override
+  late final GeneratedColumn<String> fundHouse = GeneratedColumn<String>(
+      'fund_house', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _schemeTypeMeta =
+      const VerificationMeta('schemeType');
+  @override
+  late final GeneratedColumn<String> schemeType = GeneratedColumn<String>(
+      'scheme_type', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _schemeCategoryMeta =
+      const VerificationMeta('schemeCategory');
+  @override
+  late final GeneratedColumn<String> schemeCategory = GeneratedColumn<String>(
+      'scheme_category', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _planTypeMeta =
+      const VerificationMeta('planType');
+  @override
+  late final GeneratedColumn<String> planType = GeneratedColumn<String>(
+      'plan_type', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _optionTypeMeta =
+      const VerificationMeta('optionType');
+  @override
+  late final GeneratedColumn<String> optionType = GeneratedColumn<String>(
+      'option_type', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _isinMeta = const VerificationMeta('isin');
+  @override
+  late final GeneratedColumn<String> isin = GeneratedColumn<String>(
+      'isin', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _latestNavMicroPaiseMeta =
+      const VerificationMeta('latestNavMicroPaise');
+  @override
+  late final GeneratedColumn<int> latestNavMicroPaise = GeneratedColumn<int>(
+      'latest_nav_micro_paise', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _latestNavDateMeta =
+      const VerificationMeta('latestNavDate');
+  @override
+  late final GeneratedColumn<DateTime> latestNavDate =
+      GeneratedColumn<DateTime>('latest_nav_date', aliasedName, true,
+          type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _isFavoriteMeta =
+      const VerificationMeta('isFavorite');
+  @override
+  late final GeneratedColumn<bool> isFavorite = GeneratedColumn<bool>(
+      'is_favorite', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("is_favorite" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _lastSyncedAtMeta =
+      const VerificationMeta('lastSyncedAt');
+  @override
+  late final GeneratedColumn<DateTime> lastSyncedAt = GeneratedColumn<DateTime>(
+      'last_synced_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  @override
+  List<GeneratedColumn> get $columns => [
+        schemeCode,
+        schemeName,
+        fundHouse,
+        schemeType,
+        schemeCategory,
+        planType,
+        optionType,
+        isin,
+        latestNavMicroPaise,
+        latestNavDate,
+        isFavorite,
+        lastSyncedAt,
+        createdAt,
+        updatedAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'mutual_fund_schemes';
+  @override
+  VerificationContext validateIntegrity(Insertable<MutualFundScheme> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('scheme_code')) {
+      context.handle(
+          _schemeCodeMeta,
+          schemeCode.isAcceptableOrUnknown(
+              data['scheme_code']!, _schemeCodeMeta));
+    }
+    if (data.containsKey('scheme_name')) {
+      context.handle(
+          _schemeNameMeta,
+          schemeName.isAcceptableOrUnknown(
+              data['scheme_name']!, _schemeNameMeta));
+    } else if (isInserting) {
+      context.missing(_schemeNameMeta);
+    }
+    if (data.containsKey('fund_house')) {
+      context.handle(_fundHouseMeta,
+          fundHouse.isAcceptableOrUnknown(data['fund_house']!, _fundHouseMeta));
+    }
+    if (data.containsKey('scheme_type')) {
+      context.handle(
+          _schemeTypeMeta,
+          schemeType.isAcceptableOrUnknown(
+              data['scheme_type']!, _schemeTypeMeta));
+    }
+    if (data.containsKey('scheme_category')) {
+      context.handle(
+          _schemeCategoryMeta,
+          schemeCategory.isAcceptableOrUnknown(
+              data['scheme_category']!, _schemeCategoryMeta));
+    }
+    if (data.containsKey('plan_type')) {
+      context.handle(_planTypeMeta,
+          planType.isAcceptableOrUnknown(data['plan_type']!, _planTypeMeta));
+    }
+    if (data.containsKey('option_type')) {
+      context.handle(
+          _optionTypeMeta,
+          optionType.isAcceptableOrUnknown(
+              data['option_type']!, _optionTypeMeta));
+    }
+    if (data.containsKey('isin')) {
+      context.handle(
+          _isinMeta, isin.isAcceptableOrUnknown(data['isin']!, _isinMeta));
+    }
+    if (data.containsKey('latest_nav_micro_paise')) {
+      context.handle(
+          _latestNavMicroPaiseMeta,
+          latestNavMicroPaise.isAcceptableOrUnknown(
+              data['latest_nav_micro_paise']!, _latestNavMicroPaiseMeta));
+    }
+    if (data.containsKey('latest_nav_date')) {
+      context.handle(
+          _latestNavDateMeta,
+          latestNavDate.isAcceptableOrUnknown(
+              data['latest_nav_date']!, _latestNavDateMeta));
+    }
+    if (data.containsKey('is_favorite')) {
+      context.handle(
+          _isFavoriteMeta,
+          isFavorite.isAcceptableOrUnknown(
+              data['is_favorite']!, _isFavoriteMeta));
+    }
+    if (data.containsKey('last_synced_at')) {
+      context.handle(
+          _lastSyncedAtMeta,
+          lastSyncedAt.isAcceptableOrUnknown(
+              data['last_synced_at']!, _lastSyncedAtMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {schemeCode};
+  @override
+  MutualFundScheme map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return MutualFundScheme(
+      schemeCode: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}scheme_code'])!,
+      schemeName: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}scheme_name'])!,
+      fundHouse: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}fund_house']),
+      schemeType: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}scheme_type']),
+      schemeCategory: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}scheme_category']),
+      planType: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}plan_type']),
+      optionType: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}option_type']),
+      isin: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}isin']),
+      latestNavMicroPaise: attachedDatabase.typeMapping.read(
+          DriftSqlType.int, data['${effectivePrefix}latest_nav_micro_paise']),
+      latestNavDate: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime, data['${effectivePrefix}latest_nav_date']),
+      isFavorite: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}is_favorite'])!,
+      lastSyncedAt: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime, data['${effectivePrefix}last_synced_at']),
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at'])!,
+    );
+  }
+
+  @override
+  $MutualFundSchemesTable createAlias(String alias) {
+    return $MutualFundSchemesTable(attachedDatabase, alias);
+  }
+}
+
+class MutualFundScheme extends DataClass
+    implements Insertable<MutualFundScheme> {
+  /// AMFI unique scheme code (primary key)
+  final int schemeCode;
+
+  /// Full scheme display name
+  final String schemeName;
+
+  /// Asset Management Company / Fund House (e.g. "HDFC Mutual Fund", "SBI Mutual Fund")
+  final String? fundHouse;
+
+  /// Scheme Type (e.g. "Open Ended Schemes", "Close Ended")
+  final String? schemeType;
+
+  /// Scheme Category (e.g. "Equity Scheme - Small Cap Fund", "Debt Scheme - Liquid Fund")
+  final String? schemeCategory;
+
+  /// Plan Type: 'Direct' or 'Regular'
+  final String? planType;
+
+  /// Option Type: 'Growth' or 'IDCW' (Dividend)
+  final String? optionType;
+
+  /// International Securities Identification Number (ISIN)
+  final String? isin;
+
+  /// Latest known NAV in micro-paise (1 Rupee = 1,000,000 micro-paise)
+  final int? latestNavMicroPaise;
+
+  /// Date of the latest NAV record
+  final DateTime? latestNavDate;
+
+  /// Whether user bookmarked this fund in their favourites/watchlist
+  final bool isFavorite;
+
+  /// Timestamp of the last successful synchronization from remote provider
+  final DateTime? lastSyncedAt;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  const MutualFundScheme(
+      {required this.schemeCode,
+      required this.schemeName,
+      this.fundHouse,
+      this.schemeType,
+      this.schemeCategory,
+      this.planType,
+      this.optionType,
+      this.isin,
+      this.latestNavMicroPaise,
+      this.latestNavDate,
+      required this.isFavorite,
+      this.lastSyncedAt,
+      required this.createdAt,
+      required this.updatedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['scheme_code'] = Variable<int>(schemeCode);
+    map['scheme_name'] = Variable<String>(schemeName);
+    if (!nullToAbsent || fundHouse != null) {
+      map['fund_house'] = Variable<String>(fundHouse);
+    }
+    if (!nullToAbsent || schemeType != null) {
+      map['scheme_type'] = Variable<String>(schemeType);
+    }
+    if (!nullToAbsent || schemeCategory != null) {
+      map['scheme_category'] = Variable<String>(schemeCategory);
+    }
+    if (!nullToAbsent || planType != null) {
+      map['plan_type'] = Variable<String>(planType);
+    }
+    if (!nullToAbsent || optionType != null) {
+      map['option_type'] = Variable<String>(optionType);
+    }
+    if (!nullToAbsent || isin != null) {
+      map['isin'] = Variable<String>(isin);
+    }
+    if (!nullToAbsent || latestNavMicroPaise != null) {
+      map['latest_nav_micro_paise'] = Variable<int>(latestNavMicroPaise);
+    }
+    if (!nullToAbsent || latestNavDate != null) {
+      map['latest_nav_date'] = Variable<DateTime>(latestNavDate);
+    }
+    map['is_favorite'] = Variable<bool>(isFavorite);
+    if (!nullToAbsent || lastSyncedAt != null) {
+      map['last_synced_at'] = Variable<DateTime>(lastSyncedAt);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  MutualFundSchemesCompanion toCompanion(bool nullToAbsent) {
+    return MutualFundSchemesCompanion(
+      schemeCode: Value(schemeCode),
+      schemeName: Value(schemeName),
+      fundHouse: fundHouse == null && nullToAbsent
+          ? const Value.absent()
+          : Value(fundHouse),
+      schemeType: schemeType == null && nullToAbsent
+          ? const Value.absent()
+          : Value(schemeType),
+      schemeCategory: schemeCategory == null && nullToAbsent
+          ? const Value.absent()
+          : Value(schemeCategory),
+      planType: planType == null && nullToAbsent
+          ? const Value.absent()
+          : Value(planType),
+      optionType: optionType == null && nullToAbsent
+          ? const Value.absent()
+          : Value(optionType),
+      isin: isin == null && nullToAbsent ? const Value.absent() : Value(isin),
+      latestNavMicroPaise: latestNavMicroPaise == null && nullToAbsent
+          ? const Value.absent()
+          : Value(latestNavMicroPaise),
+      latestNavDate: latestNavDate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(latestNavDate),
+      isFavorite: Value(isFavorite),
+      lastSyncedAt: lastSyncedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastSyncedAt),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory MutualFundScheme.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return MutualFundScheme(
+      schemeCode: serializer.fromJson<int>(json['schemeCode']),
+      schemeName: serializer.fromJson<String>(json['schemeName']),
+      fundHouse: serializer.fromJson<String?>(json['fundHouse']),
+      schemeType: serializer.fromJson<String?>(json['schemeType']),
+      schemeCategory: serializer.fromJson<String?>(json['schemeCategory']),
+      planType: serializer.fromJson<String?>(json['planType']),
+      optionType: serializer.fromJson<String?>(json['optionType']),
+      isin: serializer.fromJson<String?>(json['isin']),
+      latestNavMicroPaise:
+          serializer.fromJson<int?>(json['latestNavMicroPaise']),
+      latestNavDate: serializer.fromJson<DateTime?>(json['latestNavDate']),
+      isFavorite: serializer.fromJson<bool>(json['isFavorite']),
+      lastSyncedAt: serializer.fromJson<DateTime?>(json['lastSyncedAt']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'schemeCode': serializer.toJson<int>(schemeCode),
+      'schemeName': serializer.toJson<String>(schemeName),
+      'fundHouse': serializer.toJson<String?>(fundHouse),
+      'schemeType': serializer.toJson<String?>(schemeType),
+      'schemeCategory': serializer.toJson<String?>(schemeCategory),
+      'planType': serializer.toJson<String?>(planType),
+      'optionType': serializer.toJson<String?>(optionType),
+      'isin': serializer.toJson<String?>(isin),
+      'latestNavMicroPaise': serializer.toJson<int?>(latestNavMicroPaise),
+      'latestNavDate': serializer.toJson<DateTime?>(latestNavDate),
+      'isFavorite': serializer.toJson<bool>(isFavorite),
+      'lastSyncedAt': serializer.toJson<DateTime?>(lastSyncedAt),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  MutualFundScheme copyWith(
+          {int? schemeCode,
+          String? schemeName,
+          Value<String?> fundHouse = const Value.absent(),
+          Value<String?> schemeType = const Value.absent(),
+          Value<String?> schemeCategory = const Value.absent(),
+          Value<String?> planType = const Value.absent(),
+          Value<String?> optionType = const Value.absent(),
+          Value<String?> isin = const Value.absent(),
+          Value<int?> latestNavMicroPaise = const Value.absent(),
+          Value<DateTime?> latestNavDate = const Value.absent(),
+          bool? isFavorite,
+          Value<DateTime?> lastSyncedAt = const Value.absent(),
+          DateTime? createdAt,
+          DateTime? updatedAt}) =>
+      MutualFundScheme(
+        schemeCode: schemeCode ?? this.schemeCode,
+        schemeName: schemeName ?? this.schemeName,
+        fundHouse: fundHouse.present ? fundHouse.value : this.fundHouse,
+        schemeType: schemeType.present ? schemeType.value : this.schemeType,
+        schemeCategory:
+            schemeCategory.present ? schemeCategory.value : this.schemeCategory,
+        planType: planType.present ? planType.value : this.planType,
+        optionType: optionType.present ? optionType.value : this.optionType,
+        isin: isin.present ? isin.value : this.isin,
+        latestNavMicroPaise: latestNavMicroPaise.present
+            ? latestNavMicroPaise.value
+            : this.latestNavMicroPaise,
+        latestNavDate:
+            latestNavDate.present ? latestNavDate.value : this.latestNavDate,
+        isFavorite: isFavorite ?? this.isFavorite,
+        lastSyncedAt:
+            lastSyncedAt.present ? lastSyncedAt.value : this.lastSyncedAt,
+        createdAt: createdAt ?? this.createdAt,
+        updatedAt: updatedAt ?? this.updatedAt,
+      );
+  MutualFundScheme copyWithCompanion(MutualFundSchemesCompanion data) {
+    return MutualFundScheme(
+      schemeCode:
+          data.schemeCode.present ? data.schemeCode.value : this.schemeCode,
+      schemeName:
+          data.schemeName.present ? data.schemeName.value : this.schemeName,
+      fundHouse: data.fundHouse.present ? data.fundHouse.value : this.fundHouse,
+      schemeType:
+          data.schemeType.present ? data.schemeType.value : this.schemeType,
+      schemeCategory: data.schemeCategory.present
+          ? data.schemeCategory.value
+          : this.schemeCategory,
+      planType: data.planType.present ? data.planType.value : this.planType,
+      optionType:
+          data.optionType.present ? data.optionType.value : this.optionType,
+      isin: data.isin.present ? data.isin.value : this.isin,
+      latestNavMicroPaise: data.latestNavMicroPaise.present
+          ? data.latestNavMicroPaise.value
+          : this.latestNavMicroPaise,
+      latestNavDate: data.latestNavDate.present
+          ? data.latestNavDate.value
+          : this.latestNavDate,
+      isFavorite:
+          data.isFavorite.present ? data.isFavorite.value : this.isFavorite,
+      lastSyncedAt: data.lastSyncedAt.present
+          ? data.lastSyncedAt.value
+          : this.lastSyncedAt,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MutualFundScheme(')
+          ..write('schemeCode: $schemeCode, ')
+          ..write('schemeName: $schemeName, ')
+          ..write('fundHouse: $fundHouse, ')
+          ..write('schemeType: $schemeType, ')
+          ..write('schemeCategory: $schemeCategory, ')
+          ..write('planType: $planType, ')
+          ..write('optionType: $optionType, ')
+          ..write('isin: $isin, ')
+          ..write('latestNavMicroPaise: $latestNavMicroPaise, ')
+          ..write('latestNavDate: $latestNavDate, ')
+          ..write('isFavorite: $isFavorite, ')
+          ..write('lastSyncedAt: $lastSyncedAt, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      schemeCode,
+      schemeName,
+      fundHouse,
+      schemeType,
+      schemeCategory,
+      planType,
+      optionType,
+      isin,
+      latestNavMicroPaise,
+      latestNavDate,
+      isFavorite,
+      lastSyncedAt,
+      createdAt,
+      updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is MutualFundScheme &&
+          other.schemeCode == this.schemeCode &&
+          other.schemeName == this.schemeName &&
+          other.fundHouse == this.fundHouse &&
+          other.schemeType == this.schemeType &&
+          other.schemeCategory == this.schemeCategory &&
+          other.planType == this.planType &&
+          other.optionType == this.optionType &&
+          other.isin == this.isin &&
+          other.latestNavMicroPaise == this.latestNavMicroPaise &&
+          other.latestNavDate == this.latestNavDate &&
+          other.isFavorite == this.isFavorite &&
+          other.lastSyncedAt == this.lastSyncedAt &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class MutualFundSchemesCompanion extends UpdateCompanion<MutualFundScheme> {
+  final Value<int> schemeCode;
+  final Value<String> schemeName;
+  final Value<String?> fundHouse;
+  final Value<String?> schemeType;
+  final Value<String?> schemeCategory;
+  final Value<String?> planType;
+  final Value<String?> optionType;
+  final Value<String?> isin;
+  final Value<int?> latestNavMicroPaise;
+  final Value<DateTime?> latestNavDate;
+  final Value<bool> isFavorite;
+  final Value<DateTime?> lastSyncedAt;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  const MutualFundSchemesCompanion({
+    this.schemeCode = const Value.absent(),
+    this.schemeName = const Value.absent(),
+    this.fundHouse = const Value.absent(),
+    this.schemeType = const Value.absent(),
+    this.schemeCategory = const Value.absent(),
+    this.planType = const Value.absent(),
+    this.optionType = const Value.absent(),
+    this.isin = const Value.absent(),
+    this.latestNavMicroPaise = const Value.absent(),
+    this.latestNavDate = const Value.absent(),
+    this.isFavorite = const Value.absent(),
+    this.lastSyncedAt = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  });
+  MutualFundSchemesCompanion.insert({
+    this.schemeCode = const Value.absent(),
+    required String schemeName,
+    this.fundHouse = const Value.absent(),
+    this.schemeType = const Value.absent(),
+    this.schemeCategory = const Value.absent(),
+    this.planType = const Value.absent(),
+    this.optionType = const Value.absent(),
+    this.isin = const Value.absent(),
+    this.latestNavMicroPaise = const Value.absent(),
+    this.latestNavDate = const Value.absent(),
+    this.isFavorite = const Value.absent(),
+    this.lastSyncedAt = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  }) : schemeName = Value(schemeName);
+  static Insertable<MutualFundScheme> custom({
+    Expression<int>? schemeCode,
+    Expression<String>? schemeName,
+    Expression<String>? fundHouse,
+    Expression<String>? schemeType,
+    Expression<String>? schemeCategory,
+    Expression<String>? planType,
+    Expression<String>? optionType,
+    Expression<String>? isin,
+    Expression<int>? latestNavMicroPaise,
+    Expression<DateTime>? latestNavDate,
+    Expression<bool>? isFavorite,
+    Expression<DateTime>? lastSyncedAt,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+  }) {
+    return RawValuesInsertable({
+      if (schemeCode != null) 'scheme_code': schemeCode,
+      if (schemeName != null) 'scheme_name': schemeName,
+      if (fundHouse != null) 'fund_house': fundHouse,
+      if (schemeType != null) 'scheme_type': schemeType,
+      if (schemeCategory != null) 'scheme_category': schemeCategory,
+      if (planType != null) 'plan_type': planType,
+      if (optionType != null) 'option_type': optionType,
+      if (isin != null) 'isin': isin,
+      if (latestNavMicroPaise != null)
+        'latest_nav_micro_paise': latestNavMicroPaise,
+      if (latestNavDate != null) 'latest_nav_date': latestNavDate,
+      if (isFavorite != null) 'is_favorite': isFavorite,
+      if (lastSyncedAt != null) 'last_synced_at': lastSyncedAt,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+    });
+  }
+
+  MutualFundSchemesCompanion copyWith(
+      {Value<int>? schemeCode,
+      Value<String>? schemeName,
+      Value<String?>? fundHouse,
+      Value<String?>? schemeType,
+      Value<String?>? schemeCategory,
+      Value<String?>? planType,
+      Value<String?>? optionType,
+      Value<String?>? isin,
+      Value<int?>? latestNavMicroPaise,
+      Value<DateTime?>? latestNavDate,
+      Value<bool>? isFavorite,
+      Value<DateTime?>? lastSyncedAt,
+      Value<DateTime>? createdAt,
+      Value<DateTime>? updatedAt}) {
+    return MutualFundSchemesCompanion(
+      schemeCode: schemeCode ?? this.schemeCode,
+      schemeName: schemeName ?? this.schemeName,
+      fundHouse: fundHouse ?? this.fundHouse,
+      schemeType: schemeType ?? this.schemeType,
+      schemeCategory: schemeCategory ?? this.schemeCategory,
+      planType: planType ?? this.planType,
+      optionType: optionType ?? this.optionType,
+      isin: isin ?? this.isin,
+      latestNavMicroPaise: latestNavMicroPaise ?? this.latestNavMicroPaise,
+      latestNavDate: latestNavDate ?? this.latestNavDate,
+      isFavorite: isFavorite ?? this.isFavorite,
+      lastSyncedAt: lastSyncedAt ?? this.lastSyncedAt,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (schemeCode.present) {
+      map['scheme_code'] = Variable<int>(schemeCode.value);
+    }
+    if (schemeName.present) {
+      map['scheme_name'] = Variable<String>(schemeName.value);
+    }
+    if (fundHouse.present) {
+      map['fund_house'] = Variable<String>(fundHouse.value);
+    }
+    if (schemeType.present) {
+      map['scheme_type'] = Variable<String>(schemeType.value);
+    }
+    if (schemeCategory.present) {
+      map['scheme_category'] = Variable<String>(schemeCategory.value);
+    }
+    if (planType.present) {
+      map['plan_type'] = Variable<String>(planType.value);
+    }
+    if (optionType.present) {
+      map['option_type'] = Variable<String>(optionType.value);
+    }
+    if (isin.present) {
+      map['isin'] = Variable<String>(isin.value);
+    }
+    if (latestNavMicroPaise.present) {
+      map['latest_nav_micro_paise'] = Variable<int>(latestNavMicroPaise.value);
+    }
+    if (latestNavDate.present) {
+      map['latest_nav_date'] = Variable<DateTime>(latestNavDate.value);
+    }
+    if (isFavorite.present) {
+      map['is_favorite'] = Variable<bool>(isFavorite.value);
+    }
+    if (lastSyncedAt.present) {
+      map['last_synced_at'] = Variable<DateTime>(lastSyncedAt.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MutualFundSchemesCompanion(')
+          ..write('schemeCode: $schemeCode, ')
+          ..write('schemeName: $schemeName, ')
+          ..write('fundHouse: $fundHouse, ')
+          ..write('schemeType: $schemeType, ')
+          ..write('schemeCategory: $schemeCategory, ')
+          ..write('planType: $planType, ')
+          ..write('optionType: $optionType, ')
+          ..write('isin: $isin, ')
+          ..write('latestNavMicroPaise: $latestNavMicroPaise, ')
+          ..write('latestNavDate: $latestNavDate, ')
+          ..write('isFavorite: $isFavorite, ')
+          ..write('lastSyncedAt: $lastSyncedAt, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $NavHistoryTable extends NavHistory
+    with TableInfo<$NavHistoryTable, NavHistoryData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $NavHistoryTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _schemeCodeMeta =
+      const VerificationMeta('schemeCode');
+  @override
+  late final GeneratedColumn<int> schemeCode = GeneratedColumn<int>(
+      'scheme_code', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: true,
+      $customConstraints:
+          'NOT NULL REFERENCES mutual_fund_schemes(scheme_code) ON DELETE CASCADE');
+  static const VerificationMeta _navDateMeta =
+      const VerificationMeta('navDate');
+  @override
+  late final GeneratedColumn<DateTime> navDate = GeneratedColumn<DateTime>(
+      'nav_date', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _navMicroPaiseMeta =
+      const VerificationMeta('navMicroPaise');
+  @override
+  late final GeneratedColumn<int> navMicroPaise = GeneratedColumn<int>(
+      'nav_micro_paise', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _sourceProviderMeta =
+      const VerificationMeta('sourceProvider');
+  @override
+  late final GeneratedColumn<String> sourceProvider = GeneratedColumn<String>(
+      'source_provider', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('mfapi'));
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  @override
+  List<GeneratedColumn> get $columns =>
+      [id, schemeCode, navDate, navMicroPaise, sourceProvider, createdAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'nav_history';
+  @override
+  VerificationContext validateIntegrity(Insertable<NavHistoryData> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('scheme_code')) {
+      context.handle(
+          _schemeCodeMeta,
+          schemeCode.isAcceptableOrUnknown(
+              data['scheme_code']!, _schemeCodeMeta));
+    } else if (isInserting) {
+      context.missing(_schemeCodeMeta);
+    }
+    if (data.containsKey('nav_date')) {
+      context.handle(_navDateMeta,
+          navDate.isAcceptableOrUnknown(data['nav_date']!, _navDateMeta));
+    } else if (isInserting) {
+      context.missing(_navDateMeta);
+    }
+    if (data.containsKey('nav_micro_paise')) {
+      context.handle(
+          _navMicroPaiseMeta,
+          navMicroPaise.isAcceptableOrUnknown(
+              data['nav_micro_paise']!, _navMicroPaiseMeta));
+    } else if (isInserting) {
+      context.missing(_navMicroPaiseMeta);
+    }
+    if (data.containsKey('source_provider')) {
+      context.handle(
+          _sourceProviderMeta,
+          sourceProvider.isAcceptableOrUnknown(
+              data['source_provider']!, _sourceProviderMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+        {schemeCode, navDate},
+      ];
+  @override
+  NavHistoryData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return NavHistoryData(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      schemeCode: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}scheme_code'])!,
+      navDate: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}nav_date'])!,
+      navMicroPaise: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}nav_micro_paise'])!,
+      sourceProvider: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}source_provider'])!,
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+    );
+  }
+
+  @override
+  $NavHistoryTable createAlias(String alias) {
+    return $NavHistoryTable(attachedDatabase, alias);
+  }
+}
+
+class NavHistoryData extends DataClass implements Insertable<NavHistoryData> {
+  final int id;
+  final int schemeCode;
+
+  /// Normalized date of NAV valuation (UTC midnight)
+  final DateTime navDate;
+
+  /// NAV in micro-paise (1 Rupee = 1,000,000 micro-paise, 4-6 decimal places)
+  final int navMicroPaise;
+
+  /// Data source: 'mfapi', 'tigzig', 'amfi', 'manual'
+  final String sourceProvider;
+  final DateTime createdAt;
+  const NavHistoryData(
+      {required this.id,
+      required this.schemeCode,
+      required this.navDate,
+      required this.navMicroPaise,
+      required this.sourceProvider,
+      required this.createdAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['scheme_code'] = Variable<int>(schemeCode);
+    map['nav_date'] = Variable<DateTime>(navDate);
+    map['nav_micro_paise'] = Variable<int>(navMicroPaise);
+    map['source_provider'] = Variable<String>(sourceProvider);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  NavHistoryCompanion toCompanion(bool nullToAbsent) {
+    return NavHistoryCompanion(
+      id: Value(id),
+      schemeCode: Value(schemeCode),
+      navDate: Value(navDate),
+      navMicroPaise: Value(navMicroPaise),
+      sourceProvider: Value(sourceProvider),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory NavHistoryData.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return NavHistoryData(
+      id: serializer.fromJson<int>(json['id']),
+      schemeCode: serializer.fromJson<int>(json['schemeCode']),
+      navDate: serializer.fromJson<DateTime>(json['navDate']),
+      navMicroPaise: serializer.fromJson<int>(json['navMicroPaise']),
+      sourceProvider: serializer.fromJson<String>(json['sourceProvider']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'schemeCode': serializer.toJson<int>(schemeCode),
+      'navDate': serializer.toJson<DateTime>(navDate),
+      'navMicroPaise': serializer.toJson<int>(navMicroPaise),
+      'sourceProvider': serializer.toJson<String>(sourceProvider),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  NavHistoryData copyWith(
+          {int? id,
+          int? schemeCode,
+          DateTime? navDate,
+          int? navMicroPaise,
+          String? sourceProvider,
+          DateTime? createdAt}) =>
+      NavHistoryData(
+        id: id ?? this.id,
+        schemeCode: schemeCode ?? this.schemeCode,
+        navDate: navDate ?? this.navDate,
+        navMicroPaise: navMicroPaise ?? this.navMicroPaise,
+        sourceProvider: sourceProvider ?? this.sourceProvider,
+        createdAt: createdAt ?? this.createdAt,
+      );
+  NavHistoryData copyWithCompanion(NavHistoryCompanion data) {
+    return NavHistoryData(
+      id: data.id.present ? data.id.value : this.id,
+      schemeCode:
+          data.schemeCode.present ? data.schemeCode.value : this.schemeCode,
+      navDate: data.navDate.present ? data.navDate.value : this.navDate,
+      navMicroPaise: data.navMicroPaise.present
+          ? data.navMicroPaise.value
+          : this.navMicroPaise,
+      sourceProvider: data.sourceProvider.present
+          ? data.sourceProvider.value
+          : this.sourceProvider,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NavHistoryData(')
+          ..write('id: $id, ')
+          ..write('schemeCode: $schemeCode, ')
+          ..write('navDate: $navDate, ')
+          ..write('navMicroPaise: $navMicroPaise, ')
+          ..write('sourceProvider: $sourceProvider, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      id, schemeCode, navDate, navMicroPaise, sourceProvider, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is NavHistoryData &&
+          other.id == this.id &&
+          other.schemeCode == this.schemeCode &&
+          other.navDate == this.navDate &&
+          other.navMicroPaise == this.navMicroPaise &&
+          other.sourceProvider == this.sourceProvider &&
+          other.createdAt == this.createdAt);
+}
+
+class NavHistoryCompanion extends UpdateCompanion<NavHistoryData> {
+  final Value<int> id;
+  final Value<int> schemeCode;
+  final Value<DateTime> navDate;
+  final Value<int> navMicroPaise;
+  final Value<String> sourceProvider;
+  final Value<DateTime> createdAt;
+  const NavHistoryCompanion({
+    this.id = const Value.absent(),
+    this.schemeCode = const Value.absent(),
+    this.navDate = const Value.absent(),
+    this.navMicroPaise = const Value.absent(),
+    this.sourceProvider = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  NavHistoryCompanion.insert({
+    this.id = const Value.absent(),
+    required int schemeCode,
+    required DateTime navDate,
+    required int navMicroPaise,
+    this.sourceProvider = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  })  : schemeCode = Value(schemeCode),
+        navDate = Value(navDate),
+        navMicroPaise = Value(navMicroPaise);
+  static Insertable<NavHistoryData> custom({
+    Expression<int>? id,
+    Expression<int>? schemeCode,
+    Expression<DateTime>? navDate,
+    Expression<int>? navMicroPaise,
+    Expression<String>? sourceProvider,
+    Expression<DateTime>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (schemeCode != null) 'scheme_code': schemeCode,
+      if (navDate != null) 'nav_date': navDate,
+      if (navMicroPaise != null) 'nav_micro_paise': navMicroPaise,
+      if (sourceProvider != null) 'source_provider': sourceProvider,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  NavHistoryCompanion copyWith(
+      {Value<int>? id,
+      Value<int>? schemeCode,
+      Value<DateTime>? navDate,
+      Value<int>? navMicroPaise,
+      Value<String>? sourceProvider,
+      Value<DateTime>? createdAt}) {
+    return NavHistoryCompanion(
+      id: id ?? this.id,
+      schemeCode: schemeCode ?? this.schemeCode,
+      navDate: navDate ?? this.navDate,
+      navMicroPaise: navMicroPaise ?? this.navMicroPaise,
+      sourceProvider: sourceProvider ?? this.sourceProvider,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (schemeCode.present) {
+      map['scheme_code'] = Variable<int>(schemeCode.value);
+    }
+    if (navDate.present) {
+      map['nav_date'] = Variable<DateTime>(navDate.value);
+    }
+    if (navMicroPaise.present) {
+      map['nav_micro_paise'] = Variable<int>(navMicroPaise.value);
+    }
+    if (sourceProvider.present) {
+      map['source_provider'] = Variable<String>(sourceProvider.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NavHistoryCompanion(')
+          ..write('id: $id, ')
+          ..write('schemeCode: $schemeCode, ')
+          ..write('navDate: $navDate, ')
+          ..write('navMicroPaise: $navMicroPaise, ')
+          ..write('sourceProvider: $sourceProvider, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -5011,6 +6098,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $RecurringTransactionsTable recurringTransactions =
       $RecurringTransactionsTable(this);
   late final $AppSettingsTable appSettings = $AppSettingsTable(this);
+  late final $MutualFundSchemesTable mutualFundSchemes =
+      $MutualFundSchemesTable(this);
+  late final $NavHistoryTable navHistory = $NavHistoryTable(this);
   late final Index idxCategoryClassification = Index(
       'idx_category_classification',
       'CREATE INDEX idx_category_classification ON financial_categories (classification)');
@@ -5047,6 +6137,14 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       'CREATE INDEX idx_recurring_status ON recurring_transactions (status)');
   late final Index idxRecurringItem = Index('idx_recurring_item',
       'CREATE INDEX idx_recurring_item ON recurring_transactions (financial_item_id)');
+  late final Index idxSchemeName = Index('idx_scheme_name',
+      'CREATE INDEX idx_scheme_name ON mutual_fund_schemes (scheme_name)');
+  late final Index idxSchemeFundHouse = Index('idx_scheme_fund_house',
+      'CREATE INDEX idx_scheme_fund_house ON mutual_fund_schemes (fund_house)');
+  late final Index idxSchemeFavorite = Index('idx_scheme_favorite',
+      'CREATE INDEX idx_scheme_favorite ON mutual_fund_schemes (is_favorite)');
+  late final Index idxNavSchemeDate = Index('idx_nav_scheme_date',
+      'CREATE INDEX idx_nav_scheme_date ON nav_history (scheme_code, nav_date)');
   late final ProfilesDao profilesDao = ProfilesDao(this as AppDatabase);
   late final CategoriesDao categoriesDao = CategoriesDao(this as AppDatabase);
   late final AccountsDao accountsDao = AccountsDao(this as AppDatabase);
@@ -5059,6 +6157,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       RecurringTransactionsDao(this as AppDatabase);
   late final AppSettingsDao appSettingsDao =
       AppSettingsDao(this as AppDatabase);
+  late final MutualFundDao mutualFundDao = MutualFundDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -5072,6 +6171,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         valuationHistory,
         recurringTransactions,
         appSettings,
+        mutualFundSchemes,
+        navHistory,
         idxCategoryClassification,
         idxCategoryProfile,
         idxAccountType,
@@ -5088,7 +6189,11 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         idxValuationDate,
         idxRecurringProfile,
         idxRecurringStatus,
-        idxRecurringItem
+        idxRecurringItem,
+        idxSchemeName,
+        idxSchemeFundHouse,
+        idxSchemeFavorite,
+        idxNavSchemeDate
       ];
 }
 
@@ -7337,6 +8442,499 @@ typedef $$AppSettingsTableProcessedTableManager = ProcessedTableManager<
     (AppSetting, BaseReferences<_$AppDatabase, $AppSettingsTable, AppSetting>),
     AppSetting,
     PrefetchHooks Function()>;
+typedef $$MutualFundSchemesTableCreateCompanionBuilder
+    = MutualFundSchemesCompanion Function({
+  Value<int> schemeCode,
+  required String schemeName,
+  Value<String?> fundHouse,
+  Value<String?> schemeType,
+  Value<String?> schemeCategory,
+  Value<String?> planType,
+  Value<String?> optionType,
+  Value<String?> isin,
+  Value<int?> latestNavMicroPaise,
+  Value<DateTime?> latestNavDate,
+  Value<bool> isFavorite,
+  Value<DateTime?> lastSyncedAt,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+});
+typedef $$MutualFundSchemesTableUpdateCompanionBuilder
+    = MutualFundSchemesCompanion Function({
+  Value<int> schemeCode,
+  Value<String> schemeName,
+  Value<String?> fundHouse,
+  Value<String?> schemeType,
+  Value<String?> schemeCategory,
+  Value<String?> planType,
+  Value<String?> optionType,
+  Value<String?> isin,
+  Value<int?> latestNavMicroPaise,
+  Value<DateTime?> latestNavDate,
+  Value<bool> isFavorite,
+  Value<DateTime?> lastSyncedAt,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+});
+
+class $$MutualFundSchemesTableFilterComposer
+    extends Composer<_$AppDatabase, $MutualFundSchemesTable> {
+  $$MutualFundSchemesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get schemeCode => $composableBuilder(
+      column: $table.schemeCode, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get schemeName => $composableBuilder(
+      column: $table.schemeName, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get fundHouse => $composableBuilder(
+      column: $table.fundHouse, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get schemeType => $composableBuilder(
+      column: $table.schemeType, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get schemeCategory => $composableBuilder(
+      column: $table.schemeCategory,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get planType => $composableBuilder(
+      column: $table.planType, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get optionType => $composableBuilder(
+      column: $table.optionType, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get isin => $composableBuilder(
+      column: $table.isin, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get latestNavMicroPaise => $composableBuilder(
+      column: $table.latestNavMicroPaise,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get latestNavDate => $composableBuilder(
+      column: $table.latestNavDate, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get isFavorite => $composableBuilder(
+      column: $table.isFavorite, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get lastSyncedAt => $composableBuilder(
+      column: $table.lastSyncedAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$MutualFundSchemesTableOrderingComposer
+    extends Composer<_$AppDatabase, $MutualFundSchemesTable> {
+  $$MutualFundSchemesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get schemeCode => $composableBuilder(
+      column: $table.schemeCode, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get schemeName => $composableBuilder(
+      column: $table.schemeName, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get fundHouse => $composableBuilder(
+      column: $table.fundHouse, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get schemeType => $composableBuilder(
+      column: $table.schemeType, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get schemeCategory => $composableBuilder(
+      column: $table.schemeCategory,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get planType => $composableBuilder(
+      column: $table.planType, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get optionType => $composableBuilder(
+      column: $table.optionType, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get isin => $composableBuilder(
+      column: $table.isin, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get latestNavMicroPaise => $composableBuilder(
+      column: $table.latestNavMicroPaise,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get latestNavDate => $composableBuilder(
+      column: $table.latestNavDate,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get isFavorite => $composableBuilder(
+      column: $table.isFavorite, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get lastSyncedAt => $composableBuilder(
+      column: $table.lastSyncedAt,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$MutualFundSchemesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $MutualFundSchemesTable> {
+  $$MutualFundSchemesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get schemeCode => $composableBuilder(
+      column: $table.schemeCode, builder: (column) => column);
+
+  GeneratedColumn<String> get schemeName => $composableBuilder(
+      column: $table.schemeName, builder: (column) => column);
+
+  GeneratedColumn<String> get fundHouse =>
+      $composableBuilder(column: $table.fundHouse, builder: (column) => column);
+
+  GeneratedColumn<String> get schemeType => $composableBuilder(
+      column: $table.schemeType, builder: (column) => column);
+
+  GeneratedColumn<String> get schemeCategory => $composableBuilder(
+      column: $table.schemeCategory, builder: (column) => column);
+
+  GeneratedColumn<String> get planType =>
+      $composableBuilder(column: $table.planType, builder: (column) => column);
+
+  GeneratedColumn<String> get optionType => $composableBuilder(
+      column: $table.optionType, builder: (column) => column);
+
+  GeneratedColumn<String> get isin =>
+      $composableBuilder(column: $table.isin, builder: (column) => column);
+
+  GeneratedColumn<int> get latestNavMicroPaise => $composableBuilder(
+      column: $table.latestNavMicroPaise, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get latestNavDate => $composableBuilder(
+      column: $table.latestNavDate, builder: (column) => column);
+
+  GeneratedColumn<bool> get isFavorite => $composableBuilder(
+      column: $table.isFavorite, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get lastSyncedAt => $composableBuilder(
+      column: $table.lastSyncedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$MutualFundSchemesTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $MutualFundSchemesTable,
+    MutualFundScheme,
+    $$MutualFundSchemesTableFilterComposer,
+    $$MutualFundSchemesTableOrderingComposer,
+    $$MutualFundSchemesTableAnnotationComposer,
+    $$MutualFundSchemesTableCreateCompanionBuilder,
+    $$MutualFundSchemesTableUpdateCompanionBuilder,
+    (
+      MutualFundScheme,
+      BaseReferences<_$AppDatabase, $MutualFundSchemesTable, MutualFundScheme>
+    ),
+    MutualFundScheme,
+    PrefetchHooks Function()> {
+  $$MutualFundSchemesTableTableManager(
+      _$AppDatabase db, $MutualFundSchemesTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$MutualFundSchemesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$MutualFundSchemesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$MutualFundSchemesTableAnnotationComposer(
+                  $db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> schemeCode = const Value.absent(),
+            Value<String> schemeName = const Value.absent(),
+            Value<String?> fundHouse = const Value.absent(),
+            Value<String?> schemeType = const Value.absent(),
+            Value<String?> schemeCategory = const Value.absent(),
+            Value<String?> planType = const Value.absent(),
+            Value<String?> optionType = const Value.absent(),
+            Value<String?> isin = const Value.absent(),
+            Value<int?> latestNavMicroPaise = const Value.absent(),
+            Value<DateTime?> latestNavDate = const Value.absent(),
+            Value<bool> isFavorite = const Value.absent(),
+            Value<DateTime?> lastSyncedAt = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+          }) =>
+              MutualFundSchemesCompanion(
+            schemeCode: schemeCode,
+            schemeName: schemeName,
+            fundHouse: fundHouse,
+            schemeType: schemeType,
+            schemeCategory: schemeCategory,
+            planType: planType,
+            optionType: optionType,
+            isin: isin,
+            latestNavMicroPaise: latestNavMicroPaise,
+            latestNavDate: latestNavDate,
+            isFavorite: isFavorite,
+            lastSyncedAt: lastSyncedAt,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+          ),
+          createCompanionCallback: ({
+            Value<int> schemeCode = const Value.absent(),
+            required String schemeName,
+            Value<String?> fundHouse = const Value.absent(),
+            Value<String?> schemeType = const Value.absent(),
+            Value<String?> schemeCategory = const Value.absent(),
+            Value<String?> planType = const Value.absent(),
+            Value<String?> optionType = const Value.absent(),
+            Value<String?> isin = const Value.absent(),
+            Value<int?> latestNavMicroPaise = const Value.absent(),
+            Value<DateTime?> latestNavDate = const Value.absent(),
+            Value<bool> isFavorite = const Value.absent(),
+            Value<DateTime?> lastSyncedAt = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+          }) =>
+              MutualFundSchemesCompanion.insert(
+            schemeCode: schemeCode,
+            schemeName: schemeName,
+            fundHouse: fundHouse,
+            schemeType: schemeType,
+            schemeCategory: schemeCategory,
+            planType: planType,
+            optionType: optionType,
+            isin: isin,
+            latestNavMicroPaise: latestNavMicroPaise,
+            latestNavDate: latestNavDate,
+            isFavorite: isFavorite,
+            lastSyncedAt: lastSyncedAt,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$MutualFundSchemesTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $MutualFundSchemesTable,
+    MutualFundScheme,
+    $$MutualFundSchemesTableFilterComposer,
+    $$MutualFundSchemesTableOrderingComposer,
+    $$MutualFundSchemesTableAnnotationComposer,
+    $$MutualFundSchemesTableCreateCompanionBuilder,
+    $$MutualFundSchemesTableUpdateCompanionBuilder,
+    (
+      MutualFundScheme,
+      BaseReferences<_$AppDatabase, $MutualFundSchemesTable, MutualFundScheme>
+    ),
+    MutualFundScheme,
+    PrefetchHooks Function()>;
+typedef $$NavHistoryTableCreateCompanionBuilder = NavHistoryCompanion Function({
+  Value<int> id,
+  required int schemeCode,
+  required DateTime navDate,
+  required int navMicroPaise,
+  Value<String> sourceProvider,
+  Value<DateTime> createdAt,
+});
+typedef $$NavHistoryTableUpdateCompanionBuilder = NavHistoryCompanion Function({
+  Value<int> id,
+  Value<int> schemeCode,
+  Value<DateTime> navDate,
+  Value<int> navMicroPaise,
+  Value<String> sourceProvider,
+  Value<DateTime> createdAt,
+});
+
+class $$NavHistoryTableFilterComposer
+    extends Composer<_$AppDatabase, $NavHistoryTable> {
+  $$NavHistoryTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get schemeCode => $composableBuilder(
+      column: $table.schemeCode, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get navDate => $composableBuilder(
+      column: $table.navDate, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get navMicroPaise => $composableBuilder(
+      column: $table.navMicroPaise, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get sourceProvider => $composableBuilder(
+      column: $table.sourceProvider,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$NavHistoryTableOrderingComposer
+    extends Composer<_$AppDatabase, $NavHistoryTable> {
+  $$NavHistoryTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get schemeCode => $composableBuilder(
+      column: $table.schemeCode, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get navDate => $composableBuilder(
+      column: $table.navDate, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get navMicroPaise => $composableBuilder(
+      column: $table.navMicroPaise,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get sourceProvider => $composableBuilder(
+      column: $table.sourceProvider,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$NavHistoryTableAnnotationComposer
+    extends Composer<_$AppDatabase, $NavHistoryTable> {
+  $$NavHistoryTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get schemeCode => $composableBuilder(
+      column: $table.schemeCode, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get navDate =>
+      $composableBuilder(column: $table.navDate, builder: (column) => column);
+
+  GeneratedColumn<int> get navMicroPaise => $composableBuilder(
+      column: $table.navMicroPaise, builder: (column) => column);
+
+  GeneratedColumn<String> get sourceProvider => $composableBuilder(
+      column: $table.sourceProvider, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+}
+
+class $$NavHistoryTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $NavHistoryTable,
+    NavHistoryData,
+    $$NavHistoryTableFilterComposer,
+    $$NavHistoryTableOrderingComposer,
+    $$NavHistoryTableAnnotationComposer,
+    $$NavHistoryTableCreateCompanionBuilder,
+    $$NavHistoryTableUpdateCompanionBuilder,
+    (
+      NavHistoryData,
+      BaseReferences<_$AppDatabase, $NavHistoryTable, NavHistoryData>
+    ),
+    NavHistoryData,
+    PrefetchHooks Function()> {
+  $$NavHistoryTableTableManager(_$AppDatabase db, $NavHistoryTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$NavHistoryTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$NavHistoryTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$NavHistoryTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<int> schemeCode = const Value.absent(),
+            Value<DateTime> navDate = const Value.absent(),
+            Value<int> navMicroPaise = const Value.absent(),
+            Value<String> sourceProvider = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+          }) =>
+              NavHistoryCompanion(
+            id: id,
+            schemeCode: schemeCode,
+            navDate: navDate,
+            navMicroPaise: navMicroPaise,
+            sourceProvider: sourceProvider,
+            createdAt: createdAt,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required int schemeCode,
+            required DateTime navDate,
+            required int navMicroPaise,
+            Value<String> sourceProvider = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+          }) =>
+              NavHistoryCompanion.insert(
+            id: id,
+            schemeCode: schemeCode,
+            navDate: navDate,
+            navMicroPaise: navMicroPaise,
+            sourceProvider: sourceProvider,
+            createdAt: createdAt,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$NavHistoryTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $NavHistoryTable,
+    NavHistoryData,
+    $$NavHistoryTableFilterComposer,
+    $$NavHistoryTableOrderingComposer,
+    $$NavHistoryTableAnnotationComposer,
+    $$NavHistoryTableCreateCompanionBuilder,
+    $$NavHistoryTableUpdateCompanionBuilder,
+    (
+      NavHistoryData,
+      BaseReferences<_$AppDatabase, $NavHistoryTable, NavHistoryData>
+    ),
+    NavHistoryData,
+    PrefetchHooks Function()>;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -7357,4 +8955,8 @@ class $AppDatabaseManager {
       $$RecurringTransactionsTableTableManager(_db, _db.recurringTransactions);
   $$AppSettingsTableTableManager get appSettings =>
       $$AppSettingsTableTableManager(_db, _db.appSettings);
+  $$MutualFundSchemesTableTableManager get mutualFundSchemes =>
+      $$MutualFundSchemesTableTableManager(_db, _db.mutualFundSchemes);
+  $$NavHistoryTableTableManager get navHistory =>
+      $$NavHistoryTableTableManager(_db, _db.navHistory);
 }

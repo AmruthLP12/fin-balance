@@ -45,6 +45,34 @@ class FinancialPrecision {
     return (nav * microPaisePerRupee).round();
   }
 
+  /// Parse a raw NAV decimal string (e.g. "200.18460", "15.2") directly into
+  /// integer micro-paise (1 Rupee = 1,000,000 micro-paise) without floating-point representation errors.
+  static int navStringToMicroPaise(String? navStr) {
+    if (navStr == null) return 0;
+    final clean = navStr.trim().replaceAll(',', '');
+    if (clean.isEmpty) return 0;
+
+    final parts = clean.split('.');
+    final intPart = int.tryParse(parts[0]) ?? 0;
+    if (parts.length == 1) {
+      return intPart * microPaisePerRupee;
+    }
+
+    // Pad or trim fractional string to exactly 6 digits (micro-paise)
+    var fracStr = parts[1];
+    if (fracStr.length > 6) {
+      fracStr = fracStr.substring(0, 6);
+    } else {
+      fracStr = fracStr.padRight(6, '0');
+    }
+    final fracPart = int.tryParse(fracStr) ?? 0;
+
+    if (intPart < 0) {
+      return intPart * microPaisePerRupee - fracPart;
+    }
+    return intPart * microPaisePerRupee + fracPart;
+  }
+
   /// Convert integer micro-paise (125456000) to standard NAV (125.4560).
   static double microPaiseToNav(int microPaise) {
     return microPaise / microPaisePerRupee;

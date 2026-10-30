@@ -265,47 +265,47 @@ Requirements:
 
 ## 9. NAV Synchronization Architecture
 
-Create a common NAV provider interface.
+FinBalance implements a provider-independent NAV integration layer under `lib/data/nav/`:
 
-Conceptual interface:
+```mermaid
+flowchart TD
+    UI[Mutual Fund Search & Scheme Details UI]
+    SYNC[NavSyncService]
+    DAO[MutualFundDao SQLite]
+    MF[MFapiProvider - Primary]
+    TIG[TigzigProvider - Secondary]
+    AMFI[AmfiProvider - Tertiary Fallback]
 
-```dart
-abstract interface class NavDataProvider {
-  Future<List<MutualFundScheme>> searchSchemes(
-    String query,
-  );
-
-  Future<NavData?> getLatestNav(
-    String schemeCode,
-  );
-
-  Future<List<NavData>> getHistoricalNav(
-    String schemeCode,
-  );
-}
+    UI --> SYNC
+    SYNC --> DAO
+    SYNC --> MF
+    MF -.->|Failover| TIG
+    TIG -.->|Failover| AMFI
+    SYNC -->|Batch Upsert| DAO
 ```
 
-Implement separate adapters:
+### 9.1 Provider Priority & Implementation
 
-- MfapiProvider.
-- TigzigProvider.
+1. **MFapiProvider (Primary):**
+   - Base URL: `https://api.mfapi.in`
+   - Scheme Search: `/mf/search?q={query}`
+   - Latest Details: `/mf/{schemeCode}/latest`
+   - Historical Details: `/mf/{schemeCode}`
+   - Date format: `DD-MM-YYYY`
+   - NAV precision: Stored as 64-bit integer micro-paise (`$10^{-6}$` INR) without floating-point conversion drift.
+2. **TigzigProvider (Secondary):**
+   - Base URL: `https://api.tigzig.com/mf/v1`
+   - Subject to Cloudflare security checks. When Cloudflare responds with HTTP 403 (Error 1006), the adapter cleanly reports `isAvailable() == false` without throwing or attempting unauthorized circumvention, seamlessly passing to the fallback provider.
+3. **AmfiProvider (Tertiary Fallback):**
+   - URL: `https://portal.amfiindia.com/spages/NAVAll.txt`
+   - Official AMFI semicolon-delimited text format: `Scheme Code;ISIN Div Payout/ISIN Growth;ISIN Div Reinvestment;Scheme Name;Plan;Option;Net Asset Value;Date`.
+   - Parses date format `DD-MMM-YYYY` (e.g. `29-Oct-2026`).
 
-A NavService coordinates the adapters.
+### 9.2 Synchronization Workflow (`NavSyncService`)
 
-Responsibilities:
-
-1. Read local NAV cache.
-2. Check data freshness.
-3. Query the primary provider.
-4. Validate the response.
-5. Use the fallback provider if necessary.
-6. Persist valid NAV data.
-7. Preserve existing data on failure.
-8. Return synchronization status.
-
-Do not couple the application to a particular API's JSON response format.
-
-Provider endpoints, response mappings and limits must be validated against current provider documentation before implementation.
+1. **Cache-First Discovery:** Reads locally cached schemes from `MutualFundSchemes` in SQLite.
+2. **Online Query & Caching:** Queries active remote providers, caches discovered scheme metadata, and avoids redundant downloads.
+3. **Valuation Propagation:** When a new NAV is fetched for `schemeCode`, `MutualFundDao.syncHoldingsValuation()` automatically recalculates `currentValuationPaise` across all profiles holding the fund in `FinancialItems` and writes to `ValuationHistory`.
 
 ## 10. Synchronization Strategy
 

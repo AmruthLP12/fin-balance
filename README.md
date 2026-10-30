@@ -50,11 +50,19 @@ lib/
 │   ├── providers/                # Global state providers (theme, database, DAOs)
 │   ├── theme/                    # AppColors, AppTypography, AppSpacing, AppTheme
 │   └── widgets/                  # FinCard, StatCard, StatusBadge, SectionHeader, EmptyStateView
+├── data/
+│   └── nav/                      # NAV provider layer (MFapi, TIGZIG, AMFI) & sync coordinator
+│       ├── models/               # MutualFundSearchResult, NavRecord, MutualFundSchemeDetail
+│       ├── nav_provider.dart     # Provider-independent abstract interface
+│       ├── mfapi_provider.dart   # Primary MFapi.in REST adapter
+│       ├── tigzig_provider.dart  # Secondary TIGZIG adapter with Cloudflare 1006 handling
+│       ├── amfi_provider.dart    # Tertiary AMFI text parser fallback
+│       └── nav_sync_service.dart # Failover, caching, and valuation propagation orchestrator
 ├── database/
-│   ├── app_database.dart         # Drift AppDatabase with schema version 1 & migrations
+│   ├── app_database.dart         # Drift AppDatabase with schema version 2 & migrations
 │   ├── connection/               # Native SQLite connection via drift_flutter
 │   ├── precision/                # FinancialPrecision (Paise, micro-units, micro-paise)
-│   ├── tables/                   # Drift table definitions (8 normalized tables)
+│   ├── tables/                   # Drift table definitions (10 normalized tables)
 │   │   ├── financial_profiles.dart
 │   │   ├── financial_categories.dart
 │   │   ├── financial_accounts.dart
@@ -62,8 +70,10 @@ lib/
 │   │   ├── transactions.dart
 │   │   ├── valuation_history.dart
 │   │   ├── recurring_transactions.dart
-│   │   └── app_settings.dart
-│   └── daos/                     # Data Access Objects (8 specialized DAOs)
+│   │   ├── app_settings.dart
+│   │   ├── mutual_fund_schemes.dart
+│   │   └── nav_history.dart
+│   └── daos/                     # Data Access Objects (9 specialized DAOs)
 │       ├── profiles_dao.dart
 │       ├── categories_dao.dart
 │       ├── accounts_dao.dart
@@ -71,11 +81,12 @@ lib/
 │       ├── transactions_dao.dart
 │       ├── valuations_dao.dart
 │       ├── recurring_transactions_dao.dart
-│       └── app_settings_dao.dart
+│       ├── app_settings_dao.dart
+│       └── mutual_fund_dao.dart
 └── features/
     ├── navigation/               # MainScaffold with 5-tab NavigationBar
     ├── overview/                 # Net Worth summary & monthly commitments
-    ├── assets/                   # Mutual funds, SIPs, stocks, deposits, and gold
+    ├── assets/                   # Mutual funds, SIPs, stocks, deposits, gold, and live scheme search
     ├── liabilities/              # Loans, credit card dues, and EMI tracking
     ├── activity/                 # Transaction ledger, simulated SIPs, EMI flows
     └── settings/                 # Preferences, sync configuration, backup & restore
@@ -119,7 +130,7 @@ make clean
 
 - [x] **Milestone 1 — Project Foundation:** Scaffolding, Riverpod, Design System, Theme Tokens, 5-Tab Navigation (`Overview`, `Assets`, `Liabilities`, `Activity`, `Settings`), Makefile, Documentation.
 - [x] **Milestone 2 — Drift Database Layer:** Schema definition (8 normalized tables: Profiles, Categories, Accounts, Items, Transactions, Valuations, Recurring Schedules, Settings), multi-profile family finance data isolation, 8 specialized DAOs with reactive streams, integer precision engine (Paise/micro-units/micro-paise), foreign keys with cascade/restrict, default profile & category seeding, and in-memory test suite.
-- [ ] **Milestone 3 — Mutual Fund & NAV Integration:** Provider adapters (MFapi.in & TIGZIG), search, local NAV caching.
+- [x] **Milestone 3 — Mutual Fund & NAV Integration:** Provider-independent NAV integration layer (`NavProvider`), primary `MFapiProvider`, secondary `TigzigProvider` with Cloudflare 1006 detection, tertiary `AmfiProvider` semicolon text parser, `NavSyncService` coordinator, global master catalog (`MutualFundSchemes` & `NavHistory`), debounced scheme search, favourites stream, scheme details sheet, and profile asset addition modal.
 - [ ] **Milestone 4 — SIP & Commitment Scheduling:** Independent date generator, leap year & month-end handlers, duplicate prevention.
 - [ ] **Milestone 5 — Transaction & Valuation Engine:** Simulated installments, lump-sum purchases, redemptions, unit calculations.
 - [ ] **Milestone 6 — Dashboard & Overview:** Real-time net worth calculation, active SIPs, upcoming EMIs.

@@ -4,6 +4,7 @@ import '../../database/daos/accounts_dao.dart';
 import '../../database/daos/app_settings_dao.dart';
 import '../../database/daos/categories_dao.dart';
 import '../../database/daos/financial_items_dao.dart';
+import '../../database/daos/mutual_fund_dao.dart';
 import '../../database/daos/profiles_dao.dart';
 import '../../database/daos/recurring_transactions_dao.dart';
 import '../../database/daos/transactions_dao.dart';
@@ -47,6 +48,10 @@ final recurringTransactionsDaoProvider =
 
 final appSettingsDaoProvider = Provider<AppSettingsDao>((ref) {
   return ref.watch(databaseProvider).appSettingsDao;
+});
+
+final mutualFundDaoProvider = Provider<MutualFundDao>((ref) {
+  return ref.watch(databaseProvider).mutualFundDao;
 });
 
 /// StateNotifier to manage active profile selection and persistence.

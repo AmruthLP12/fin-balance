@@ -5,6 +5,30 @@ All notable changes to the FinBalance application will be documented in this fil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-10-30
+
+### Added
+- **Provider-Independent NAV Integration Layer:**
+  - `NavProvider` abstract interface allowing pluggable provider switching without modifying application logic.
+  - `MFapiProvider`: Primary REST adapter for `api.mfapi.in` with debounced search (`/mf/search`) and metadata/NAV retrieval (`/mf/{schemeCode}/latest`).
+  - `TigzigProvider`: Secondary adapter with Cloudflare 1006 detection, graceful failure handling, and clear unavailable-provider reporting.
+  - `AmfiProvider`: Tertiary fallback parser for official AMFI semicolon-delimited `NAVAll.txt` files with `DD-MMM-YYYY` date conversion.
+  - `NavSyncService`: Central coordinator orchestrating multi-provider failover, local SQLite caching, and automatic portfolio valuation propagation.
+- **Drift Database Schema Upgrade (Version 2):**
+  - Added `MutualFundSchemes` master table: Global reference catalog storing scheme codes, fund houses, categories, plans (Direct/Regular), options (Growth/IDCW), latest NAV in micro-paise, and favourite bookmark state.
+  - Added `NavHistory` table: Historical time-series with composite unique key constraint `(scheme_code, nav_date)`.
+  - Added `MutualFundDao`: Local scheme search, favourites stream, historical NAV caching with deduplication, and automatic portfolio holdings recalculation.
+  - Non-destructive `MigrationStrategy` safely upgrading databases from version 1 to 2.
+- **Mutual Fund UI & Profile Asset Addition:**
+  - `MutualFundSearchScreen`: Debounced search bar, provider status badge, tabs for "Search Schemes" and "Favourites".
+  - `MutualFundCard`: Displays scheme name, AMC, Direct/Regular badge, Growth/IDCW badge, latest NAV, and star bookmark toggle.
+  - `SchemeDetailsSheet`: Draggable bottom sheet with full scheme metadata, latest NAV hero card, historical NAV table, and quick actions.
+  - `AddToProfileDialog`: Seamlessly links any global master scheme to an individual profile's asset portfolio with unit estimation and double-entry transaction recording.
+- **Testing & Verification:**
+  - Added unit test suite `test/unit/nav_models_test.dart` for plan/option heuristics, date parsers, and micro-paise conversion without float drift.
+  - Added unit test suite `test/unit/nav_providers_test.dart` with mock HTTP adapters for MFapi, Tigzig (Cloudflare 1006 detection), and AMFI text parser.
+  - Added database integration tests in `test/database/mutual_fund_dao_test.dart` covering scheme search, favourites, NAV deduplication, and multi-profile holdings valuation propagation (44 passing tests total).
+
 ## [0.2.0] - 2026-10-30
 
 ### Added
