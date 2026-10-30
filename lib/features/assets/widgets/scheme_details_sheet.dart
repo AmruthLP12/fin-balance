@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/formatting/date_formatter.dart';
 import '../../../core/providers/database_provider.dart';
 import '../../../core/providers/nav_providers.dart';
 import '../../../core/theme/app_colors.dart';
@@ -12,16 +13,23 @@ import '../../../database/precision/financial_precision.dart';
 import 'add_to_profile_dialog.dart';
 
 /// Bottom sheet displaying mutual fund scheme details, latest NAV, and historical data.
-class SchemeDetailsSheet extends ConsumerWidget {
+class SchemeDetailsSheet extends ConsumerStatefulWidget {
   final int schemeCode;
 
   const SchemeDetailsSheet({super.key, required this.schemeCode});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SchemeDetailsSheet> createState() => _SchemeDetailsSheetState();
+}
+
+class _SchemeDetailsSheetState extends ConsumerState<SchemeDetailsSheet> {
+  bool _isSyncing = false;
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final detailsAsync = ref.watch(schemeDetailsProvider(schemeCode));
+    final detailsAsync = ref.watch(schemeDetailsProvider(widget.schemeCode));
 
     return DraggableScrollableSheet(
       initialChildSize: 0.75,
@@ -52,8 +60,8 @@ class SchemeDetailsSheet extends ConsumerWidget {
                 child: detailsAsync.when(
                   data: (details) {
                     if (details == null) {
-                      return const Center(
-                        child: Text('Scheme details could not be loaded.'),
+                      return _buildErrorState(
+                        'Scheme details could not be loaded from online providers. Please check your internet connection.',
                       );
                     }
                     return _buildDetailsContent(
@@ -65,10 +73,17 @@ class SchemeDetailsSheet extends ConsumerWidget {
                     );
                   },
                   loading: () => const Center(
-                    child: CircularProgressIndicator(),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CircularProgressIndicator(),
+                        SizedBox(height: AppSpacing.md),
+                        Text('Fetching latest scheme & NAV details...'),
+                      ],
+                    ),
                   ),
-                  error: (err, _) => Center(
-                    child: Text('Failed to load scheme: $err'),
+                  error: (err, _) => _buildErrorState(
+                    'Failed to load scheme: $err',
                   ),
                 ),
               ),
@@ -76,6 +91,43 @@ class SchemeDetailsSheet extends ConsumerWidget {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildErrorState(String message) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.xl),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.cloud_off_rounded,
+              size: 48,
+              color: AppColors.liability,
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              'Scheme Could Not Be Loaded',
+              style: AppTypography.titleMedium
+                  .copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: AppTypography.bodyMedium,
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            FilledButton.icon(
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('Retry'),
+              onPressed: () =>
+                  ref.refresh(schemeDetailsProvider(widget.schemeCode)),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -141,15 +193,33 @@ class SchemeDetailsSheet extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'LATEST NET ASSET VALUE',
-                style: AppTypography.labelSmall.copyWith(
-                  color: isDark
-                      ? AppColors.darkTextMuted
-                      : AppColors.lightTextMuted,
-                  letterSpacing: 0.8,
-                  fontWeight: FontWeight.w600,
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'LATEST NET ASSET VALUE',
+                    style: AppTypography.labelSmall.copyWith(
+                      color: isDark
+                          ? AppColors.darkTextMuted
+                          : AppColors.lightTextMuted,
+                      letterSpacing: 0.8,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  IconButton(
+                    icon: _isSyncing
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.refresh_rounded, size: 20),
+                    tooltip: 'Sync Latest NAV',
+                    onPressed: _isSyncing
+                        ? null
+                        : () => _syncLatestNav(details.schemeCode),
+                  ),
+                ],
               ),
               const SizedBox(height: AppSpacing.xs),
               if (details.latestNav != null) ...[
@@ -167,7 +237,7 @@ class SchemeDetailsSheet extends ConsumerWidget {
                     ),
                     const SizedBox(width: AppSpacing.sm),
                     Text(
-                      'as of ${details.latestNav!.date.day}/${details.latestNav!.date.month}/${details.latestNav!.date.year}',
+                      'as of ${DateFormatter.formatDate(details.latestNav!.date)}',
                       style: AppTypography.labelMedium.copyWith(
                         color: isDark
                             ? AppColors.darkTextMuted
@@ -178,7 +248,7 @@ class SchemeDetailsSheet extends ConsumerWidget {
                 ),
               ] else
                 Text(
-                  'NAV not available',
+                  'NAV not published yet',
                   style: AppTypography.bodyLarge.copyWith(
                     color: isDark
                         ? AppColors.darkTextMuted
@@ -255,7 +325,7 @@ class SchemeDetailsSheet extends ConsumerWidget {
             child: ListView.separated(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              itemCount: details.navHistory.take(10).length,
+              itemCount: details.navHistory.take(15).length,
               separatorBuilder: (_, __) => const Divider(height: 1),
               itemBuilder: (context, index) {
                 final record = details.navHistory[index];
@@ -265,7 +335,7 @@ class SchemeDetailsSheet extends ConsumerWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        '${record.date.day.toString().padLeft(2, '0')}/${record.date.month.toString().padLeft(2, '0')}/${record.date.year}',
+                        DateFormatter.formatDate(record.date),
                         style: AppTypography.bodyMedium,
                       ),
                       Text(
@@ -284,6 +354,27 @@ class SchemeDetailsSheet extends ConsumerWidget {
         const SizedBox(height: AppSpacing.xxl),
       ],
     );
+  }
+
+  Future<void> _syncLatestNav(int schemeCode) async {
+    setState(() => _isSyncing = true);
+    try {
+      final syncService = ref.read(navSyncServiceProvider);
+      final res = await syncService.syncSchemeNav(schemeCode);
+      if (mounted) {
+        ref.invalidate(schemeDetailsProvider(schemeCode));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(res.success
+                ? 'NAV synchronized from ${res.provider ?? "MFapi"}!'
+                : 'NAV sync notice: ${res.errorMessage ?? "Failed"}'),
+            backgroundColor: res.success ? AppColors.asset : AppColors.warning,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSyncing = false);
+    }
   }
 
   Widget _buildMetaRow(String label, String value, bool isDark) {

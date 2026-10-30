@@ -54,6 +54,20 @@ class TransactionsDao extends DatabaseAccessor<AppDatabase>
         .get();
   }
 
+  /// Get the earliest / primary investment purchase transaction for a financial item.
+  Future<Transaction?> getPrimaryTransactionForItem(
+    int profileId,
+    int financialItemId,
+  ) {
+    return (select(transactions)
+          ..where((tbl) =>
+              tbl.profileId.equals(profileId) &
+              tbl.financialItemId.equals(financialItemId))
+          ..orderBy([(t) => OrderingTerm.asc(t.transactionDate)])
+          ..limit(1))
+        .getSingleOrNull();
+  }
+
   /// Watch transactions for a specific profile and item.
   Stream<List<Transaction>> watchTransactionsByItem(
     int profileId,

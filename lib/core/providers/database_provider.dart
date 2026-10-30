@@ -141,3 +141,12 @@ final activeProfileTransactionsProvider =
       .watch(transactionsDaoProvider)
       .watchRecentTransactionsForProfile(activeId);
 });
+
+/// Stream provider for all transactions belonging to a specific item and profile.
+final transactionsByItemProvider =
+    StreamProvider.family<List<Transaction>, ({int profileId, int itemId})>(
+        (ref, arg) {
+  return ref
+      .watch(transactionsDaoProvider)
+      .watchTransactionsByItem(arg.profileId, arg.itemId);
+});

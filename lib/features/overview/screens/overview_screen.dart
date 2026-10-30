@@ -313,15 +313,16 @@ class OverviewScreen extends ConsumerWidget {
 
     try {
       final syncService = ref.read(navSyncServiceProvider);
-      final synced = await syncService.syncAllPortfolioSchemes();
+      final summary = await syncService.syncAllPortfolioSchemes();
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(synced > 0
-                ? 'Updated NAV and valuation for $synced holdings!'
-                : 'All NAVs are currently up to date.'),
-            backgroundColor: AppColors.asset,
+            content: Text(summary.totalSchemes > 0
+                ? 'Updated NAV for ${summary.successCount} of ${summary.totalSchemes} schemes (${summary.primaryProvider ?? "MFapi"})'
+                : 'No tracked schemes to sync.'),
+            backgroundColor:
+                summary.failedCount == 0 ? AppColors.asset : AppColors.warning,
           ),
         );
       }

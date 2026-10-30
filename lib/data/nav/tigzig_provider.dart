@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'models/nav_models.dart';
 import 'nav_provider.dart';
 
@@ -19,8 +20,9 @@ class TigzigProvider implements NavProvider {
                 receiveTimeout: const Duration(seconds: 10),
                 headers: {
                   'Accept': 'application/json, text/plain, */*',
-                  'User-Agent':
-                      'Mozilla/5.0 (Linux; Android 14; FinBalance) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
+                  if (!kIsWeb)
+                    'User-Agent':
+                        'Mozilla/5.0 (Linux; Android 14; FinBalance) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
                 },
               ),
             );

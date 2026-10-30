@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/providers/nav_providers.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
@@ -9,16 +11,17 @@ import '../../../core/widgets/status_badge.dart';
 import '../../profile/screens/profile_management_screen.dart';
 
 /// Settings screen for managing application preferences, backup, and sync.
-class SettingsScreen extends StatefulWidget {
+class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
   @override
-  State<SettingsScreen> createState() => _SettingsScreenState();
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends State<SettingsScreen> {
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   ThemeMode _selectedTheme = ThemeMode.system;
   String _selectedCurrency = AppConstants.defaultCurrencyCode;
+  bool _isSyncing = false;
 
   @override
   Widget build(BuildContext context) {
@@ -163,21 +166,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   leading: const Icon(Icons.refresh_rounded),
                   title: const Text('Manual NAV Sync',
                       style: AppTypography.titleMedium),
-                  subtitle: const Text('Fetch latest published values',
+                  subtitle: const Text(
+                      'Fetch latest published values from MFapi',
                       style: AppTypography.bodyMedium),
                   trailing: OutlinedButton(
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                            content: Text(
-                                'NAV sync will be connected in Milestone 3')),
-                      );
-                    },
+                    onPressed: _isSyncing ? null : _runManualNavSync,
                     style: OutlinedButton.styleFrom(
                       minimumSize: const Size(80, 36),
                       padding: const EdgeInsets.symmetric(horizontal: 12),
                     ),
-                    child: const Text('Sync Now'),
+                    child: _isSyncing
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text('Sync Now'),
                   ),
                 ),
               ],
@@ -383,5 +387,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
         );
       },
     );
+  }
+
+  Future<void> _runManualNavSync() async {
+    setState(() => _isSyncing = true);
+    try {
+      final syncService = ref.read(navSyncServiceProvider);
+      final summary = await syncService.syncAllPortfolioSchemes();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(summary.totalSchemes > 0
+                ? 'NAV sync complete: Updated ${summary.successCount} of ${summary.totalSchemes} schemes (${summary.primaryProvider ?? "MFapi"}).'
+                : 'No tracked schemes to sync in portfolio.'),
+            backgroundColor:
+                summary.failedCount == 0 ? AppColors.asset : AppColors.warning,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('NAV sync failed: $e'),
+            backgroundColor: AppColors.liability,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSyncing = false);
+    }
   }
 }

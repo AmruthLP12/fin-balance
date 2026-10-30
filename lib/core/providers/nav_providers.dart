@@ -51,3 +51,15 @@ final schemeDetailsProvider =
   return syncService.getOrFetchSchemeDetails(schemeCode,
       includeHistoricalNav: true);
 });
+
+/// Stream provider for locally cached scheme master data.
+final schemeByCodeProvider =
+    StreamProvider.family<MutualFundScheme?, int>((ref, schemeCode) {
+  return ref.watch(mutualFundDaoProvider).watchSchemeByCode(schemeCode);
+});
+
+/// Future provider for historical NAV datapoints for a scheme.
+final schemeNavHistoryProvider =
+    FutureProvider.family<List<NavHistoryData>, int>((ref, schemeCode) {
+  return ref.watch(mutualFundDaoProvider).getNavHistory(schemeCode, limit: 100);
+});

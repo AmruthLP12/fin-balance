@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'models/nav_models.dart';
 import 'nav_provider.dart';
 
@@ -11,12 +13,13 @@ class MFapiProvider implements NavProvider {
             Dio(
               BaseOptions(
                 baseUrl: 'https://api.mfapi.in',
-                connectTimeout: const Duration(seconds: 10),
-                receiveTimeout: const Duration(seconds: 15),
+                connectTimeout: const Duration(seconds: 12),
+                receiveTimeout: const Duration(seconds: 20),
                 headers: {
                   'Accept': 'application/json',
-                  'User-Agent':
-                      'FinBalance/1.0 (Android; Offline-First Personal Finance)',
+                  if (!kIsWeb)
+                    'User-Agent':
+                        'FinBalance/1.0 (Android; Offline-First Personal Finance)',
                 },
               ),
             );
@@ -75,20 +78,45 @@ class MFapiProvider implements NavProvider {
   }) async {
     if (schemeCode <= 0) return null;
 
-    final path =
+    // Try full history if requested, otherwise latest NAV
+    final primaryPath =
         includeHistoricalNav ? '/mf/$schemeCode' : '/mf/$schemeCode/latest';
 
+    MutualFundSchemeDetail? detail = await _fetchDetailFromPath(primaryPath);
+
+    // If full history path failed or timed out, attempt fallback to latest NAV
+    if (detail == null && includeHistoricalNav) {
+      detail = await _fetchDetailFromPath('/mf/$schemeCode/latest');
+    }
+
+    return detail;
+  }
+
+  Future<MutualFundSchemeDetail?> _fetchDetailFromPath(String path) async {
     try {
       final response = await _dio.get<dynamic>(path);
+      if (response.statusCode == 200 && response.data != null) {
+        Map<String, dynamic>? data;
+        if (response.data is Map<String, dynamic>) {
+          data = response.data as Map<String, dynamic>;
+        } else if (response.data is Map) {
+          data = Map<String, dynamic>.from(response.data as Map);
+        } else if (response.data is String) {
+          try {
+            final decoded = json.decode(response.data as String);
+            if (decoded is Map) {
+              data = Map<String, dynamic>.from(decoded);
+            }
+          } catch (_) {}
+        }
 
-      if (response.statusCode == 200 && response.data is Map<String, dynamic>) {
-        final data = response.data as Map<String, dynamic>;
-        if (data['status'] == 'SUCCESS' || data['meta'] != null) {
+        if (data != null &&
+            (data['status'] == 'SUCCESS' ||
+                data['meta'] != null ||
+                data['data'] != null)) {
           return MutualFundSchemeDetail.fromMfApiJson(data);
         }
       }
-      return null;
-    } on DioException {
       return null;
     } catch (_) {
       return null;

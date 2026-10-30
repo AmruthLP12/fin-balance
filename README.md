@@ -78,7 +78,7 @@ lib/
 │   │   └── screens/              # ProfileManagementScreen
 │   ├── overview/                 # Net Worth hero dashboard dynamically scoped to active profile
 │   ├── assets/                   # Profile holdings, mutual fund catalogue search, details, and addition
-│   │   ├── widgets/              # HoldingCard, MutualFundCard, SchemeDetailsSheet, AddToProfileDialog
+│   │   ├── widgets/              # HoldingCard, MutualFundCard, SchemeDetailsSheet, HoldingDetailsSheet, AddToProfileDialog, EditHoldingDialog
 │   │   └── screens/              # AssetsScreen, MutualFundSearchScreen
 │   ├── liabilities/              # Loans, credit card dues, and EMI tracking
 │   ├── activity/                 # Transaction ledger, simulated SIPs, EMI flows

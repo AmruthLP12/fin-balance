@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import '../../../database/precision/financial_precision.dart';
 import 'models/nav_models.dart';
 import 'nav_provider.dart';
@@ -18,8 +19,9 @@ class AmfiProvider implements NavProvider {
                 connectTimeout: const Duration(seconds: 15),
                 receiveTimeout: const Duration(seconds: 30),
                 headers: {
-                  'User-Agent':
-                      'FinBalance/1.0 (Android; Offline-First Personal Finance)',
+                  if (!kIsWeb)
+                    'User-Agent':
+                        'FinBalance/1.0 (Android; Offline-First Personal Finance)',
                 },
               ),
             );

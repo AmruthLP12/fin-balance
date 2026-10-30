@@ -5,7 +5,37 @@ All notable changes to the FinBalance application will be documented in this fil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.3.1] - 2026-10-30
+## [0.3.2] - 2026-10-30
+
+### Fixed
+- **Mutual Fund Scheme Details Loading:**
+  - Resolved loading failure when tapping mutual fund schemes by eliminating silent failure suppression in `MFapiProvider` and `NavSyncService`.
+  - Added fallback from `/mf/{schemeCode}` (full history) to `/mf/{schemeCode}/latest` when history requests time out or fail.
+  - Implemented offline-first cache fallback in `NavSyncService.getOrFetchSchemeDetails`: returns locally cached scheme metadata even if remote providers are unreachable or offline.
+  - Excluded forbidden `User-Agent` HTTP header when executing on Flutter Web (`!kIsWeb`), resolving browser CORS/XHR preflight rejections.
+  - Enhanced `SchemeDetailsSheet` with explicit loading, retry, and meaningful offline error states with one-tap retry.
+- **Manual NAV Synchronization:**
+  - Replaced placeholder SnackBar in `SettingsScreen` with live manual NAV synchronization.
+  - Implemented single-scheme synchronization (`syncSchemeNav`) with direct sync button on `SchemeDetailsSheet` and `HoldingDetailsSheet`.
+  - Implemented full portfolio synchronization (`syncAllPortfolioSchemes`) updating all held and bookmarked mutual funds across all financial profiles.
+  - Added non-regression rule: prevents overwriting newer cached NAVs with older provider quotes.
+  - Enforced SQLite duplicate prevention for identical `(schemeCode, navDate)` records in `NavHistory`.
+  - Persisted `last_nav_sync_time` in `AppSettings` table and reported sync results with scheme counts and provider attribution.
+
+### Added
+- **Full Mutual Fund Holding Management:**
+  - `HoldingDetailsSheet`: Tap any `HoldingCard` in `AssetsScreen` to open comprehensive investment metrics: current estimated valuation, net invested capital, absolute return (₹ and %), total units, latest NAV, transaction log, and scheme metadata.
+  - `EditHoldingDialog`: Allows editing investment amount, units, purchase NAV, purchase date, and notes on existing holdings without creating duplicates.
+  - Two-way interactive calculation: Editing amount calculates units (`Amount / Purchase NAV`), editing units calculates amount (`Units * Purchase NAV`).
+  - Enhanced `AddToProfileDialog`: Added customizable purchase NAV, purchase date picker, and notes for historical purchase entry.
+  - Manual sync button directly in `AssetsScreen` AppBar for rapid on-demand portfolio valuation refresh.
+
+### Testing
+- Added `test/unit/scheme_details_test.dart` (5 tests for parsing, missing metadata, malformed response handling, offline fallback, and endpoint fallback).
+- Added `test/unit/nav_sync_test.dart` (5 tests for individual scheme sync, portfolio-wide sync, duplicate prevention, non-regression date protection, and offline reporting).
+- Added `test/unit/holding_management_test.dart` (5 tests for adding with purchase NAV/date, editing without duplicates, two-way calculations, multiple purchase aggregation, and cross-profile isolation).
+- Added `test/unit/portfolio_valuation_test.dart` (4 tests for current valuation, profit/loss, return %, zero-value handling, and portfolio-wide aggregation).
+- Total test suite expanded to 71 passing tests.
 
 ### Added
 - **Multi-Profile Management & Family Finance UI:**

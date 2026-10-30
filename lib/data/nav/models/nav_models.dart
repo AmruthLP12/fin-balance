@@ -66,9 +66,16 @@ class NavRecord {
     final rawDate = json['date']?.toString() ?? '';
     final rawNav = json['nav']?.toString() ?? '0';
 
+    int microPaise = 0;
+    try {
+      microPaise = FinancialPrecision.navStringToMicroPaise(rawNav);
+    } catch (_) {
+      microPaise = 0;
+    }
+
     return NavRecord(
       date: parseNavDate(rawDate),
-      navMicroPaise: FinancialPrecision.navStringToMicroPaise(rawNav),
+      navMicroPaise: microPaise,
       rawNav: rawNav,
     );
   }
@@ -164,17 +171,29 @@ class MutualFundSchemeDetail {
   });
 
   factory MutualFundSchemeDetail.fromMfApiJson(Map<String, dynamic> json) {
-    final meta = json['meta'] as Map<String, dynamic>? ?? {};
-    final schemeCode = meta['scheme_code'] is int
-        ? meta['scheme_code'] as int
-        : int.tryParse(meta['scheme_code']?.toString() ?? '') ?? 0;
-    final schemeName = meta['scheme_name']?.toString() ?? '';
+    final meta = json['meta'] is Map<String, dynamic>
+        ? json['meta'] as Map<String, dynamic>
+        : (json['meta'] is Map
+            ? Map<String, dynamic>.from(json['meta'] as Map)
+            : <String, dynamic>{});
 
-    final dataList = json['data'] as List<dynamic>? ?? [];
-    final records = dataList
-        .whereType<Map<String, dynamic>>()
-        .map((d) => NavRecord.fromJson(d))
-        .toList();
+    final rawCode = meta['scheme_code'] ?? json['scheme_code'];
+    final schemeCode =
+        rawCode is int ? rawCode : int.tryParse(rawCode?.toString() ?? '') ?? 0;
+
+    final schemeName = meta['scheme_name']?.toString() ??
+        json['scheme_name']?.toString() ??
+        '';
+
+    final dataList = json['data'] is List ? json['data'] as List : <dynamic>[];
+    final records = <NavRecord>[];
+    for (final item in dataList) {
+      if (item is Map<String, dynamic>) {
+        records.add(NavRecord.fromJson(item));
+      } else if (item is Map) {
+        records.add(NavRecord.fromJson(Map<String, dynamic>.from(item)));
+      }
+    }
 
     return MutualFundSchemeDetail(
       schemeCode: schemeCode,
@@ -190,4 +209,70 @@ class MutualFundSchemeDetail {
       navHistory: records,
     );
   }
+
+  MutualFundSchemeDetail copyWith({
+    int? schemeCode,
+    String? schemeName,
+    String? fundHouse,
+    String? schemeType,
+    String? schemeCategory,
+    String? isin,
+    String? planType,
+    String? optionType,
+    NavRecord? latestNav,
+    List<NavRecord>? navHistory,
+  }) {
+    return MutualFundSchemeDetail(
+      schemeCode: schemeCode ?? this.schemeCode,
+      schemeName: schemeName ?? this.schemeName,
+      fundHouse: fundHouse ?? this.fundHouse,
+      schemeType: schemeType ?? this.schemeType,
+      schemeCategory: schemeCategory ?? this.schemeCategory,
+      isin: isin ?? this.isin,
+      planType: planType ?? this.planType,
+      optionType: optionType ?? this.optionType,
+      latestNav: latestNav ?? this.latestNav,
+      navHistory: navHistory ?? this.navHistory,
+    );
+  }
+}
+
+/// Result of synchronizing NAV for a single mutual fund scheme.
+class SchemeNavSyncResult {
+  final int schemeCode;
+  final String schemeName;
+  final bool success;
+  final int? navMicroPaise;
+  final DateTime? navDate;
+  final String? provider;
+  final String? errorMessage;
+
+  const SchemeNavSyncResult({
+    required this.schemeCode,
+    required this.schemeName,
+    required this.success,
+    this.navMicroPaise,
+    this.navDate,
+    this.provider,
+    this.errorMessage,
+  });
+}
+
+/// Summary report returned after synchronizing all tracked portfolio schemes.
+class PortfolioSyncSummary {
+  final int totalSchemes;
+  final int successCount;
+  final int failedCount;
+  final List<SchemeNavSyncResult> results;
+  final DateTime syncTime;
+  final String? primaryProvider;
+
+  const PortfolioSyncSummary({
+    required this.totalSchemes,
+    required this.successCount,
+    required this.failedCount,
+    required this.results,
+    required this.syncTime,
+    this.primaryProvider,
+  });
 }
