@@ -35,7 +35,7 @@ Do not introduce unnecessary technologies.
 
 The following are mandatory:
 
-1. Android-first application.
+1. Android and Flutter Web application.
 2. No backend.
 3. No PostgreSQL.
 4. No Docker.

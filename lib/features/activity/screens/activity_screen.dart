@@ -50,14 +50,18 @@ class ActivityScreen extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      'PROJECTED MONTHLY FLOW',
-                      style: AppTypography.labelSmall.copyWith(
-                        color: isDark
-                            ? AppColors.darkTextMuted
-                            : AppColors.lightTextMuted,
-                        letterSpacing: 0.8,
-                        fontWeight: FontWeight.w600,
+                    Expanded(
+                      child: Text(
+                        'PROJECTED MONTHLY FLOW',
+                        style: AppTypography.labelSmall.copyWith(
+                          color: isDark
+                              ? AppColors.darkTextMuted
+                              : AppColors.lightTextMuted,
+                          letterSpacing: 0.8,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     const StatusBadge(

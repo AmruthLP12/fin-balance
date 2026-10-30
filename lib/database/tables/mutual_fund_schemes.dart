@@ -50,4 +50,3 @@ class MutualFundSchemes extends Table {
   @override
   Set<Column> get primaryKey => {schemeCode};
 }
-

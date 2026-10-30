@@ -210,20 +210,45 @@ class _AddToProfileDialogState extends ConsumerState<AddToProfileDialog> {
         navMicroPaise: navMicro,
       );
 
-      // 2. Insert into FinancialItems
-      final itemId = await itemsDao.insertItem(
-        FinancialItemsCompanion(
-          profileId: drift.Value(profileId),
-          name: drift.Value(widget.scheme.schemeName),
-          itemType: const drift.Value('asset'),
-          subType: const drift.Value('mutual_fund'),
-          categoryId: drift.Value(mfCategory.id),
-          externalCode: drift.Value(widget.scheme.schemeCode.toString()),
-          initialValuePaise: drift.Value(amountPaise),
-          currentValuationPaise: drift.Value(valuationPaise),
-          unitCountMicroUnits: drift.Value(unitsMicro),
-        ),
+      // 2. Check if this profile already holds this mutual fund scheme
+      final existingItem = await itemsDao.getItemByExternalCode(
+        profileId,
+        widget.scheme.schemeCode.toString(),
       );
+
+      int itemId;
+      if (existingItem != null) {
+        final newUnitsMicro = existingItem.unitCountMicroUnits + unitsMicro;
+        final newInitialPaise = existingItem.initialValuePaise + amountPaise;
+        final newValuationPaise = FinancialPrecision.calculateValuationPaise(
+          unitCountMicroUnits: newUnitsMicro,
+          navMicroPaise: navMicro,
+        );
+
+        await itemsDao.updateItem(
+          existingItem.copyWith(
+            initialValuePaise: newInitialPaise,
+            currentValuationPaise: newValuationPaise,
+            unitCountMicroUnits: newUnitsMicro,
+            updatedAt: DateTime.now().toUtc(),
+          ),
+        );
+        itemId = existingItem.id;
+      } else {
+        itemId = await itemsDao.insertItem(
+          FinancialItemsCompanion(
+            profileId: drift.Value(profileId),
+            name: drift.Value(widget.scheme.schemeName),
+            itemType: const drift.Value('asset'),
+            subType: const drift.Value('mutual_fund'),
+            categoryId: drift.Value(mfCategory.id),
+            externalCode: drift.Value(widget.scheme.schemeCode.toString()),
+            initialValuePaise: drift.Value(amountPaise),
+            currentValuationPaise: drift.Value(valuationPaise),
+            unitCountMicroUnits: drift.Value(unitsMicro),
+          ),
+        );
+      }
 
       // 3. Insert transaction record if amount > 0
       if (amountPaise > 0) {

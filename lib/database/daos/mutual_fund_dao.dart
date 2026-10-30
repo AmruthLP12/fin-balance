@@ -225,4 +225,3 @@ class MutualFundDao extends DatabaseAccessor<AppDatabase>
     return updatedCount;
   }
 }
-

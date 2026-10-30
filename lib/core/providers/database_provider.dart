@@ -99,6 +99,12 @@ final allProfilesProvider = StreamProvider<List<FinancialProfile>>((ref) {
   return ref.watch(profilesDaoProvider).watchAllProfiles();
 });
 
+/// Stream provider for all profiles including archived ones (for Profile Management).
+final allProfilesWithArchivedProvider =
+    StreamProvider<List<FinancialProfile>>((ref) {
+  return ref.watch(profilesDaoProvider).watchAllProfiles(includeArchived: true);
+});
+
 /// Stream provider for the currently selected active profile object.
 final activeProfileProvider = StreamProvider<FinancialProfile?>((ref) {
   final activeId = ref.watch(activeProfileIdProvider);

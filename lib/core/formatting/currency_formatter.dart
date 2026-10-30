@@ -30,6 +30,11 @@ class CurrencyFormatter {
     return '$symbol${amount.toStringAsFixed(2)}';
   }
 
+  /// Format integer paise as currency: formatPaise(1000000) -> ₹10,000.00
+  static String formatPaise(int paise, {String symbol = '₹'}) {
+    return format(paise / 100.0, symbol: symbol);
+  }
+
   /// Format as whole currency without paise: ₹1,50,000
   static String formatWhole(double amount, {String symbol = '₹'}) {
     if (symbol == '₹') {

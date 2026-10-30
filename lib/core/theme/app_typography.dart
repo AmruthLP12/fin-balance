@@ -45,6 +45,8 @@ class AppTypography {
   );
 
   // Body & Titles
+  static const TextStyle titleLarge = headlineMedium;
+
   static const TextStyle titleMedium = TextStyle(
     fontSize: 16.0,
     fontWeight: FontWeight.w600,
@@ -65,6 +67,8 @@ class AppTypography {
     letterSpacing: 0.0,
     height: 1.45,
   );
+
+  static const TextStyle bodySmall = labelMedium;
 
   // Labels & Captions
   static const TextStyle labelMedium = TextStyle(
@@ -97,6 +101,8 @@ class AppTypography {
     height: 1.25,
     fontFeatures: tabularFigures,
   );
+
+  static const TextStyle amountMedium = cardAmount;
 
   static TextTheme createTextTheme(Color primaryColor, Color secondaryColor) {
     return TextTheme(

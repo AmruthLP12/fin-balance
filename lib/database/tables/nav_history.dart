@@ -27,4 +27,3 @@ class NavHistory extends Table {
         {schemeCode, navDate},
       ];
 }
-

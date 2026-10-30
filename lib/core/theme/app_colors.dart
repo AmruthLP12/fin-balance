@@ -28,6 +28,7 @@ class AppColors {
   static const Color liabilityBackgroundLight = Color(0xFFFFE4E6);
 
   static const Color scheduled = Color(0xFFF59E0B); // Amber (Pending / SIP)
+  static const Color warning = scheduled;
   static const Color scheduledBackgroundDark = Color(0xFF451A03);
   static const Color scheduledBackgroundLight = Color(0xFFFEF3C7);
 

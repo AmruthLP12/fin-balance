@@ -23,4 +23,3 @@ abstract class NavProvider {
   /// Fetch only the latest NAV record for a scheme
   Future<NavRecord?> getLatestNav(int schemeCode);
 }
-

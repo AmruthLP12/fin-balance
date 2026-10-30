@@ -6,6 +6,7 @@ import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/fin_card.dart';
 import '../../../core/widgets/section_header.dart';
 import '../../../core/widgets/status_badge.dart';
+import '../../profile/screens/profile_management_screen.dart';
 
 /// Settings screen for managing application preferences, backup, and sync.
 class SettingsScreen extends StatefulWidget {
@@ -68,6 +69,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                     ],
                   ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+
+          // Family Profiles
+          const SectionHeader(title: 'Family Profiles'),
+          FinCard(
+            padding: EdgeInsets.zero,
+            child: Column(
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.people_alt_outlined),
+                  title: const Text('Manage Family Profiles',
+                      style: AppTypography.titleMedium),
+                  subtitle: const Text(
+                    'Configure family members, switch profiles, set defaults',
+                    style: AppTypography.bodyMedium,
+                  ),
+                  trailing: const Icon(Icons.chevron_right_rounded),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const ProfileManagementScreen(),
+                      ),
+                    );
+                  },
                 ),
               ],
             ),

@@ -28,21 +28,26 @@ class SectionHeader extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Row(
-            children: [
-              Text(
-                title,
-                style: AppTypography.headlineMedium.copyWith(
-                  color: isDark
-                      ? AppColors.darkTextPrimary
-                      : AppColors.lightTextPrimary,
+          Expanded(
+            child: Row(
+              children: [
+                Flexible(
+                  child: Text(
+                    title,
+                    style: AppTypography.headlineMedium.copyWith(
+                      color: isDark
+                          ? AppColors.darkTextPrimary
+                          : AppColors.lightTextPrimary,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
-              ),
-              if (badge != null) ...[
-                const SizedBox(width: AppSpacing.sm),
-                badge!,
+                if (badge != null) ...[
+                  const SizedBox(width: AppSpacing.sm),
+                  badge!,
+                ],
               ],
-            ],
+            ),
           ),
           if (actionLabel != null && onActionTap != null)
             InkWell(

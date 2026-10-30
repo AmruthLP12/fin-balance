@@ -1,13 +1,33 @@
+import 'package:drift/native.dart';
+import 'package:finbalance/app.dart';
+import 'package:finbalance/core/providers/database_provider.dart';
+import 'package:finbalance/database/app_database.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:finbalance/app.dart';
 
 void main() {
+  late AppDatabase db;
+
+  setUp(() async {
+    db = AppDatabase(NativeDatabase.memory());
+  });
+
+  tearDown(() async {
+    await db.close();
+  });
+
   testWidgets('FinBalance app boots and displays 5 navigation destinations',
       (tester) async {
+    await tester.binding.setSurfaceSize(const Size(500, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
     await tester.pumpWidget(
-      const ProviderScope(
-        child: FinBalanceApp(),
+      ProviderScope(
+        overrides: [
+          databaseProvider.overrideWithValue(db),
+        ],
+        child: const FinBalanceApp(),
       ),
     );
     await tester.pumpAndSettle();
@@ -23,7 +43,7 @@ void main() {
     expect(find.text('Settings'), findsOneWidget);
 
     // Verify Overview default content
-    expect(find.text('TOTAL NET WORTH'), findsOneWidget);
+    expect(find.textContaining('NET WORTH'), findsOneWidget);
     expect(find.text('Total Assets'), findsOneWidget);
     expect(find.text('Total Liabilities'), findsOneWidget);
 
@@ -46,5 +66,9 @@ void main() {
     await tester.tap(find.text('Settings'));
     await tester.pumpAndSettle();
     expect(find.text('Settings & Privacy'), findsOneWidget);
+
+    // Dispose widget tree and allow stream cancellation timers to complete
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(milliseconds: 100));
   });
 }

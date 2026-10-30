@@ -5,6 +5,31 @@ All notable changes to the FinBalance application will be documented in this fil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.1] - 2026-10-30
+
+### Added
+- **Multi-Profile Management & Family Finance UI:**
+  - `ProfileFormDialog`: Create and edit family members with name, relationship picker (Self, Spouse, Father, Mother, Child, Other), color avatar palette, optional description, and default profile toggle.
+  - `ProfileSelectorButton`: Interactive, accessible header button in AppBar showing active profile avatar, name, and relationship badge.
+  - `ProfileSwitcherSheet`: Bottom sheet displaying all available profiles with one-tap switching and persistence in local settings.
+  - `ProfileManagementScreen`: Dedicated screen to view, edit, archive/restore, and change the default profile.
+  - Accidental deletion protection: Enforced `hasFinancialHistory` check preventing permanent deletion of profiles with existing assets, accounts, or transactions, offering safe Archiving instead.
+  - Cross-profile data isolation: Verified that switching profiles dynamically recalibrates `OverviewScreen`, `AssetsScreen`, and all dependent providers with zero stale data leakage.
+- **Mutual Fund Holdings Reactive Management:**
+  - `AssetsScreen` fully wired to `activeProfileAssetsProvider` with dynamic summary metrics (Total Asset Value, Invested Value, Gain/Loss, Returns %).
+  - Category filter chips (`All`, `Mutual Funds`, `Stocks & ETFs`, `Fixed Deposits`, `Gold`, `Retirement`).
+  - `HoldingCard`: Displays current value, invested value, gains, units, average cost, and options menu to remove or inspect holdings.
+  - Enhanced `AddToProfileDialog` to check for existing holdings and aggregate additional purchases into the same scheme without duplicate records.
+- **Flutter Web Support & Responsive UI:**
+  - Configured `DriftWebOptions` with `sqlite3.wasm` and `drift_worker.js` for SQLite Wasm execution in browsers via OPFS and IndexedDB.
+  - Responsive `MainScaffold`: Automatically adapts navigation layout using a side `NavigationRail` for desktop/tablet screens (>= 720px) and a bottom `NavigationBar` on mobile screens.
+  - Updated web scaffolding (`index.html`, `manifest.json`) with official FinBalance branding.
+  - Updated `Makefile` with `make build-web` and `make run-web`.
+- **Testing:**
+  - Added `test/database/profile_management_test.dart` (6 tests for profile creation, editing, default selection, archiving, financial history protection, and multi-profile data isolation).
+  - Added `test/unit/mutual_fund_holdings_test.dart` (2 tests for profile-scoped holdings addition, cross-profile isolation, and multi-purchase holding aggregation).
+  - Cleaned up widget smoke tests with proper in-memory database setup (52 total passing tests).
+
 ## [0.3.0] - 2026-10-30
 
 ### Added

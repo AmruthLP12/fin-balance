@@ -409,3 +409,23 @@ Widget tests:
 - Investment lists.
 - Transaction forms.
 - Analytics.
+
+---
+
+## 16. Multi-Profile Management, Holdings Workflow & Flutter Web Architecture
+
+### 16.1 Profile Lifecycle & Family Finance
+- **Profile Creation & Customization:** `ProfileFormDialog` handles person name, relationship mapping, avatar color palette, notes, and default flag.
+- **Fast Profile Switcher:** `ProfileSelectorButton` in the AppBar opens `ProfileSwitcherSheet` for immediate profile switching.
+- **Profile Management:** `ProfileManagementScreen` enables editing, archiving, restoring, and default designating. Profiles with recorded financial data (`hasFinancialHistory`) cannot be deleted, preventing accidental record loss.
+- **Strict Data Isolation:** All financial queries are scoped to `activeProfileIdProvider`. Changing profiles triggers immediate reactive updates across Overview, Assets, and all child widgets.
+
+### 16.2 Mutual Fund Holdings & Portfolio Reactive Flow
+- **Holding Management:** `AddToProfileDialog` calculates purchased units using published NAV, saves the asset in `FinancialItems` for the active profile, and records an initial ledger purchase in `Transactions`. Subsequent purchases in the same fund aggregate into the existing holding.
+- **Real-Time Display:** `AssetsScreen` watches `activeProfileAssetsProvider` and displays `HoldingCard` items with live current valuation, invested amount, and gain/loss metrics.
+
+### 16.3 Dual-Platform Drift Persistence (Android & Web)
+- **Native Android:** SQLite connection via `drift_flutter` with cross-isolate sharing (`DriftNativeOptions`).
+- **Flutter Web:** SQLite3 WebAssembly (`sqlite3.wasm`) execution with dedicated worker (`drift_worker.js`) via `driftDatabase`'s `DriftWebOptions`.
+- **Responsive Layout:** Responsive `MainScaffold` renders a `NavigationRail` for wide viewports (>= 720px) and a bottom `NavigationBar` on mobile viewports.
+

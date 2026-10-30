@@ -133,6 +133,30 @@ class ProfilesDao extends DatabaseAccessor<AppDatabase>
     return (delete(financialProfiles)..where((tbl) => tbl.id.equals(id))).go();
   }
 
+  /// Check if a profile has existing financial items, accounts, or transactions.
+  Future<bool> hasFinancialHistory(int profileId) async {
+    final itemsCount = await (db.selectOnly(db.financialItems)
+          ..where(db.financialItems.profileId.equals(profileId))
+          ..addColumns([countAll()]))
+        .map((row) => row.read(countAll()) ?? 0)
+        .getSingle();
+    if (itemsCount > 0) return true;
+
+    final txCount = await (db.selectOnly(db.transactions)
+          ..where(db.transactions.profileId.equals(profileId))
+          ..addColumns([countAll()]))
+        .map((row) => row.read(countAll()) ?? 0)
+        .getSingle();
+    if (txCount > 0) return true;
+
+    final accCount = await (db.selectOnly(db.financialAccounts)
+          ..where(db.financialAccounts.profileId.equals(profileId))
+          ..addColumns([countAll()]))
+        .map((row) => row.read(countAll()) ?? 0)
+        .getSingle();
+    return accCount > 0;
+  }
+
   /// Count active profiles.
   Future<int> countActiveProfiles() async {
     final count = countAll();

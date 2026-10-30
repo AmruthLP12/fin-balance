@@ -1,8 +1,8 @@
 # FinBalance — Project Documentation
 
-**Project type:** Offline-first Android application  
+**Project type:** Offline-first personal finance application  
 **Working name:** FinBalance  
-**Platform:** Android  
+**Platform:** Android, Web  
 **Technology:** Flutter + Dart  
 **Database:** SQLite using Drift  
 **Architecture:** Local-first, feature-oriented architecture  

@@ -1,22 +1,44 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/formatting/currency_formatter.dart';
+import '../../../core/providers/database_provider.dart';
+import '../../../core/providers/nav_providers.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/widgets/empty_state_view.dart';
 import '../../../core/widgets/fin_card.dart';
 import '../../../core/widgets/section_header.dart';
 import '../../../core/widgets/stat_card.dart';
 import '../../../core/widgets/status_badge.dart';
+import '../../assets/screens/mutual_fund_search_screen.dart';
+import '../../profile/widgets/profile_selector_button.dart';
 
-/// FinBalance Overview / Net Worth Dashboard.
-class OverviewScreen extends StatelessWidget {
+/// FinBalance Overview / Net Worth Dashboard dynamically scoped to active financial profile.
+class OverviewScreen extends ConsumerWidget {
   const OverviewScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+
+    final activeProfileAsync = ref.watch(activeProfileProvider);
+    final assetsAsync = ref.watch(activeProfileAssetsProvider);
+    final liabilitiesAsync = ref.watch(activeProfileLiabilitiesProvider);
+
+    final profile = activeProfileAsync.value;
+    final profileName = profile?.name ?? 'My Profile';
+
+    final assets = assetsAsync.value ?? [];
+    final liabilities = liabilitiesAsync.value ?? [];
+
+    final totalAssetsPaise =
+        assets.fold<int>(0, (sum, a) => sum + a.currentValuationPaise);
+    final totalLiabilitiesPaise =
+        liabilities.fold<int>(0, (sum, l) => sum + l.currentValuationPaise);
+    final netWorthPaise = totalAssetsPaise - totalLiabilitiesPaise;
 
     return Scaffold(
       appBar: AppBar(
@@ -39,19 +61,13 @@ class OverviewScreen extends StatelessWidget {
           ],
         ),
         actions: [
+          const ProfileSelectorButton(),
           IconButton(
             icon: const Icon(Icons.sync_rounded),
-            tooltip: 'Sync NAV',
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text(
-                      'NAV synchronization will be enabled in Milestone 3'),
-                  duration: Duration(seconds: 2),
-                ),
-              );
-            },
+            tooltip: 'Sync NAVs',
+            onPressed: () => _triggerNavSync(context, ref),
           ),
+          const SizedBox(width: AppSpacing.xs),
         ],
       ),
       body: ListView(
@@ -67,16 +83,21 @@ class OverviewScreen extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      'TOTAL NET WORTH',
-                      style: AppTypography.labelSmall.copyWith(
-                        color: isDark
-                            ? AppColors.darkTextMuted
-                            : AppColors.lightTextMuted,
-                        letterSpacing: 1.0,
-                        fontWeight: FontWeight.w700,
+                    Expanded(
+                      child: Text(
+                        '$profileName’s NET WORTH'.toUpperCase(),
+                        style: AppTypography.labelSmall.copyWith(
+                          color: isDark
+                              ? AppColors.darkTextMuted
+                              : AppColors.lightTextMuted,
+                          letterSpacing: 1.0,
+                          fontWeight: FontWeight.w700,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
+                    const SizedBox(width: AppSpacing.xs),
                     const StatusBadge(
                       label: '100% Offline',
                       type: BadgeType.neutral,
@@ -86,7 +107,7 @@ class OverviewScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 Text(
-                  CurrencyFormatter.format(0.0),
+                  CurrencyFormatter.formatPaise(netWorthPaise),
                   style: AppTypography.heroAmount.copyWith(
                     color: isDark
                         ? AppColors.darkTextPrimary
@@ -113,20 +134,23 @@ class OverviewScreen extends StatelessWidget {
                                 ),
                               ),
                               const SizedBox(width: 6),
-                              Text(
-                                'Total Assets',
-                                style: AppTypography.labelSmall.copyWith(
-                                  color: isDark
-                                      ? AppColors.darkTextSecondary
-                                      : AppColors.lightTextSecondary,
+                              Flexible(
+                                child: Text(
+                                  'Total Assets',
+                                  style: AppTypography.labelSmall.copyWith(
+                                    color: isDark
+                                        ? AppColors.darkTextSecondary
+                                        : AppColors.lightTextSecondary,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 2),
+                          const SizedBox(height: 4),
                           Text(
-                            CurrencyFormatter.format(0.0),
-                            style: AppTypography.titleMedium.copyWith(
+                            CurrencyFormatter.formatPaise(totalAssetsPaise),
+                            style: AppTypography.amountMedium.copyWith(
                               color: AppColors.asset,
                               fontWeight: FontWeight.w700,
                             ),
@@ -134,13 +158,6 @@ class OverviewScreen extends StatelessWidget {
                         ],
                       ),
                     ),
-                    Container(
-                      width: 1,
-                      height: 32,
-                      color:
-                          isDark ? AppColors.darkBorder : AppColors.lightBorder,
-                    ),
-                    const SizedBox(width: AppSpacing.md),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -156,20 +173,24 @@ class OverviewScreen extends StatelessWidget {
                                 ),
                               ),
                               const SizedBox(width: 6),
-                              Text(
-                                'Total Liabilities',
-                                style: AppTypography.labelSmall.copyWith(
-                                  color: isDark
-                                      ? AppColors.darkTextSecondary
-                                      : AppColors.lightTextSecondary,
+                              Flexible(
+                                child: Text(
+                                  'Total Liabilities',
+                                  style: AppTypography.labelSmall.copyWith(
+                                    color: isDark
+                                        ? AppColors.darkTextSecondary
+                                        : AppColors.lightTextSecondary,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 2),
+                          const SizedBox(height: 4),
                           Text(
-                            CurrencyFormatter.format(0.0),
-                            style: AppTypography.titleMedium.copyWith(
+                            CurrencyFormatter.formatPaise(
+                                totalLiabilitiesPaise),
+                            style: AppTypography.amountMedium.copyWith(
                               color: AppColors.liability,
                               fontWeight: FontWeight.w700,
                             ),
@@ -184,73 +205,134 @@ class OverviewScreen extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.lg),
 
-          // Monthly Commitments Row
-          const SectionHeader(title: 'Monthly Commitments'),
+          // Quick Stats Grid
           Row(
             children: [
               Expanded(
                 child: StatCard(
-                  label: 'Active SIPs',
-                  value: CurrencyFormatter.formatWhole(0.0),
-                  subtitle: '0 funds scheduled',
-                  icon: Icons.trending_up_rounded,
+                  label: 'Active Assets',
+                  value: CurrencyFormatter.formatPaise(totalAssetsPaise),
+                  subtitle: '${assets.length} items tracked',
                   accentColor: AppColors.asset,
+                  icon: Icons.trending_up_rounded,
                 ),
               ),
               const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: StatCard(
-                  label: 'Loan EMIs',
-                  value: CurrencyFormatter.formatWhole(0.0),
-                  subtitle: '0 obligations active',
-                  icon: Icons.credit_card_rounded,
+                  label: 'Liabilities',
+                  value: CurrencyFormatter.formatPaise(totalLiabilitiesPaise),
+                  subtitle: '${liabilities.length} items',
                   accentColor: AppColors.liability,
+                  icon: Icons.credit_card_rounded,
                 ),
               ),
             ],
           ),
           const SizedBox(height: AppSpacing.lg),
 
-          // Recent Activity Section
-          const SectionHeader(title: 'Recent Activity'),
-          FinCard(
-            padding: const EdgeInsets.symmetric(
-                vertical: AppSpacing.xxl, horizontal: AppSpacing.lg),
-            child: Center(
-              child: Column(
-                children: [
-                  Icon(
-                    Icons.receipt_long_outlined,
-                    size: 32,
-                    color: isDark
-                        ? AppColors.darkTextMuted
-                        : AppColors.lightTextMuted,
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  Text(
-                    'No financial records yet',
-                    style: AppTypography.titleMedium.copyWith(
-                      color: isDark
-                          ? AppColors.darkTextPrimary
-                          : AppColors.lightTextPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Your simulated SIPs, mutual funds, and liabilities will appear here.',
-                    style: AppTypography.bodyMedium.copyWith(
-                      color: isDark
-                          ? AppColors.darkTextMuted
-                          : AppColors.lightTextMuted,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-            ),
+          // Portfolio Breakdown / Recent Holdings Section
+          SectionHeader(
+            title: '$profileName’s Holdings',
+            actionLabel: 'Search Schemes',
+            onActionTap: () => _openSearch(context),
           ),
+          const SizedBox(height: AppSpacing.sm),
+
+          if (assets.isEmpty)
+            EmptyStateView(
+              icon: Icons.account_balance_wallet_outlined,
+              title: 'No Assets in $profileName’s Balance Sheet',
+              description:
+                  'Search Indian mutual funds or add holdings to calculate $profileName’s verified net worth.',
+              actionLabel: 'Search Mutual Funds',
+              onAction: () => _openSearch(context),
+            )
+          else
+            ...assets.take(5).map((item) => Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                  child: FinCard(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                item.name,
+                                style: AppTypography.titleMedium
+                                    .copyWith(fontWeight: FontWeight.bold),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Invested: ${CurrencyFormatter.formatPaise(item.initialValuePaise)}',
+                                style: AppTypography.bodySmall.copyWith(
+                                  color: isDark
+                                      ? AppColors.darkTextMuted
+                                      : AppColors.lightTextMuted,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Text(
+                          CurrencyFormatter.formatPaise(
+                              item.currentValuationPaise),
+                          style: AppTypography.cardAmount.copyWith(
+                            color: AppColors.asset,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                )),
         ],
       ),
     );
+  }
+
+  void _openSearch(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => const MutualFundSearchScreen(),
+      ),
+    );
+  }
+
+  Future<void> _triggerNavSync(BuildContext context, WidgetRef ref) async {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Checking latest NAV quotes across providers...'),
+        duration: Duration(seconds: 1),
+      ),
+    );
+
+    try {
+      final syncService = ref.read(navSyncServiceProvider);
+      final synced = await syncService.syncAllPortfolioSchemes();
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(synced > 0
+                ? 'Updated NAV and valuation for $synced holdings!'
+                : 'All NAVs are currently up to date.'),
+            backgroundColor: AppColors.asset,
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('NAV sync completed with notice: $e'),
+          ),
+        );
+      }
+    }
   }
 }

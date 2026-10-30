@@ -424,3 +424,25 @@ Import must validate:
 - Duplicate identifiers.
 
 Never silently overwrite existing investment records.
+
+---
+
+## 12. Multi-Profile Management, Holdings Workflow & Flutter Web Support
+
+### 12.1 End-to-End Profile Management
+FinBalance provides complete family finance lifecycle management:
+- **Creation:** `ProfileFormDialog` captures person name, relationship (`self`, `spouse`, `father`, `mother`, `child`, `other`), color swatch for avatar tinting, optional description notes, and a default profile indicator.
+- **Fast Profile Switching:** Accessible header button (`ProfileSelectorButton`) in AppBar opens `ProfileSwitcherSheet`, allowing immediate switching between family members with persistent storage of the active profile ID in `app_settings`.
+- **Management & Deletion Protection:** `ProfileManagementScreen` enables full editing, default toggling, and soft archiving. Permanent deletion is strictly guarded by `hasFinancialHistory(profileId)` to prevent loss of historical financial records and audit integrity.
+- **Reactive Data Isolation:** Providers (`activeProfileAssetsProvider`, `activeProfileLiabilitiesProvider`, `activeProfileTransactionsProvider`, etc.) watch `activeProfileIdProvider`. Switching profiles synchronously recalculates Net Worth, Total Assets, Total Liabilities, and Holdings across all screens without data leakage.
+
+### 12.2 Mutual Fund Holdings & Portfolio Integration
+- **Holding vs. Watchlist:** Favourites in `MutualFundSchemes` represent global watchlist data. Holdings in `FinancialItems` represent verified financial assets belonging to a specific profile with `profile_id`, `unitCountMicroUnits`, `initialValuePaise`, and `currentValuationPaise`.
+- **Holding Creation & Top-up:** `AddToProfileDialog` calculates exact units or amount from published NAV. If the scheme is already held by the profile, additional purchases aggregate into the existing holding and append an `investment_purchase` ledger record in `Transactions`.
+- **Live Reactive Display:** `AssetsScreen` displays profile-specific holdings using `HoldingCard`, including category filtering, invested amount, current valuation, and gain/loss in INR and percentage.
+
+### 12.3 Flutter Web & Dual-Platform Drift Strategy
+- **Native Android:** SQLite accessed via `drift_flutter` with isolate sharing (`DriftNativeOptions(shareAcrossIsolates: true)`).
+- **Flutter Web:** SQLite accessed via WebAssembly (`drift/wasm.dart`) configured with `DriftWebOptions(sqlite3Wasm: Uri.parse('sqlite3.wasm'), driftWorker: Uri.parse('drift_worker.js'))`. Storage uses browser Origin Private File System (OPFS) with IndexedDB fallback.
+- **Responsive Layout:** `MainScaffold` dynamically renders a `NavigationRail` with max-width content constraints on desktop/tablet viewports (>= 720px) and a bottom `NavigationBar` on mobile viewports.
+

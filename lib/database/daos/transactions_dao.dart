@@ -21,6 +21,18 @@ class TransactionsDao extends DatabaseAccessor<AppDatabase>
         .watch();
   }
 
+  /// Get recent transactions for a specific profile.
+  Future<List<Transaction>> getRecentTransactionsForProfile(
+    int profileId, {
+    int limit = 50,
+  }) {
+    return (select(transactions)
+          ..where((tbl) => tbl.profileId.equals(profileId))
+          ..orderBy([(t) => OrderingTerm.desc(t.transactionDate)])
+          ..limit(limit))
+        .get();
+  }
+
   /// Watch household recent transactions across all profiles.
   Stream<List<Transaction>> watchHouseholdRecentTransactions({int limit = 50}) {
     return (select(transactions)
