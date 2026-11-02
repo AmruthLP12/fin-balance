@@ -1,7 +1,6 @@
 import 'package:drift/native.dart';
 import 'package:finbalance/app.dart';
 import 'package:finbalance/core/providers/database_provider.dart';
-import 'package:finbalance/core/widgets/return_to_profiles_button.dart';
 import 'package:finbalance/database/app_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -75,7 +74,7 @@ void main() {
     });
 
     testWidgets(
-        'ReturnToProfilesButton resets initial selection and returns to profile picker',
+        'Clickable logo header resets initial selection and returns to profile picker',
         (tester) async {
       await tester.binding.setSurfaceSize(const Size(500, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -99,16 +98,16 @@ void main() {
       // Verify dashboard is showing
       expect(find.text('Overview'), findsOneWidget);
 
-      // Find and tap the ReturnToProfilesButton (switch_account_rounded icon)
-      final returnButton = find.byType(ReturnToProfilesButton);
-      expect(returnButton, findsWidgets);
+      // Find and tap the clickable logo header with Switch Family Profile tooltip
+      final logoButton = find.byTooltip('Switch Family Profile');
+      expect(logoButton, findsWidgets);
 
-      await tester.tap(returnButton.first);
+      await tester.tap(logoButton.first);
       await tester.pumpAndSettle();
 
       // Verify returned to Profile Selection screen
       expect(container.read(hasSelectedInitialProfileProvider), isFalse);
-      expect(find.text('Select a profile to continue'), findsOneWidget);
+      expect(find.text('Family-Wide Financial Overview'), findsOneWidget);
 
       // Clean disposal
       await tester.pumpWidget(const SizedBox());

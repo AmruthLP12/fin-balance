@@ -8,9 +8,10 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/empty_state_view.dart';
 import '../../../core/widgets/fin_card.dart';
-import '../../../core/widgets/return_to_profiles_button.dart';
+import '../../../core/widgets/finbalance_logo.dart';
 import '../../../core/widgets/status_badge.dart';
 import '../../../database/app_database.dart';
+import '../../profile/widgets/profile_avatar.dart';
 
 /// Unified Activity Ledger and Cash Flow Analysis Screen.
 ///
@@ -63,8 +64,39 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen>
 
     return Scaffold(
       appBar: AppBar(
-        leading: const ReturnToProfilesButton(),
-        title: const Text('Activity & Cash Flow'),
+        automaticallyImplyLeading: false,
+        title: Tooltip(
+          message: 'Switch Family Profile',
+          child: InkWell(
+            borderRadius: BorderRadius.circular(8),
+            onTap: () {
+              ref.read(hasSelectedInitialProfileProvider.notifier).state =
+                  false;
+            },
+            child: const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+              child:
+                  FinBalanceLogo(size: 28, showText: true, showTagline: false),
+            ),
+          ),
+        ),
+        actions: [
+          Tooltip(
+            message: 'Switch Family Profile',
+            child: InkWell(
+              borderRadius: BorderRadius.circular(20),
+              onTap: () {
+                ref.read(hasSelectedInitialProfileProvider.notifier).state =
+                    false;
+              },
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: ProfileAvatar.active(radius: 16),
+              ),
+            ),
+          ),
+          const SizedBox(width: AppSpacing.xs),
+        ],
         bottom: TabBar(
           controller: _tabController,
           labelColor:
@@ -823,8 +855,10 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen>
         // Calculate Cash Flow metrics
         int incomePaise = 0;
         int expensePaise = 0;
+        int investmentOutflowPaise = 0;
         final incomeByCategory = <int, int>{};
         final expenseByCategory = <int, int>{};
+        final investmentByCategory = <int, int>{};
 
         for (final txn in cashFlowTxns) {
           if (txn.transactionType == 'income') {
@@ -835,12 +869,17 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen>
             expensePaise += txn.amountPaise;
             expenseByCategory[txn.categoryId] =
                 (expenseByCategory[txn.categoryId] ?? 0) + txn.amountPaise;
+          } else if (txn.transactionType == 'investment_purchase') {
+            investmentOutflowPaise += txn.amountPaise;
+            investmentByCategory[txn.categoryId] =
+                (investmentByCategory[txn.categoryId] ?? 0) + txn.amountPaise;
           }
         }
 
-        final netCashFlowPaise = incomePaise - expensePaise;
+        final totalOutflowPaise = expensePaise + investmentOutflowPaise;
+        final netCashFlowPaise = incomePaise - totalOutflowPaise;
         final savingsRate = incomePaise > 0
-            ? ((incomePaise - expensePaise) / incomePaise * 100)
+            ? (((incomePaise - expensePaise) / incomePaise) * 100)
                 .clamp(-100.0, 100.0)
             : 0.0;
 
@@ -905,7 +944,7 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen>
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'NET CASH FLOW',
+                        'NET CASH MOVEMENT',
                         style: AppTypography.labelSmall.copyWith(
                           color: isDark
                               ? AppColors.darkTextMuted
@@ -976,7 +1015,7 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen>
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              CurrencyFormatter.formatPaise(expensePaise),
+                              CurrencyFormatter.formatPaise(totalOutflowPaise),
                               style: AppTypography.titleMedium.copyWith(
                                 fontWeight: FontWeight.bold,
                                 color: AppColors.liability,
@@ -987,8 +1026,77 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen>
                       ),
                     ],
                   ),
+                  const SizedBox(height: AppSpacing.sm),
+                  const Divider(),
+                  const SizedBox(height: AppSpacing.sm),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Expenses',
+                              style: AppTypography.labelSmall.copyWith(
+                                color: isDark
+                                    ? AppColors.darkTextMuted
+                                    : AppColors.lightTextMuted,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              CurrencyFormatter.formatPaise(expensePaise),
+                              style: AppTypography.bodyMedium.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: isDark
+                                    ? AppColors.darkTextSecondary
+                                    : AppColors.lightTextSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Investments (SIPs)',
+                              style: AppTypography.labelSmall.copyWith(
+                                color: isDark
+                                    ? AppColors.darkTextMuted
+                                    : AppColors.lightTextMuted,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              CurrencyFormatter.formatPaise(
+                                  investmentOutflowPaise),
+                              style: AppTypography.bodyMedium.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.brandPrimaryLight,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+
+            // Investment Outflow Section (SIPs and Mutual Fund purchases)
+            _buildBreakdownSection(
+              title: 'Investment Outflows (SIPs & Purchases)',
+              emptyMessage:
+                  'No investment purchases or SIP installments recorded in this period.',
+              byCategory: investmentByCategory,
+              categoriesMap: categoriesMap,
+              totalPaise: investmentOutflowPaise,
+              indicatorColor: AppColors.brandPrimaryLight,
+              isDark: isDark,
             ),
             const SizedBox(height: AppSpacing.lg),
 
@@ -1088,12 +1196,15 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                title,
-                style: AppTypography.titleMedium.copyWith(
-                  fontWeight: FontWeight.bold,
+              Expanded(
+                child: Text(
+                  title,
+                  style: AppTypography.titleMedium.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
+              const SizedBox(width: AppSpacing.sm),
               Text(
                 CurrencyFormatter.formatPaise(totalPaise),
                 style: AppTypography.titleMedium.copyWith(

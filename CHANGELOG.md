@@ -5,6 +5,45 @@ All notable changes to the FinBalance application will be documented in this fil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-11-02
+
+### Added
+- **Family-Wide Financial Overview on Profile Selection (`ProfileSelectionScreen`):**
+  - Redesigned opening startup/profile switching screen with a top family-wide financial overview card aggregating Total Family Assets, Liabilities (`₹0 • Upcoming`), and Family Net Worth ($Assets - Liabilities$) across all member profiles.
+  - Replaced redundant "Quick Continue as" card and "Last Used" / "Default" badges with clean, scannable profile cards showing initials avatar, display name, relationship label, profile assets, liabilities, and profile net worth.
+  - Completely removed unnecessary top-right close `X` icon to preserve navigation hierarchy.
+- **Global Android Back Navigation Flow (`MainScaffold`):**
+  - Integrated `PopScope` on `MainScaffold` ensuring Android Back switches to Overview (tab 0) before returning to the Profile Selection screen.
+  - Preserved standard stack popping from nested modals, search, holding details, and settings back to previous screens; only root profile selection screen permits platform app exit.
+- **Clickable FinBalance Logo Header Shortcut:**
+  - Removed separate `ReturnToProfilesButton` / `ProfileSelectorButton` in app headers.
+  - Transformed the `FinBalanceLogo` in the main header into an intuitive clickable shortcut with tooltip "Switch Family Profile" to immediately return to the profile switcher.
+  - Added compact `ProfileAvatar` displaying the active profile's initial in the AppBar actions.
+- **Standardized Profile Avatar (`ProfileAvatar`):**
+  - Standardized `ProfileAvatar` to consistently display the uppercase first letter of the profile name across all screen sizes and themes.
+  - Added deterministic high-contrast color palette generation based on profile name hash with custom `colorHex` fallback.
+  - Added `ProfileAvatar.active({double radius = 18})` Consumer helper for displaying the active profile.
+- **Individual Profile Dashboard Redesign (`OverviewScreen`):**
+  - Added Asset Category Allocation donut chart powered by `fl_chart` with interactive percentage badges, readable sorted legend, and clean empty state.
+  - Removed redundant "Active Assets" StatCard, "Liabilities" StatCard, and redundant "Holdings" list cards.
+  - Added Recent Investment Activity ledger stream displaying the 5 most recent profile transactions.
+- **SIP Cash Flow Integration (`ActivityScreen`):**
+  - Fixed critical omission where Cash Flow analysis only tracked `income` and `expense` types, ignoring `investment_purchase`.
+  - Added confirmed SIP contributions and mutual fund purchases as investment outflows ($Total Outflow = Expenses + Investment Outflow$, $Net Cash Movement = Income - Total Outflow$).
+  - Added dedicated Investment Outflows summary card and categorized breakdown section in Cash Flow view.
+- **Granular Asset Categories & Migration (`AppDatabase`):**
+  - Replaced generic "Retirement" category with specific categories: PPF, EPF, GPF, NPS, Bonds, and Other Assets.
+  - Implemented automatic non-destructive migration routine `_migrateRetirementCategory()` in `beforeOpen` remapping legacy retirement items by subType/name.
+  - Updated category filter chips and holdings filters in `AssetsScreen`.
+- **SIP Detail Popup Layout & Post-Save Redirect:**
+  - Responsive `Wrap` layouts in `SchemeDetailsSheet` and `AddToProfileDialog` preventing horizontal overflow on long scheme names or NAV cards on narrow mobile screens.
+  - Auto-switches active profile and pops back to the primary workspace root (`Navigator.popUntil((route) => route.isFirst)`) after saving an investment schedule with success SnackBar.
+
+### Testing
+- Added `test/widget/profile_overview_and_cashflow_test.dart` (4 tests verifying family overview calculation, category allocation chart, SIP cash flow integration, and asset category migration).
+- Updated `test/widget/app_smoke_test.dart`, `test/widget/contextual_fab_and_navigation_test.dart`, `test/widget/profile_selection_startup_test.dart`, and `test/widget_test.dart`.
+- Total automated test suite expanded to **138 passing tests** (0 failures).
+
 ## [0.7.0] - 2026-11-02
 
 ### Added

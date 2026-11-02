@@ -88,6 +88,7 @@ class AppDatabase extends _$AppDatabase {
       },
       beforeOpen: (details) async {
         await customStatement('PRAGMA foreign_keys = ON');
+        await _migrateRetirementCategory();
       },
     );
   }
@@ -141,16 +142,46 @@ class AppDatabase extends _$AppDatabase {
         colorHex: Value('#F59E0B'),
       ),
       const FinancialCategoriesCompanion(
-        name: Value('Retirement (PPF/EPF/NPS)'),
+        name: Value('PPF'),
         classification: Value('asset'),
-        icon: Value('security'),
+        icon: Value('shield'),
         colorHex: Value('#14B8A6'),
+      ),
+      const FinancialCategoriesCompanion(
+        name: Value('EPF'),
+        classification: Value('asset'),
+        icon: Value('domain'),
+        colorHex: Value('#0EA5E9'),
+      ),
+      const FinancialCategoriesCompanion(
+        name: Value('GPF'),
+        classification: Value('asset'),
+        icon: Value('account_balance_wallet'),
+        colorHex: Value('#059669'),
+      ),
+      const FinancialCategoriesCompanion(
+        name: Value('NPS'),
+        classification: Value('asset'),
+        icon: Value('account_balance'),
+        colorHex: Value('#8B5CF6'),
+      ),
+      const FinancialCategoriesCompanion(
+        name: Value('Bonds'),
+        classification: Value('asset'),
+        icon: Value('receipt_long'),
+        colorHex: Value('#D97706'),
       ),
       const FinancialCategoriesCompanion(
         name: Value('Cash & Bank Accounts'),
         classification: Value('asset'),
         icon: Value('account_balance'),
         colorHex: Value('#06B6D4'),
+      ),
+      const FinancialCategoriesCompanion(
+        name: Value('Other Assets'),
+        classification: Value('asset'),
+        icon: Value('category'),
+        colorHex: Value('#64748B'),
       ),
 
       // Liability categories
@@ -215,5 +246,106 @@ class AppDatabase extends _$AppDatabase {
     await batch((b) {
       b.insertAll(financialCategories, defaultCategories);
     });
+  }
+
+  /// Safe migration routine ensuring Retirement category is split into specific
+  /// categories (PPF, EPF, GPF, NPS, Bonds, Other Assets) without deleting user data.
+  Future<void> _migrateRetirementCategory() async {
+    final existingCategories = await select(financialCategories).get();
+    final existingNames =
+        existingCategories.map((c) => c.name.toLowerCase()).toSet();
+
+    final newSpecificCategories = [
+      const FinancialCategoriesCompanion(
+        name: Value('PPF'),
+        classification: Value('asset'),
+        icon: Value('shield'),
+        colorHex: Value('#14B8A6'),
+      ),
+      const FinancialCategoriesCompanion(
+        name: Value('EPF'),
+        classification: Value('asset'),
+        icon: Value('domain'),
+        colorHex: Value('#0EA5E9'),
+      ),
+      const FinancialCategoriesCompanion(
+        name: Value('GPF'),
+        classification: Value('asset'),
+        icon: Value('account_balance_wallet'),
+        colorHex: Value('#059669'),
+      ),
+      const FinancialCategoriesCompanion(
+        name: Value('NPS'),
+        classification: Value('asset'),
+        icon: Value('account_balance'),
+        colorHex: Value('#8B5CF6'),
+      ),
+      const FinancialCategoriesCompanion(
+        name: Value('Bonds'),
+        classification: Value('asset'),
+        icon: Value('receipt_long'),
+        colorHex: Value('#D97706'),
+      ),
+      const FinancialCategoriesCompanion(
+        name: Value('Other Assets'),
+        classification: Value('asset'),
+        icon: Value('category'),
+        colorHex: Value('#64748B'),
+      ),
+    ];
+
+    for (final cat in newSpecificCategories) {
+      if (!existingNames.contains(cat.name.value.toLowerCase())) {
+        await into(financialCategories).insert(cat, onConflict: DoNothing());
+      }
+    }
+
+    // Check for old Retirement category
+    final oldRetirementCategories = existingCategories
+        .where((c) => c.name.toLowerCase().contains('retirement'))
+        .toList();
+
+    if (oldRetirementCategories.isNotEmpty) {
+      final updatedCategories = await select(financialCategories).get();
+      int? idFor(String name) => updatedCategories
+          .where((c) => c.name.toLowerCase() == name.toLowerCase())
+          .firstOrNull
+          ?.id;
+
+      final ppfId = idFor('PPF') ?? 1;
+      final epfId = idFor('EPF') ?? 1;
+      final gpfId = idFor('GPF') ?? 1;
+      final npsId = idFor('NPS') ?? 1;
+      final otherId = idFor('Other Assets') ?? 1;
+
+      for (final oldCat in oldRetirementCategories) {
+        final items = await (select(financialItems)
+              ..where((tbl) => tbl.categoryId.equals(oldCat.id)))
+            .get();
+
+        for (final item in items) {
+          final sub = item.subType.toLowerCase();
+          final n = item.name.toLowerCase();
+          int targetId = otherId;
+          if (sub.contains('ppf') || n.contains('ppf')) {
+            targetId = ppfId;
+          } else if (sub.contains('epf') || n.contains('epf')) {
+            targetId = epfId;
+          } else if (sub.contains('gpf') || n.contains('gpf')) {
+            targetId = gpfId;
+          } else if (sub.contains('nps') || n.contains('nps')) {
+            targetId = npsId;
+          }
+
+          await (update(financialItems)..where((tbl) => tbl.id.equals(item.id)))
+              .write(FinancialItemsCompanion(categoryId: Value(targetId)));
+        }
+
+        // Archive old retirement category so it never appears in UI
+        await (update(financialCategories)
+              ..where((tbl) => tbl.id.equals(oldCat.id)))
+            .write(const FinancialCategoriesCompanion(isArchived: Value(true)));
+      }
+    }
   }
 }

@@ -160,6 +160,16 @@ make clean
   - Milestone scope control: restricted liabilities tracking to a polished future milestone preview (Home loans, Personal loans, Vehicle loans, Education loans, Credit card dues, Other liabilities) with zero fake records and liabilities excluded from net worth.
   - Transaction scope control: restricted transaction creation strictly to investment workflows (SIPs), removing manual entry dialogs and quick action buttons.
   - Local theme persistence: integrated `ThemeModeNotifier` backed by `AppSettingsDao` for persistent System, Light, and Dark mode preferences across application launches.
+- [x] **Profile Overview, Dashboard Redesign, Navigation & SIP Cash Flow Fixes:**
+  - Redesigned startup profile picker (`ProfileSelectionScreen`) with top Family-Wide Financial Overview aggregating Total Family Assets, Liabilities (`₹0 • Upcoming`), and Family Net Worth ($Assets - Liabilities$) across all member profiles.
+  - Replaced redundant "Quick Continue as" card and "Last Used" / "Default" badges with clean, scannable profile cards showing initials avatar, display name, relationship label, profile assets, liabilities, and profile net worth.
+  - Global Android Back Navigation Flow in `MainScaffold` with `PopScope`: Android Back navigates to Overview (tab 0) before returning to the Profile Selection screen, while nested modals, search, and settings pop to previous screens.
+  - Clickable FinBalance Logo Header Shortcut: Removed redundant `ReturnToProfilesButton` and `ProfileSelectorButton` in app headers, making the main `FinBalanceLogo` in headers a one-tap shortcut with tooltip "Switch Family Profile" to return to profile selection, with active `ProfileAvatar` in the actions.
+  - Standardized `ProfileAvatar` displaying the profile's first letter initial with deterministic color palette across all screen sizes and themes.
+  - Profile Overview Dashboard with FL Chart Asset Allocation donut chart, percentage badges, readable legend, and Recent Investment Activity stream (removed redundant "Active Assets" / "Liabilities" stat cards and holdings list).
+  - Fixed critical SIP Cash Flow integration: included confirmed SIP contributions (`investment_purchase`) as investment outflows ($Total Outflow = Expenses + Investment Outflows$, $Net Cash Movement = Income - Total Outflow$).
+  - Granular asset categories replacing generic "Retirement" with specific categories (PPF, EPF, GPF, NPS, Bonds, Other Assets) and non-destructive automated migration routine in `AppDatabase`.
+  - SIP detail popup layout fixes with responsive `Wrap` layouts and post-save redirect popping back to root workspace with success SnackBar.
 - [ ] **Milestone 5 — Transaction & Valuation Engine:** Simulated installments, lump-sum purchases, redemptions, unit calculations.
 - [ ] **Milestone 6 — Dashboard & Overview:** Real-time net worth calculation, active SIPs, upcoming EMIs.
 - [ ] **Milestone 7 — Financial Analytics:** Dated-cashflow XIRR (Newton-Raphson), asset allocation, historical charts.

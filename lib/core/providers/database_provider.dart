@@ -132,6 +132,13 @@ final activeProfileAssetsProvider = StreamProvider<List<FinancialItem>>((ref) {
   return ref.watch(financialItemsDaoProvider).watchAssetsByProfile(activeId);
 });
 
+/// Stream provider for all active assets across all household profiles.
+final householdAssetsProvider = StreamProvider<List<FinancialItem>>((ref) {
+  return ref
+      .watch(financialItemsDaoProvider)
+      .watchHouseholdItems(itemType: 'asset');
+});
+
 /// Stream provider for the active profile's liabilities.
 final activeProfileLiabilitiesProvider =
     StreamProvider<List<FinancialItem>>((ref) {

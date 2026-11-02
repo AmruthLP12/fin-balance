@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/formatting/date_formatter.dart';
+import '../../../core/providers/database_provider.dart';
 import '../../../core/providers/nav_providers.dart';
 import '../../../core/providers/theme_provider.dart';
 import '../../../core/theme/app_colors.dart';
@@ -9,11 +10,11 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/fin_card.dart';
 import '../../../core/widgets/finbalance_logo.dart';
-import '../../../core/widgets/return_to_profiles_button.dart';
 import '../../../core/widgets/section_header.dart';
 import '../../../core/widgets/status_badge.dart';
 import '../../../data/nav/models/nav_models.dart';
 import '../../profile/screens/profile_management_screen.dart';
+import '../../profile/widgets/profile_avatar.dart';
 
 /// Settings screen for managing application preferences, backup, and sync.
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -37,8 +38,39 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        leading: const ReturnToProfilesButton(),
-        title: const Text('Settings & Privacy'),
+        automaticallyImplyLeading: false,
+        title: Tooltip(
+          message: 'Switch Family Profile',
+          child: InkWell(
+            borderRadius: BorderRadius.circular(8),
+            onTap: () {
+              ref.read(hasSelectedInitialProfileProvider.notifier).state =
+                  false;
+            },
+            child: const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+              child:
+                  FinBalanceLogo(size: 28, showText: true, showTagline: false),
+            ),
+          ),
+        ),
+        actions: [
+          Tooltip(
+            message: 'Switch Family Profile',
+            child: InkWell(
+              borderRadius: BorderRadius.circular(20),
+              onTap: () {
+                ref.read(hasSelectedInitialProfileProvider.notifier).state =
+                    false;
+              },
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: ProfileAvatar.active(radius: 16),
+              ),
+            ),
+          ),
+          const SizedBox(width: AppSpacing.xs),
+        ],
       ),
       body: ListView(
         padding: AppSpacing.screenPadding,

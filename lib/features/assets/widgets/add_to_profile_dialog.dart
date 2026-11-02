@@ -366,15 +366,16 @@ class _AddToProfileDialogState extends ConsumerState<AddToProfileDialog> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: AppSpacing.sm,
+            runSpacing: 6,
             children: [
-              Expanded(
-                child: Text(
-                  widget.scheme.schemeName,
-                  style: AppTypography.titleMedium.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
+              Text(
+                widget.scheme.schemeName,
+                style: AppTypography.titleMedium.copyWith(
+                  fontWeight: FontWeight.w700,
                 ),
               ),
               const StatusBadge(
@@ -395,8 +396,11 @@ class _AddToProfileDialogState extends ConsumerState<AddToProfileDialog> {
             ),
           ],
           const Divider(height: AppSpacing.md),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: AppSpacing.sm,
+            runSpacing: 4,
             children: [
               Text(
                 'Latest Available NAV',
@@ -406,18 +410,13 @@ class _AddToProfileDialogState extends ConsumerState<AddToProfileDialog> {
                       : AppColors.lightTextMuted,
                 ),
               ),
-              const SizedBox(width: AppSpacing.sm),
-              Flexible(
-                child: Text(
-                  widget.scheme.latestNav != null
-                      ? '₹${FinancialPrecision.microPaiseToNav(widget.scheme.latestNav!.navMicroPaise).toStringAsFixed(4)} (${DateFormatter.formatDate(widget.scheme.latestNav!.date)})'
-                      : 'Awaiting NAV fetch',
-                  style: AppTypography.labelMedium.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.brandPrimaryLight,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.end,
+              Text(
+                widget.scheme.latestNav != null
+                    ? '₹${FinancialPrecision.microPaiseToNav(widget.scheme.latestNav!.navMicroPaise).toStringAsFixed(4)} (${DateFormatter.formatDate(widget.scheme.latestNav!.date)})'
+                    : 'Awaiting NAV fetch',
+                style: AppTypography.labelMedium.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.brandPrimaryLight,
                 ),
               ),
             ],
@@ -755,7 +754,16 @@ class _AddToProfileDialogState extends ConsumerState<AddToProfileDialog> {
       );
 
       if (mounted) {
-        Navigator.of(context).pop();
+        // Switch to the profile that received the schedule
+        await ref
+            .read(activeProfileIdProvider.notifier)
+            .switchProfile(profileId);
+        if (!mounted) return;
+        ref.read(hasSelectedInitialProfileProvider.notifier).state = true;
+
+        // Pop back to root MainScaffold so user returns to the primary workspace
+        Navigator.of(context).popUntil((route) => route.isFirst);
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(

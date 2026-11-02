@@ -7,11 +7,11 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/empty_state_view.dart';
 import '../../../core/widgets/fin_card.dart';
-import '../../../core/widgets/return_to_profiles_button.dart';
+import '../../../core/widgets/finbalance_logo.dart';
 import '../../../core/widgets/section_header.dart';
 import '../../../core/widgets/status_badge.dart';
 import '../../../database/app_database.dart';
-import '../../profile/widgets/profile_selector_button.dart';
+import '../../profile/widgets/profile_avatar.dart';
 import '../widgets/add_sip_dialog.dart';
 import '../widgets/holding_card.dart';
 import '../widgets/holding_details_sheet.dart';
@@ -42,15 +42,42 @@ class _AssetsScreenState extends ConsumerState<AssetsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        leading: const ReturnToProfilesButton(),
-        title: const Text('Assets & Holdings'),
+        automaticallyImplyLeading: false,
+        title: Tooltip(
+          message: 'Switch Family Profile',
+          child: InkWell(
+            borderRadius: BorderRadius.circular(8),
+            onTap: () {
+              ref.read(hasSelectedInitialProfileProvider.notifier).state =
+                  false;
+            },
+            child: const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+              child:
+                  FinBalanceLogo(size: 28, showText: true, showTagline: false),
+            ),
+          ),
+        ),
         actions: [
-          const ProfileSelectorButton(),
-          const SizedBox(width: AppSpacing.xs),
           IconButton(
             icon: const Icon(Icons.search_rounded),
             tooltip: 'Search & Add Mutual Funds',
             onPressed: () => _openSearchScreen(context),
+          ),
+          Tooltip(
+            message: 'Switch Family Profile',
+            child: InkWell(
+              borderRadius: BorderRadius.circular(20),
+              onTap: () {
+                ref.read(hasSelectedInitialProfileProvider.notifier).state =
+                    false;
+              },
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: ProfileAvatar(
+                    profile: activeProfileAsync.value, radius: 16),
+              ),
+            ),
           ),
           const SizedBox(width: AppSpacing.xs),
         ],
@@ -164,7 +191,20 @@ class _AssetsScreenState extends ConsumerState<AssetsScreen> {
                     const SizedBox(width: AppSpacing.sm),
                     _buildFilterChip('Gold', 'gold', isDark: isDark),
                     const SizedBox(width: AppSpacing.sm),
-                    _buildFilterChip('Retirement', 'ppf', isDark: isDark),
+                    _buildFilterChip('PPF', 'ppf', isDark: isDark),
+                    const SizedBox(width: AppSpacing.sm),
+                    _buildFilterChip('EPF', 'epf', isDark: isDark),
+                    const SizedBox(width: AppSpacing.sm),
+                    _buildFilterChip('GPF', 'gpf', isDark: isDark),
+                    const SizedBox(width: AppSpacing.sm),
+                    _buildFilterChip('NPS', 'nps', isDark: isDark),
+                    const SizedBox(width: AppSpacing.sm),
+                    _buildFilterChip('Bonds', 'bond', isDark: isDark),
+                    const SizedBox(width: AppSpacing.sm),
+                    _buildFilterChip('Cash & Bank', 'cash', isDark: isDark),
+                    const SizedBox(width: AppSpacing.sm),
+                    _buildFilterChip('Other Assets', 'other_asset',
+                        isDark: isDark),
                   ],
                 ),
               ),
@@ -270,12 +310,6 @@ class _AssetsScreenState extends ConsumerState<AssetsScreen> {
 
   List<FinancialItem> _filterItems(List<FinancialItem> items, String filter) {
     if (filter == 'all') return items;
-    if (filter == 'ppf') {
-      return items
-          .where((i) =>
-              i.subType == 'ppf' || i.subType == 'epf' || i.subType == 'nps')
-          .toList();
-    }
     return items.where((i) => i.subType == filter).toList();
   }
 

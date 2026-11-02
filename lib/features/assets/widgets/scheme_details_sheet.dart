@@ -209,9 +209,10 @@ class _SchemeDetailsSheetState extends ConsumerState<SchemeDetailsSheet> {
               ),
               const SizedBox(height: AppSpacing.xs),
               if (details.latestNav != null) ...[
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.baseline,
-                  textBaseline: TextBaseline.alphabetic,
+                Wrap(
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: AppSpacing.sm,
+                  runSpacing: 4,
                   children: [
                     Text(
                       '₹${FinancialPrecision.microPaiseToNav(details.latestNav!.navMicroPaise).toStringAsFixed(4)}',
@@ -221,7 +222,6 @@ class _SchemeDetailsSheetState extends ConsumerState<SchemeDetailsSheet> {
                             : AppColors.lightTextPrimary,
                       ),
                     ),
-                    const SizedBox(width: AppSpacing.sm),
                     Text(
                       'as of ${DateFormatter.formatDate(details.latestNav!.date)}',
                       style: AppTypography.labelMedium.copyWith(

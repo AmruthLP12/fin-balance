@@ -1,6 +1,7 @@
 import 'package:drift/native.dart';
 import 'package:finbalance/app.dart';
 import 'package:finbalance/core/providers/database_provider.dart';
+import 'package:finbalance/core/widgets/finbalance_logo.dart';
 import 'package:finbalance/database/app_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -33,8 +34,8 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // Verify app bar title
-    expect(find.text('FinBalance'), findsOneWidget);
+    // Verify app bar logo
+    expect(find.byType(FinBalanceLogo), findsWidgets);
 
     // Verify 5 navigation bar destinations
     expect(find.text('Overview'), findsOneWidget);
@@ -51,22 +52,23 @@ void main() {
     // Tap on Assets tab
     await tester.tap(find.text('Assets'));
     await tester.pumpAndSettle();
-    expect(find.text('Assets & Holdings'), findsOneWidget);
+    expect(find.text('All Assets'), findsOneWidget);
 
     // Tap on Liabilities tab
     await tester.tap(find.text('Liabilities'));
     await tester.pumpAndSettle();
-    expect(find.text('Liabilities & Debt'), findsOneWidget);
+    expect(find.text('Coming in Future Milestone'), findsOneWidget);
 
     // Tap on Activity tab
     await tester.tap(find.text('Activity'));
     await tester.pumpAndSettle();
-    expect(find.text('Activity & Cash Flow'), findsOneWidget);
+    expect(find.text('Ledger'), findsOneWidget);
+    expect(find.text('Cash Flow'), findsOneWidget);
 
     // Tap on Settings tab
     await tester.tap(find.text('Settings'));
     await tester.pumpAndSettle();
-    expect(find.text('Settings & Privacy'), findsOneWidget);
+    expect(find.text('Theme Mode'), findsOneWidget);
 
     // Dispose widget tree and allow stream cancellation timers to complete
     await tester.pumpWidget(const SizedBox());

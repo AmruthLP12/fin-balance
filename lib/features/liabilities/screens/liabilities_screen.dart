@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/providers/database_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/fin_card.dart';
-import '../../../core/widgets/return_to_profiles_button.dart';
+import '../../../core/widgets/finbalance_logo.dart';
 import '../../../core/widgets/section_header.dart';
 import '../../../core/widgets/status_badge.dart';
+import '../../profile/widgets/profile_avatar.dart';
 
 /// Liabilities screen presenting the planned liability and debt tracking capabilities
 /// for a future milestone (home loans, personal loans, vehicle loans, education loans,
 /// credit card dues, and other liabilities).
-class LiabilitiesScreen extends StatelessWidget {
+class LiabilitiesScreen extends ConsumerWidget {
   const LiabilitiesScreen({super.key});
 
   static const List<PlannedCategory> _plannedCategories = [
@@ -59,14 +62,45 @@ class LiabilitiesScreen extends StatelessWidget {
   ];
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
       appBar: AppBar(
-        leading: const ReturnToProfilesButton(),
-        title: const Text('Liabilities & Debt'),
+        automaticallyImplyLeading: false,
+        title: Tooltip(
+          message: 'Switch Family Profile',
+          child: InkWell(
+            borderRadius: BorderRadius.circular(8),
+            onTap: () {
+              ref.read(hasSelectedInitialProfileProvider.notifier).state =
+                  false;
+            },
+            child: const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+              child:
+                  FinBalanceLogo(size: 28, showText: true, showTagline: false),
+            ),
+          ),
+        ),
+        actions: [
+          Tooltip(
+            message: 'Switch Family Profile',
+            child: InkWell(
+              borderRadius: BorderRadius.circular(20),
+              onTap: () {
+                ref.read(hasSelectedInitialProfileProvider.notifier).state =
+                    false;
+              },
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: ProfileAvatar.active(radius: 16),
+              ),
+            ),
+          ),
+          const SizedBox(width: AppSpacing.xs),
+        ],
       ),
       body: ListView(
         padding: AppSpacing.screenPadding,

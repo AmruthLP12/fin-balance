@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:finbalance/app.dart';
 import 'package:finbalance/core/providers/database_provider.dart';
+import 'package:finbalance/core/widgets/finbalance_logo.dart';
 import 'package:finbalance/database/app_database.dart';
 
 void main() {
@@ -22,7 +23,7 @@ void main() {
     );
 
     await tester.pumpAndSettle();
-    expect(find.text('FinBalance'), findsOneWidget);
+    expect(find.byType(FinBalanceLogo), findsWidgets);
 
     // Allow stream cancellation timers to complete
     await tester.pumpWidget(const SizedBox());
