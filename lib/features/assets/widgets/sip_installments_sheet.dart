@@ -77,6 +77,28 @@ class SipInstallmentsSheet extends ConsumerWidget {
                         ],
                       ),
                     ),
+                    PopupMenuButton<String>(
+                      icon: const Icon(Icons.more_vert_rounded),
+                      tooltip: 'Schedule Options',
+                      onSelected: (val) {
+                        if (val == 'cancel_future') {
+                          _confirmCancelFuture(context, ref);
+                        }
+                      },
+                      itemBuilder: (ctx) => [
+                        const PopupMenuItem(
+                          value: 'cancel_future',
+                          child: Row(
+                            children: [
+                              Icon(Icons.stop_circle_outlined,
+                                  color: AppColors.warning, size: 20),
+                              SizedBox(width: AppSpacing.sm),
+                              Text('Cancel Future Installments'),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                     IconButton(
                       icon: const Icon(Icons.close_rounded),
                       onPressed: () => Navigator.pop(context),
@@ -201,7 +223,21 @@ class SipInstallmentsSheet extends ConsumerWidget {
                                   tooltip: 'Skip Installment',
                                   onPressed: () => _skipInstallment(ref, inst),
                                 ),
+                                IconButton(
+                                  icon: const Icon(Icons.cancel_outlined,
+                                      color: AppColors.liability, size: 20),
+                                  tooltip: 'Cancel Installment',
+                                  onPressed: () =>
+                                      _cancelInstallment(ref, inst),
+                                ),
                               ],
+                              IconButton(
+                                icon: const Icon(Icons.delete_outline_rounded,
+                                    color: AppColors.liability, size: 20),
+                                tooltip: 'Delete Installment',
+                                onPressed: () => _confirmDeleteInstallment(
+                                    context, ref, inst),
+                              ),
                             ],
                           ),
                         );
@@ -256,5 +292,84 @@ class SipInstallmentsSheet extends ConsumerWidget {
   Future<void> _skipInstallment(WidgetRef ref, SipInstallment inst) async {
     final sipsDao = ref.read(sipsDaoProvider);
     await sipsDao.skipInstallment(inst.id);
+  }
+
+  Future<void> _cancelInstallment(WidgetRef ref, SipInstallment inst) async {
+    final sipsDao = ref.read(sipsDaoProvider);
+    await sipsDao.cancelInstallment(inst.id);
+  }
+
+  Future<void> _confirmCancelFuture(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Cancel Future Installments?'),
+        content: const Text(
+          'This will cancel all upcoming scheduled installments for this SIP plan. Past recorded investments and accumulated units will remain completely intact.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Keep Active'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppColors.warning),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Cancel Future'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      final sipsDao = ref.read(sipsDaoProvider);
+      final count = await sipsDao.cancelFutureInstallments(sip.id);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Cancelled $count future installment(s).'),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _confirmDeleteInstallment(
+      BuildContext context, WidgetRef ref, SipInstallment inst) async {
+    final isRecorded = inst.status == 'recorded';
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Installment?'),
+        content: Text(
+          isRecorded
+              ? 'This installment is marked as recorded. Deleting it will remove the linked ledger transaction and deduct ${inst.unitsMicroUnits != null ? (inst.unitsMicroUnits! / 1000000).toStringAsFixed(3) : 0} units from the holding.'
+              : 'Are you sure you want to remove this installment from the schedule?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppColors.liability),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      final sipsDao = ref.read(sipsDaoProvider);
+      await sipsDao.deleteInstallment(inst.id);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Installment deleted.'),
+          ),
+        );
+      }
+    }
   }
 }

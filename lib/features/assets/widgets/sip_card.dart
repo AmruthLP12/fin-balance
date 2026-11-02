@@ -34,6 +34,9 @@ class SipCard extends ConsumerWidget {
         schemeAsync.value?.schemeName ?? 'Scheme #${sip.schemeCode}';
     final fundHouse = schemeAsync.value?.fundHouse;
 
+    final activeProfile = ref.watch(activeProfileProvider).value;
+    final profileName = activeProfile?.name ?? 'Profile';
+
     // Find linked holding if any
     final holdings = assetsAsync.value ?? [];
     final linkedHolding = sip.financialItemId != null
@@ -337,6 +340,19 @@ class SipCard extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
+              IconButton(
+                icon: const Icon(Icons.delete_outline_rounded,
+                    color: AppColors.liability, size: 20),
+                tooltip: 'Delete Schedule',
+                onPressed: () => _confirmDeleteSip(
+                  context,
+                  ref,
+                  schemeName,
+                  profileName,
+                  installmentsAsync.value ?? [],
+                ),
+              ),
+              const Spacer(),
               TextButton.icon(
                 icon: const Icon(Icons.history_rounded, size: 18),
                 label: const Text('Installments'),
@@ -345,7 +361,7 @@ class SipCard extends ConsumerWidget {
               const SizedBox(width: AppSpacing.xs),
               FilledButton.tonalIcon(
                 icon: const Icon(Icons.edit_calendar_rounded, size: 18),
-                label: const Text('Edit Schedule'),
+                label: const Text('Edit'),
                 onPressed: () => _openEditSchedule(context, ref),
               ),
             ],
@@ -428,6 +444,107 @@ class SipCard extends ConsumerWidget {
           backgroundColor: count > 0 ? AppColors.asset : AppColors.warning,
         ),
       );
+    }
+  }
+
+  Future<void> _confirmDeleteSip(
+    BuildContext context,
+    WidgetRef ref,
+    String schemeName,
+    String profileName,
+    List<SipInstallment> installments,
+  ) async {
+    final recordedInstallments =
+        installments.where((i) => i.status == 'recorded').toList();
+    final confirmedCount = recordedInstallments.length;
+    final confirmedAmountPaise = recordedInstallments.fold<int>(
+      0,
+      (sum, i) => sum + (i.actualAmountPaise ?? i.expectedAmountPaise),
+    );
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Investment Schedule?'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Are you sure you want to delete "${sip.name}"?',
+              style: AppTypography.bodyMedium,
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.sm),
+              decoration: BoxDecoration(
+                color: Theme.of(ctx).brightness == Brightness.dark
+                    ? AppColors.darkSurfaceElevated
+                    : AppColors.lightSurface,
+                borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                border: Border.all(
+                  color: Theme.of(ctx).brightness == Brightness.dark
+                      ? AppColors.darkBorder
+                      : AppColors.lightBorder,
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Scheme: $schemeName', style: AppTypography.labelSmall),
+                  const SizedBox(height: 2),
+                  Text('Profile: $profileName',
+                      style: AppTypography.labelSmall),
+                  const SizedBox(height: 2),
+                  Text('Total Installments: ${installments.length}',
+                      style: AppTypography.labelSmall),
+                  const SizedBox(height: 2),
+                  Text('Confirmed Transactions: $confirmedCount',
+                      style: AppTypography.labelSmall),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Confirmed Amount: ${CurrencyFormatter.formatPaise(confirmedAmountPaise)}',
+                    style: AppTypography.labelSmall.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              'All associated schedule periods, installments, and ledger transactions will be permanently removed.',
+              style: AppTypography.labelSmall.copyWith(
+                color: AppColors.liability,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppColors.liability),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Delete Schedule'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      final sipsDao = ref.read(sipsDaoProvider);
+      await sipsDao.deleteSip(sip.id);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Deleted SIP schedule "${sip.name}"'),
+            backgroundColor: AppColors.liability,
+          ),
+        );
+      }
     }
   }
 }

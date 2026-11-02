@@ -26,19 +26,17 @@ class OverviewScreen extends ConsumerWidget {
 
     final activeProfileAsync = ref.watch(activeProfileProvider);
     final assetsAsync = ref.watch(activeProfileAssetsProvider);
-    final liabilitiesAsync = ref.watch(activeProfileLiabilitiesProvider);
 
     final profile = activeProfileAsync.value;
     final profileName = profile?.name ?? 'My Profile';
 
     final assets = assetsAsync.value ?? [];
-    final liabilities = liabilitiesAsync.value ?? [];
 
     final totalAssetsPaise =
         assets.fold<int>(0, (sum, a) => sum + a.currentValuationPaise);
-    final totalLiabilitiesPaise =
-        liabilities.fold<int>(0, (sum, l) => sum + l.currentValuationPaise);
-    final netWorthPaise = totalAssetsPaise - totalLiabilitiesPaise;
+    // Scope control: liabilities are excluded from net worth until liabilities milestone
+    const totalLiabilitiesPaise = 0;
+    final netWorthPaise = totalAssetsPaise;
 
     return Scaffold(
       appBar: AppBar(
@@ -223,9 +221,11 @@ class OverviewScreen extends ConsumerWidget {
               Expanded(
                 child: StatCard(
                   label: 'Liabilities',
-                  value: CurrencyFormatter.formatPaise(totalLiabilitiesPaise),
-                  subtitle: '${liabilities.length} items',
-                  accentColor: AppColors.liability,
+                  value: '₹0',
+                  subtitle: 'Future Milestone',
+                  accentColor: isDark
+                      ? AppColors.darkTextMuted
+                      : AppColors.lightTextMuted,
                   icon: Icons.credit_card_rounded,
                 ),
               ),

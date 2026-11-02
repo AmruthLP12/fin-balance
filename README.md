@@ -153,6 +153,13 @@ make clean
   - Centralized NAV synchronization in Settings only with granular status and error details.
   - Real database-driven Activity Ledger with multi-dimension filtering (type, category, date range) and transaction deletion.
   - Dedicated Cash Flow analysis view with period selectors, savings rate calculation, and proportional category progress breakdowns (with strict internal transfer exclusion).
+- [x] **SIP Cascade Deletion, Data Consistency & Milestone Scope Control:**
+  - Atomic cascade deletion for SIP investment schedules (`deleteSip` in `SipsDao`) inside Drift transactions: cleans up master plans, schedule periods, installments (recorded, upcoming, simulated, pending valuation), and linked ledger transactions.
+  - Holding recalculation & cleanup: automatically updates or deletes the holding (`FinancialItems`) without leaving orphaned records, while strictly preserving shared master schemes (`MutualFundSchemes`) and historical NAV records (`NavHistory`).
+  - Granular installment actions: individual installment deletion with transaction cleanup, status skipping, and future installment cancellation without affecting past recorded investments.
+  - Milestone scope control: restricted liabilities tracking to a polished future milestone preview (Home loans, Personal loans, Vehicle loans, Education loans, Credit card dues, Other liabilities) with zero fake records and liabilities excluded from net worth.
+  - Transaction scope control: restricted transaction creation strictly to investment workflows (SIPs), removing manual entry dialogs and quick action buttons.
+  - Local theme persistence: integrated `ThemeModeNotifier` backed by `AppSettingsDao` for persistent System, Light, and Dark mode preferences across application launches.
 - [ ] **Milestone 5 — Transaction & Valuation Engine:** Simulated installments, lump-sum purchases, redemptions, unit calculations.
 - [ ] **Milestone 6 — Dashboard & Overview:** Real-time net worth calculation, active SIPs, upcoming EMIs.
 - [ ] **Milestone 7 — Financial Analytics:** Dated-cashflow XIRR (Newton-Raphson), asset allocation, historical charts.

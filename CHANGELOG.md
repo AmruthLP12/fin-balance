@@ -5,6 +5,38 @@ All notable changes to the FinBalance application will be documented in this fil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] - 2026-11-02
+
+### Added
+- **SIP Cascade Deletion & Financial Consistency Engine (`SipsDao`):**
+  - Atomic `deleteSip(int sipPlanId)` executed inside a Drift database transaction (`transaction(() async { ... })`).
+  - Completely cascades across SIP schedule periods, generated installments (historical, upcoming, simulated, and pending valuation), and exclusively linked investment transactions.
+  - Recalculates or cleans up linked holdings (`FinancialItems`): decrements units and invested capital using `FinancialPrecision`. If no other SIPs or transactions exist, automatically removes the holding.
+  - Added individual installment deletion `deleteInstallment(int installmentId)` removing linked transactions and updating holding units/valuation.
+  - Added `cancelFutureInstallments(int sipPlanId)` cancelling upcoming occurrences and stopping the SIP plan while strictly preserving historical investments and accumulated units.
+  - Added `deleteHoldingCascade(int holdingId)` in `FinancialItemsDao` cascading deletion across all linked SIPs, installments, and holding transactions.
+  - Absolute preservation of shared reference data: never deletes master mutual fund schemes (`MutualFundSchemes`) or historical NAV entries (`NavHistory`).
+  - Added confirmation dialogs across UI (`SipCard`, `SipInstallmentsSheet`, `HoldingDetailsSheet`, `AssetsScreen`) detailing scheme name, profile name, installment count, and confirmed transaction amounts.
+- **Milestone Scope Control (Liabilities):**
+  - Converted Liabilities section into a full-width, polished placeholder UI explaining liability tracking is planned for an upcoming milestone.
+  - Showcases planned categories: Home Loans, Personal Loans, Vehicle Loans, Education Loans, Credit Card Dues, and Other Liabilities.
+  - Excluded liabilities from Net Worth calculation across Overview dashboard and asset-only balance sheet calculations.
+  - Removed liability addition forms and triggers from navigation and FAB.
+- **Milestone Scope Control (Manual Transactions):**
+  - Restricted transaction generation strictly to supported investment workflows (SIPs).
+  - Removed manual transaction addition buttons and dialog triggers from `MainScaffold` and `ActivityScreen`.
+  - Context-aware FAB restricted to investment workflows on Overview and Assets tabs; suppressed on Liabilities, Activity, and Settings tabs.
+- **Persistent Theme Selection (`ThemeModeNotifier`):**
+  - Implemented `ThemeModeNotifier` backed by Drift's `AppSettingsDao` (`'theme_mode'` key).
+  - Connected Settings theme picker to switch between System, Light, and Dark modes with instant reactive update and persistent cold-start restoration.
+
+### Testing
+- Added `test/unit/sip_cascade_deletion_test.dart` (3 tests verifying atomic SIP deletion, multi-SIP holding retention, and profile isolation).
+- Added `test/unit/installment_lifecycle_test.dart` (4 tests verifying individual installment deletion, upcoming deletion, skip/cancel status, and future installment cancellation).
+- Added `test/unit/scope_control_and_theme_test.dart` (3 tests verifying theme persistence via `AppSettingsDao`, milestone net worth calculation, and holding cascade deletion).
+- Updated `test/widget/contextual_fab_and_navigation_test.dart` to match milestone scope control rules.
+- Total automated test suite expanded to **134 passing tests** (0 failures).
+
 ## [0.6.0] - 2026-11-02
 
 ### Added

@@ -487,12 +487,13 @@ class _HoldingDetailsSheetState extends ConsumerState<HoldingDetailsSheet> {
 
     if (confirmed == true && mounted) {
       final itemsDao = ref.read(financialItemsDaoProvider);
-      await itemsDao.deleteItem(holding.id);
+      await itemsDao.deleteHoldingCascade(holding.id);
       if (mounted) {
         Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Removed "${holding.name}" holding.'),
+            content: Text(
+                'Removed "${holding.name}" holding and associated records.'),
             backgroundColor: AppColors.liability,
           ),
         );

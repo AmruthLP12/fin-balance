@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/formatting/date_formatter.dart';
 import '../../../core/providers/nav_providers.dart';
+import '../../../core/providers/theme_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
@@ -23,7 +24,6 @@ class SettingsScreen extends ConsumerStatefulWidget {
 }
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
-  ThemeMode _selectedTheme = ThemeMode.system;
   String _selectedCurrency = AppConstants.defaultCurrencyCode;
   bool _isSyncing = false;
   PortfolioSyncSummary? _lastSyncSummary;
@@ -33,6 +33,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final currentThemeMode = ref.watch(themeModeProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -124,7 +125,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   title: const Text('Theme Mode',
                       style: AppTypography.titleMedium),
                   subtitle: Text(
-                    _themeModeTitle(_selectedTheme),
+                    _themeModeTitle(currentThemeMode),
                     style: AppTypography.bodyMedium,
                   ),
                   trailing: const Icon(Icons.chevron_right_rounded),
@@ -376,6 +377,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   void _showThemePicker() {
+    final currentThemeMode = ref.read(themeModeProvider);
     showModalBottomSheet<void>(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -393,33 +395,39 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ListTile(
                 leading: const Icon(Icons.brightness_auto_outlined),
                 title: const Text('Follow System'),
-                trailing: _selectedTheme == ThemeMode.system
+                trailing: currentThemeMode == ThemeMode.system
                     ? const Icon(Icons.check)
                     : null,
                 onTap: () {
-                  setState(() => _selectedTheme = ThemeMode.system);
+                  ref
+                      .read(themeModeProvider.notifier)
+                      .setThemeMode(ThemeMode.system);
                   Navigator.pop(context);
                 },
               ),
               ListTile(
                 leading: const Icon(Icons.light_mode_outlined),
                 title: const Text('Light Theme'),
-                trailing: _selectedTheme == ThemeMode.light
+                trailing: currentThemeMode == ThemeMode.light
                     ? const Icon(Icons.check)
                     : null,
                 onTap: () {
-                  setState(() => _selectedTheme = ThemeMode.light);
+                  ref
+                      .read(themeModeProvider.notifier)
+                      .setThemeMode(ThemeMode.light);
                   Navigator.pop(context);
                 },
               ),
               ListTile(
                 leading: const Icon(Icons.dark_mode_outlined),
                 title: const Text('Dark Theme'),
-                trailing: _selectedTheme == ThemeMode.dark
+                trailing: currentThemeMode == ThemeMode.dark
                     ? const Icon(Icons.check)
                     : null,
                 onTap: () {
-                  setState(() => _selectedTheme = ThemeMode.dark);
+                  ref
+                      .read(themeModeProvider.notifier)
+                      .setThemeMode(ThemeMode.dark);
                   Navigator.pop(context);
                 },
               ),

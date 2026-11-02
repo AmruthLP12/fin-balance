@@ -43,19 +43,7 @@ void main() {
       final overviewFab = find.byType(FloatingActionButton);
       expect(overviewFab, findsOneWidget);
       final fabWidget0 = tester.widget<FloatingActionButton>(overviewFab);
-      expect(fabWidget0.tooltip, 'Quick Add');
-
-      // Tap FAB on Overview -> opens Quick Financial Action sheet
-      await tester.tap(overviewFab);
-      await tester.pumpAndSettle();
-      expect(find.text('Quick Financial Action'), findsOneWidget);
-      expect(find.text('Add Mutual Fund Investment'), findsOneWidget);
-      expect(find.text('Add Liability / Debt'), findsOneWidget);
-      expect(find.text('Record Income'), findsOneWidget);
-
-      // Dismiss sheet
-      await tester.tapAt(const Offset(250, 100));
-      await tester.pumpAndSettle();
+      expect(fabWidget0.tooltip, 'Add Investment Schedule');
 
       // 2. Assets Tab (Index 1)
       await tester.tap(find.text('Assets'));
@@ -65,43 +53,16 @@ void main() {
       final fabWidget1 = tester.widget<FloatingActionButton>(assetsFab);
       expect(fabWidget1.tooltip, 'Add Asset');
 
-      // Tap FAB on Assets -> opens Add Asset sheet
-      await tester.tap(assetsFab);
-      await tester.pumpAndSettle();
-      expect(find.text('Add Asset'), findsOneWidget);
-      expect(find.text('Mutual Fund Investment Schedule'), findsOneWidget);
-
-      // Dismiss sheet
-      await tester.tapAt(const Offset(250, 100));
-      await tester.pumpAndSettle();
-
-      // 3. Liabilities Tab (Index 2)
+      // 3. Liabilities Tab (Index 2) -> FAB Suppressed for milestone scope control
       await tester.tap(find.text('Liabilities'));
       await tester.pumpAndSettle();
-      final liabFab = find.byType(FloatingActionButton);
-      expect(liabFab, findsOneWidget);
-      final fabWidget2 = tester.widget<FloatingActionButton>(liabFab);
-      expect(fabWidget2.tooltip, 'Add Liability / Loan');
+      expect(find.byType(FloatingActionButton), findsNothing);
+      expect(find.text('Coming in Future Milestone'), findsOneWidget);
 
-      // 4. Activity Tab (Index 3)
+      // 4. Activity Tab (Index 3) -> FAB Suppressed for milestone scope control
       await tester.tap(find.text('Activity'));
       await tester.pumpAndSettle();
-      final activityFab = find.byType(FloatingActionButton);
-      expect(activityFab, findsOneWidget);
-      final fabWidget3 = tester.widget<FloatingActionButton>(activityFab);
-      expect(fabWidget3.tooltip, 'Record Activity');
-
-      // Tap FAB on Activity -> opens Record Transaction sheet
-      await tester.tap(activityFab);
-      await tester.pumpAndSettle();
-      expect(find.text('Record Transaction'), findsOneWidget);
-      expect(find.text('Add Income'), findsWidgets);
-      expect(find.text('Add Expense'), findsWidgets);
-      expect(find.text('Record Transfer'), findsOneWidget);
-
-      // Dismiss sheet
-      await tester.tapAt(const Offset(250, 100));
-      await tester.pumpAndSettle();
+      expect(find.byType(FloatingActionButton), findsNothing);
 
       // 5. Settings Tab (Index 4) -> FAB MUST BE NULL
       await tester.tap(find.text('Settings'));

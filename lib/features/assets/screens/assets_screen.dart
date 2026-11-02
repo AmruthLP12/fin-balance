@@ -354,13 +354,12 @@ class _AssetsScreenState extends ConsumerState<AssetsScreen> {
             onPressed: () async {
               Navigator.of(ctx).pop();
               final itemsDao = ref.read(financialItemsDaoProvider);
-              await (itemsDao.delete(itemsDao.financialItems)
-                    ..where((tbl) => tbl.id.equals(item.id)))
-                  .go();
+              await itemsDao.deleteHoldingCascade(item.id);
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('Removed "${item.name}"'),
+                    content:
+                        Text('Removed "${item.name}" and associated records.'),
                   ),
                 );
               }

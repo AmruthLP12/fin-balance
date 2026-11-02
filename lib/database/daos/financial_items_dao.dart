@@ -142,8 +142,40 @@ class FinancialItemsDao extends DatabaseAccessor<AppDatabase>
     return (delete(financialItems)..where((tbl) => tbl.id.equals(id))).go();
   }
 
+  /// Cascade delete a holding and all its exclusively linked SIP plans, installments, and transactions.
+  /// Preserves shared mutual fund schemes and NAV history.
+  Future<bool> deleteHoldingCascade(int holdingId) async {
+    return transaction(() async {
+      final holding = await getItemById(holdingId);
+      if (holding == null) return false;
+
+      // 1. Find and delete all SIP plans linked to this holding
+      final linkedSips = await (db.select(db.sipPlans)
+            ..where((tbl) => tbl.financialItemId.equals(holdingId)))
+          .get();
+      for (final sip in linkedSips) {
+        await db.sipsDao.deleteSip(sip.id);
+      }
+
+      // 2. Delete any remaining transactions linked to this holding
+      await (db.delete(db.transactions)
+            ..where((tbl) => tbl.financialItemId.equals(holdingId)))
+          .go();
+
+      // 3. Delete the holding itself
+      await (delete(financialItems)..where((tbl) => tbl.id.equals(holdingId)))
+          .go();
+
+      return true;
+    });
+  }
+
   /// Calculate net worth for a specific profile (Total Assets - Total Liabilities) in Paise.
-  Future<int> calculateNetWorthForProfile(int profileId) async {
+  /// When [includeLiabilities] is false, calculates asset-only net worth.
+  Future<int> calculateNetWorthForProfile(
+    int profileId, {
+    bool includeLiabilities = true,
+  }) async {
     final assetValuationSum = financialItems.currentValuationPaise.sum();
     final assetQuery = selectOnly(financialItems)
       ..addColumns([assetValuationSum])
@@ -153,6 +185,8 @@ class FinancialItemsDao extends DatabaseAccessor<AppDatabase>
     final assetResult =
         await assetQuery.map((row) => row.read(assetValuationSum)).getSingle();
     final totalAssets = assetResult ?? 0;
+
+    if (!includeLiabilities) return totalAssets;
 
     final liabilityValuationSum = financialItems.currentValuationPaise.sum();
     final liabilityQuery = selectOnly(financialItems)
@@ -169,7 +203,10 @@ class FinancialItemsDao extends DatabaseAccessor<AppDatabase>
   }
 
   /// Calculate combined household net worth in Paise.
-  Future<int> calculateHouseholdNetWorth() async {
+  /// When [includeLiabilities] is false, calculates asset-only net worth.
+  Future<int> calculateHouseholdNetWorth({
+    bool includeLiabilities = true,
+  }) async {
     final assetValuationSum = financialItems.currentValuationPaise.sum();
     final assetQuery = selectOnly(financialItems)
       ..addColumns([assetValuationSum])
@@ -179,6 +216,8 @@ class FinancialItemsDao extends DatabaseAccessor<AppDatabase>
             .map((row) => row.read(assetValuationSum))
             .getSingle()) ??
         0;
+
+    if (!includeLiabilities) return totalAssets;
 
     final liabilityValuationSum = financialItems.currentValuationPaise.sum();
     final liabilityQuery = selectOnly(financialItems)

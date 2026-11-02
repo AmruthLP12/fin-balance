@@ -11,7 +11,6 @@ import '../../../core/widgets/fin_card.dart';
 import '../../../core/widgets/return_to_profiles_button.dart';
 import '../../../core/widgets/status_badge.dart';
 import '../../../database/app_database.dart';
-import '../widgets/add_transaction_dialog.dart';
 
 /// Unified Activity Ledger and Cash Flow Analysis Screen.
 ///
@@ -779,7 +778,6 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen>
   Widget _buildCashFlowTab(BuildContext context, bool isDark) {
     final transactionsAsync = ref.watch(activeProfileTransactionsProvider);
     final categoriesAsync = ref.watch(allCategoriesProvider);
-    final activeProfileId = ref.watch(activeProfileIdProvider);
 
     return transactionsAsync.when(
       data: (allTxns) {
@@ -991,41 +989,6 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen>
                   ),
                 ],
               ),
-            ),
-            const SizedBox(height: AppSpacing.md),
-
-            // Quick Actions: Add Income / Add Expense
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    icon: const Icon(Icons.add_rounded, color: AppColors.asset),
-                    label: const Text('Add Income'),
-                    onPressed: () {
-                      AddTransactionDialog.show(
-                        context,
-                        initialType: 'income',
-                        preselectedProfileId: activeProfileId,
-                      );
-                    },
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    icon: const Icon(Icons.remove_rounded,
-                        color: AppColors.liability),
-                    label: const Text('Add Expense'),
-                    onPressed: () {
-                      AddTransactionDialog.show(
-                        context,
-                        initialType: 'expense',
-                        preselectedProfileId: activeProfileId,
-                      );
-                    },
-                  ),
-                ),
-              ],
             ),
             const SizedBox(height: AppSpacing.lg),
 
