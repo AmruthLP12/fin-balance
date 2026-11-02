@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
-import '../../../core/theme/app_typography.dart';
+import '../../../core/widgets/finbalance_logo.dart';
 import '../../activity/screens/activity_screen.dart';
 import '../../assets/screens/assets_screen.dart';
 import '../../liabilities/screens/liabilities_screen.dart';
@@ -57,35 +56,10 @@ class _MainScaffoldState extends State<MainScaffold> {
                       vertical: AppSpacing.md,
                       horizontal: AppSpacing.sm,
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color:
-                                AppColors.brandPrimary.withValues(alpha: 0.15),
-                            borderRadius: AppSpacing.borderRadiusSm,
-                          ),
-                          child: const Icon(
-                            Icons.account_balance_wallet_rounded,
-                            size: 22,
-                            color: AppColors.brandPrimaryLight,
-                          ),
-                        ),
-                        if (isExpandedRail) ...[
-                          const SizedBox(width: AppSpacing.sm),
-                          Text(
-                            AppConstants.appName,
-                            style: AppTypography.titleLarge.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: isDark
-                                  ? AppColors.darkTextPrimary
-                                  : AppColors.lightTextPrimary,
-                            ),
-                          ),
-                        ],
-                      ],
+                    child: FinBalanceLogo(
+                      size: 32,
+                      showText: isExpandedRail,
+                      showTagline: false,
                     ),
                   ),
                   trailing: Expanded(

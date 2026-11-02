@@ -429,3 +429,26 @@ Widget tests:
 - **Flutter Web:** SQLite3 WebAssembly (`sqlite3.wasm`) execution with dedicated worker (`drift_worker.js`) via `driftDatabase`'s `DriftWebOptions`.
 - **Responsive Layout:** Responsive `MainScaffold` renders a `NavigationRail` for wide viewports (>= 720px) and a bottom `NavigationBar` on mobile viewports.
 
+---
+
+## 17. Mutual Fund Investment Schedules, Historical NAV Valuation & Branding Identity
+
+### 17.1 Automated Investment Schedule Architecture
+- **`InvestmentScheduleService`:** Reusable schedule generator supporting Daily, Weekly, Monthly, Quarterly, Yearly, and One-Time frequencies. Calculates occurrences with zero progressive date drift and leap-year month-end clamping (Feb 28/29, Apr 30, Jan 31). Dynamically partitions occurrences into Past ($\le \text{today}$) and Future ($> \text{today}$) based on device local date.
+- **`AddToProfileDialog`:** Redesigned investment schedule addition form with live schedule projection, profile selection, amount per installment, start date picker, frequency selector, installment count, and confirmed/estimate toggle.
+
+### 17.2 Historical NAV-Based Valuation Lifecycle
+- **`MutualFundDao.getNavOnOrBefore`:** Retrieves the applicable historical NAV for each past installment date, falling back gracefully across weekends (Saturday/Sunday $\to$ Friday) and market holidays to the preceding trading day.
+- **`pending_valuation` Status:** If historical NAV data is missing, installments are marked as `pending_valuation` without inventing artificial quotes. Revaluation is retried via `revaluePendingInstallments` once NAV data is downloaded.
+- **Strict Financial Isolation:** Future planned contributions are recorded as `upcoming` simulated installments with null units and null purchase NAV. They are strictly excluded from current portfolio valuation and net worth.
+
+### 17.3 Schedule Editing & Historical Preservation
+- **`EditSipScheduleDialog`:** Allows modifying frequency, installment amount, and remaining installments from an effective date.
+- **Historical Immutability:** Only future installments on or after the effective date are modified. Past confirmed transactions, units, and purchase NAVs are strictly preserved.
+
+### 17.4 Application Branding & Visual Identity
+- **Geometric Symbolism:** Clean geometric fintech branding representing Assets (+) Emerald Green (`#10B981`), Liabilities (−) Cobalt Blue (`#2563EB`), and Net Worth Balance Golden Amber (`#F59E0B`).
+- **Platform Deliverables:** Android adaptive vector drawables (`ic_launcher_foreground.xml`, `ic_launcher_background.xml`), all standard Android mipmap densities (`mdpi`, `hdpi`, `xhdpi`, `xxhdpi`, `xxxhdpi`), Web icons (192, 512, maskable, favicon).
+- **In-App `FinBalanceLogo`:** In-app vector Flutter widget providing scalable, theme-aware vector rendering across `ProfileSelectionScreen`, `SettingsScreen`, and `MainScaffold`.
+
+

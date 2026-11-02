@@ -273,6 +273,27 @@ class MutualFundDao extends DatabaseAccessor<AppDatabase>
         .getSingleOrNull();
   }
 
+  /// Find the latest available historical NAV on or before [targetDate] for a scheme.
+  /// Handles weekends and public market holidays by selecting the most recent prior trading day.
+  Future<NavHistoryData?> getNavOnOrBefore(
+      int schemeCode, DateTime targetDate) {
+    final endOfDate = DateTime.utc(
+      targetDate.year,
+      targetDate.month,
+      targetDate.day,
+      23,
+      59,
+      59,
+    );
+    return (select(navHistory)
+          ..where((tbl) =>
+              tbl.schemeCode.equals(schemeCode) &
+              tbl.navDate.isSmallerOrEqualValue(endOfDate))
+          ..orderBy([(t) => OrderingTerm.desc(t.navDate)])
+          ..limit(1))
+        .getSingleOrNull();
+  }
+
   /// Synchronize portfolio holdings valuation across all profiles holding this scheme.
   ///
   /// Recalculates `currentValuationPaise` for all [FinancialItems] linked to `schemeCode`,

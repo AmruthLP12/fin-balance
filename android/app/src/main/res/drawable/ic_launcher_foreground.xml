@@ -4,11 +4,27 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <path
-        android:fillColor="#2563EB"
-        android:pathData="M54,24 L80,50 L54,76 L28,50 Z"/>
+    <!-- Assets (+) Emerald Wing -->
     <path
         android:fillColor="#10B981"
-        android:pathData="M54,36 L70,50 L54,64 L38,50 Z"/>
-</vector>
+        android:pathData="M 31,54 L 48,31 L 54,38 L 42,53 Z"/>
+    <path
+        android:fillColor="#059669"
+        android:pathData="M 54,38 L 63,31 L 68,37 L 59,44 Z"/>
 
+    <!-- Liabilities (-) Cobalt Wing -->
+    <path
+        android:fillColor="#2563EB"
+        android:pathData="M 77,54 L 60,77 L 54,70 L 66,55 Z"/>
+    <path
+        android:fillColor="#3B82F6"
+        android:pathData="M 54,70 L 45,77 L 40,71 L 49,64 Z"/>
+
+    <!-- Net Worth Balance Golden Pivot -->
+    <path
+        android:fillColor="#F59E0B"
+        android:pathData="M 54,46 L 62,54 L 54,62 L 46,54 Z"/>
+    <path
+        android:fillColor="#FDE68A"
+        android:pathData="M 54,50 L 58,54 L 54,58 L 50,54 Z"/>
+</vector>

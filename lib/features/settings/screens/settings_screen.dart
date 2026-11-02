@@ -7,6 +7,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/fin_card.dart';
+import '../../../core/widgets/finbalance_logo.dart';
 import '../../../core/widgets/section_header.dart';
 import '../../../core/widgets/status_badge.dart';
 import '../../profile/screens/profile_management_screen.dart';
@@ -283,11 +284,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      AppConstants.appName,
-                      style: AppTypography.titleMedium.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
+                    const FinBalanceLogo(
+                      size: 36,
+                      showText: true,
+                      showTagline: false,
                     ),
                     Text(
                       'v${AppConstants.appVersion}',
@@ -299,7 +299,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: AppSpacing.xs),
+                const SizedBox(height: AppSpacing.sm),
                 Text(
                   '${AppConstants.appTagline}\nArchitected for privacy, SQLite persistence, and comprehensive personal balance sheets.',
                   style: AppTypography.bodyMedium.copyWith(

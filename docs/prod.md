@@ -489,3 +489,22 @@ These should be implemented as separate investment modules rather than complicat
 - Goals.
 - Additional asset classes.
 - Improved reports.
+
+---
+
+## 10. Mutual Fund Investment Schedule & Branding System
+
+### 10.1 Flexible Investment Schedule Model
+FinBalance treats mutual fund investments as systematic schedules rather than isolated manual lump sums.
+- **Unified Addition Form:** Users configure scheme, amount per installment, start date, frequency (Daily, Weekly, Monthly, Quarterly, Yearly, One-Time), total installments, and profile.
+- **Live Visual Schedule Breakdown:** Immediate preview of past actual vs future planned installments, total scheduled capital, and schedule end date.
+- **Historical NAV Valuation:** Past installments are independently valued at their historical NAVs with weekend and holiday fallbacks. Missing NAVs become `pending_valuation`.
+- **Financial Isolation:** Future planned amounts are excluded from current portfolio valuation and net worth.
+- **Schedule Editing:** Allows modifying frequency, amount, and remaining installments starting on an effective date while strictly preserving past confirmed transactions.
+
+### 10.2 Visual Branding Identity
+- Modern geometric fintech visual identity representing Assets (+) Emerald Green (`#10B981`), Liabilities (−) Cobalt Blue (`#2563EB`), and Net Worth Balance Golden Amber (`#F59E0B`).
+- Native Android adaptive icon layers and high-resolution mipmap densities (mdpi through xxxhdpi).
+- Full PWA Web assets (favicon, 192, 512, maskable variants).
+- Dedicated in-app `FinBalanceLogo` Flutter widget with dark/light mode responsiveness and scalable display options.
+

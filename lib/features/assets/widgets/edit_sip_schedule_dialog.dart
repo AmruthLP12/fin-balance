@@ -3,14 +3,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/formatting/currency_formatter.dart';
 import '../../../core/formatting/date_formatter.dart';
 import '../../../core/providers/database_provider.dart';
+import '../../../core/scheduling/investment_schedule_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../database/app_database.dart';
 import '../../../database/precision/financial_precision.dart';
 
-/// Dialog to add a new schedule period to an existing SIP, enabling flexible step-up, step-down,
-/// and deduction day changes over time without manual installment recreation.
+/// Dialog to update an existing investment schedule.
+/// Modifies frequency, amount per installment, and remaining installments from an effective date,
+/// while strictly preserving past confirmed transactions, units, and historical NAVs.
 class EditSipScheduleDialog extends ConsumerStatefulWidget {
   final SipPlan sip;
 
@@ -24,27 +26,29 @@ class EditSipScheduleDialog extends ConsumerStatefulWidget {
 class _EditSipScheduleDialogState extends ConsumerState<EditSipScheduleDialog> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _amountController;
-  late TextEditingController _dayController;
+  late TextEditingController _remainingInstallmentsController;
   late TextEditingController _notesController;
-  DateTime _effectiveFrom = DateTime.utc(
-    DateTime.now().year,
-    DateTime.now().month + 1,
-    1,
-  );
+
+  late DateTime _effectiveFrom;
+  ScheduleFrequency _frequency = ScheduleFrequency.monthly;
   bool _isSaving = false;
 
   @override
   void initState() {
     super.initState();
-    _amountController = TextEditingController();
-    _dayController = TextEditingController(text: '5');
+    final now = DateTime.now();
+    // Default effective date is tomorrow
+    _effectiveFrom = DateTime(now.year, now.month, now.day + 1);
+
+    _amountController = TextEditingController(text: '1000');
+    _remainingInstallmentsController = TextEditingController(text: '12');
     _notesController = TextEditingController();
   }
 
   @override
   void dispose() {
     _amountController.dispose();
-    _dayController.dispose();
+    _remainingInstallmentsController.dispose();
     _notesController.dispose();
     super.dispose();
   }
@@ -60,7 +64,7 @@ class _EditSipScheduleDialogState extends ConsumerState<EditSipScheduleDialog> {
         borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
       ),
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 480),
+        constraints: const BoxConstraints(maxWidth: 500, maxHeight: 680),
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.lg),
           child: Form(
@@ -73,10 +77,12 @@ class _EditSipScheduleDialogState extends ConsumerState<EditSipScheduleDialog> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        'Change SIP Schedule',
-                        style: AppTypography.titleLarge.copyWith(
-                          fontWeight: FontWeight.bold,
+                      Expanded(
+                        child: Text(
+                          'Modify Investment Schedule',
+                          style: AppTypography.titleLarge.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                       IconButton(
@@ -87,7 +93,7 @@ class _EditSipScheduleDialogState extends ConsumerState<EditSipScheduleDialog> {
                   ),
                   const SizedBox(height: AppSpacing.xxs),
                   Text(
-                    'Step-up amount or change deduction day seamlessly. FinBalance archives the current period and starts the new period on the effective date.',
+                    'Update future installments starting from the chosen effective date. All past confirmed investments, units, and transactions are strictly preserved.',
                     style: AppTypography.labelSmall.copyWith(
                       color: isDark
                           ? AppColors.darkTextSecondary
@@ -120,7 +126,7 @@ class _EditSipScheduleDialogState extends ConsumerState<EditSipScheduleDialog> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              'Current: ${CurrencyFormatter.formatPaise(current.amountPaise)} / mo on day ${current.deductionDay}',
+                              'Current: ${CurrencyFormatter.formatPaise(current.amountPaise)} (${current.frequency})',
                               style: AppTypography.labelMedium.copyWith(
                                 fontWeight: FontWeight.w600,
                               ),
@@ -144,7 +150,7 @@ class _EditSipScheduleDialogState extends ConsumerState<EditSipScheduleDialog> {
                   // Effective From Date Picker
                   ListTile(
                     contentPadding: EdgeInsets.zero,
-                    title: const Text('Effective From Date'),
+                    title: const Text('Effective Date'),
                     subtitle: Text(
                       DateFormatter.formatDate(_effectiveFrom),
                       style: AppTypography.titleMedium.copyWith(
@@ -158,14 +164,36 @@ class _EditSipScheduleDialogState extends ConsumerState<EditSipScheduleDialog> {
                         context: context,
                         initialDate: _effectiveFrom,
                         firstDate: widget.sip.startDate,
-                        lastDate: DateTime(2035),
+                        lastDate: DateTime(2040),
                       );
                       if (picked != null) {
-                        setState(() => _effectiveFrom = picked);
+                        setState(() => _effectiveFrom =
+                            DateTime(picked.year, picked.month, picked.day));
                       }
                     },
                   ),
                   const SizedBox(height: AppSpacing.sm),
+
+                  // New Frequency
+                  DropdownButtonFormField<ScheduleFrequency>(
+                    initialValue: _frequency,
+                    decoration: const InputDecoration(
+                      labelText: 'New Frequency',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: ScheduleFrequency.values
+                        .map((f) => DropdownMenuItem(
+                              value: f,
+                              child: Text(f.label),
+                            ))
+                        .toList(),
+                    onChanged: (newFreq) {
+                      if (newFreq != null) {
+                        setState(() => _frequency = newFreq);
+                      }
+                    },
+                  ),
+                  const SizedBox(height: AppSpacing.md),
 
                   // New Amount Input
                   TextFormField(
@@ -173,13 +201,14 @@ class _EditSipScheduleDialogState extends ConsumerState<EditSipScheduleDialog> {
                     keyboardType:
                         const TextInputType.numberWithOptions(decimal: true),
                     decoration: const InputDecoration(
-                      labelText: 'New Monthly Investment (₹)',
+                      labelText: 'New Amount per Installment (₹)',
                       hintText: 'e.g. 5000',
                       prefixText: '₹ ',
+                      border: OutlineInputBorder(),
                     ),
                     validator: (val) {
                       if (val == null || val.trim().isEmpty) {
-                        return 'Please enter monthly amount';
+                        return 'Please enter installment amount';
                       }
                       final n = double.tryParse(val.trim());
                       if (n == null || n <= 0) {
@@ -190,23 +219,24 @@ class _EditSipScheduleDialogState extends ConsumerState<EditSipScheduleDialog> {
                   ),
                   const SizedBox(height: AppSpacing.md),
 
-                  // New Deduction Day Input (1-31)
+                  // Remaining Installments Input
                   TextFormField(
-                    controller: _dayController,
+                    controller: _remainingInstallmentsController,
                     keyboardType: TextInputType.number,
                     decoration: const InputDecoration(
-                      labelText: 'New Deduction Day of Month (1 - 31)',
-                      hintText: 'e.g. 5 or 31',
+                      labelText: 'Remaining Installments Count',
+                      hintText: 'e.g. 12',
+                      border: OutlineInputBorder(),
                       helperText:
-                          'Clamped safely on shorter months (e.g. 31st becomes 28th/29th Feb) without drift.',
+                          'Number of new installments to project starting from effective date.',
                     ),
                     validator: (val) {
                       if (val == null || val.trim().isEmpty) {
-                        return 'Please enter day of month';
+                        return 'Please enter remaining installments';
                       }
-                      final day = int.tryParse(val.trim());
-                      if (day == null || day < 1 || day > 31) {
-                        return 'Day must be between 1 and 31';
+                      final count = int.tryParse(val.trim());
+                      if (count == null || count < 1) {
+                        return 'Must be at least 1';
                       }
                       return null;
                     },
@@ -218,7 +248,8 @@ class _EditSipScheduleDialogState extends ConsumerState<EditSipScheduleDialog> {
                     controller: _notesController,
                     decoration: const InputDecoration(
                       labelText: 'Reason for Adjustment (Optional)',
-                      hintText: 'e.g. Annual Step-up +10%, Salary increment',
+                      hintText: 'e.g. Step-up investment, Salary increment',
+                      border: OutlineInputBorder(),
                     ),
                   ),
                   const SizedBox(height: AppSpacing.lg),
@@ -234,7 +265,7 @@ class _EditSipScheduleDialogState extends ConsumerState<EditSipScheduleDialog> {
                       ),
                       const SizedBox(width: AppSpacing.sm),
                       FilledButton(
-                        onPressed: _isSaving ? null : _saveNewPeriod,
+                        onPressed: _isSaving ? null : _saveScheduleUpdate,
                         child: _isSaving
                             ? const SizedBox(
                                 width: 16,
@@ -244,7 +275,7 @@ class _EditSipScheduleDialogState extends ConsumerState<EditSipScheduleDialog> {
                                   color: Colors.white,
                                 ),
                               )
-                            : const Text('Apply New Schedule'),
+                            : const Text('Update Schedule'),
                       ),
                     ],
                   ),
@@ -257,33 +288,37 @@ class _EditSipScheduleDialogState extends ConsumerState<EditSipScheduleDialog> {
     );
   }
 
-  Future<void> _saveNewPeriod() async {
+  Future<void> _saveScheduleUpdate() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isSaving = true);
 
     try {
       final amountDouble = double.parse(_amountController.text.trim());
       final amountPaise = FinancialPrecision.rupeesToPaise(amountDouble);
-      final deductionDay = int.parse(_dayController.text.trim());
+      final remainingCount =
+          int.parse(_remainingInstallmentsController.text.trim());
       final notes = _notesController.text.trim().isNotEmpty
           ? _notesController.text.trim()
           : null;
 
       final sipsDao = ref.read(sipsDaoProvider);
-      await sipsDao.addSchedulePeriod(
+      final success = await sipsDao.updateInvestmentSchedule(
         sipPlanId: widget.sip.id,
-        effectiveFrom: _effectiveFrom,
-        amountPaise: amountPaise,
-        deductionDay: deductionDay,
+        effectiveDate: _effectiveFrom,
+        newAmountPaise: amountPaise,
+        newFrequency: _frequency,
+        remainingInstallments: remainingCount,
         notes: notes,
       );
 
       if (mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('New SIP schedule period activated!'),
-            backgroundColor: AppColors.asset,
+          SnackBar(
+            content: Text(success
+                ? 'Investment schedule successfully updated!'
+                : 'Failed to update schedule.'),
+            backgroundColor: success ? AppColors.asset : AppColors.liability,
           ),
         );
       }

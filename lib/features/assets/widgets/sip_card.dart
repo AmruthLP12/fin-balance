@@ -10,10 +10,12 @@ import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/fin_card.dart';
 import '../../../core/widgets/status_badge.dart';
 import '../../../database/app_database.dart';
+import '../../../database/precision/financial_precision.dart';
 import 'edit_sip_schedule_dialog.dart';
 import 'sip_installments_sheet.dart';
 
-/// Card displaying a master SIP Plan, current period schedule, and quick management actions.
+/// Card displaying a master SIP Plan, investment frequency, installment breakdown,
+/// units accumulated, valuation, valuation status, and schedule management actions.
 class SipCard extends ConsumerWidget {
   final SipPlan sip;
 
@@ -25,10 +27,20 @@ class SipCard extends ConsumerWidget {
     final isDark = theme.brightness == Brightness.dark;
     final periodsAsync = ref.watch(sipPeriodsProvider(sip.id));
     final schemeAsync = ref.watch(schemeByCodeProvider(sip.schemeCode));
+    final installmentsAsync = ref.watch(sipInstallmentsProvider(sip.id));
+    final assetsAsync = ref.watch(activeProfileAssetsProvider);
 
     final schemeName =
         schemeAsync.value?.schemeName ?? 'Scheme #${sip.schemeCode}';
     final fundHouse = schemeAsync.value?.fundHouse;
+
+    // Find linked holding if any
+    final holdings = assetsAsync.value ?? [];
+    final linkedHolding = sip.financialItemId != null
+        ? holdings.where((h) => h.id == sip.financialItemId).firstOrNull
+        : holdings
+            .where((h) => h.externalCode == sip.schemeCode.toString())
+            .firstOrNull;
 
     return FinCard(
       child: Column(
@@ -83,7 +95,7 @@ class SipCard extends ConsumerWidget {
           ],
           const SizedBox(height: AppSpacing.md),
 
-          // Active Schedule Period Info
+          // Active Schedule Period Info: Frequency & Amount
           periodsAsync.when(
             data: (periods) {
               if (periods.isEmpty) {
@@ -92,7 +104,7 @@ class SipCard extends ConsumerWidget {
               final activePeriod = periods.last;
               final amountStr =
                   CurrencyFormatter.formatPaise(activePeriod.amountPaise);
-              final dayStr = _formatDayOrdinal(activePeriod.deductionDay);
+              final freqStr = activePeriod.frequency.toUpperCase();
 
               return Container(
                 padding: const EdgeInsets.all(AppSpacing.sm),
@@ -109,7 +121,7 @@ class SipCard extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'MONTHLY AMOUNT',
+                          '$freqStr AMOUNT',
                           style: AppTypography.labelSmall.copyWith(
                             color: isDark
                                 ? AppColors.darkTextMuted
@@ -131,7 +143,7 @@ class SipCard extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         Text(
-                          'DEDUCTION DAY',
+                          'FREQUENCY',
                           style: AppTypography.labelSmall.copyWith(
                             color: isDark
                                 ? AppColors.darkTextMuted
@@ -141,9 +153,10 @@ class SipCard extends ConsumerWidget {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          'Every $dayStr of month',
+                          activePeriod.frequency.toUpperCase(),
                           style: AppTypography.labelMedium.copyWith(
                             fontWeight: FontWeight.w600,
+                            color: AppColors.brandPrimaryLight,
                           ),
                         ),
                       ],
@@ -155,6 +168,146 @@ class SipCard extends ConsumerWidget {
             loading: () => const LinearProgressIndicator(),
             error: (_, __) => const SizedBox.shrink(),
           ),
+          const SizedBox(height: AppSpacing.sm),
+
+          // Detailed Installment Breakdown & Valuation Metrics
+          installmentsAsync.when(
+            data: (installments) {
+              final now = DateTime.now();
+              final today = DateTime.utc(now.year, now.month, now.day);
+
+              final totalCount = installments.length;
+              final pastInstallments = installments
+                  .where((i) => !i.scheduledDate.isAfter(today))
+                  .toList();
+              final futureInstallments = installments
+                  .where((i) => i.scheduledDate.isAfter(today))
+                  .toList();
+
+              final confirmedInvestedPaise = installments
+                  .where((i) => i.status == 'recorded')
+                  .fold<int>(
+                      0,
+                      (sum, i) =>
+                          sum + (i.actualAmountPaise ?? i.expectedAmountPaise));
+
+              final plannedFuturePaise = futureInstallments.fold<int>(
+                  0, (sum, i) => sum + i.expectedAmountPaise);
+
+              final pendingValuationCount = installments
+                  .where((i) => i.status == 'pending_valuation')
+                  .length;
+
+              final unitsAccumulated = linkedHolding != null
+                  ? FinancialPrecision.microUnitsToUnits(
+                      linkedHolding.unitCountMicroUnits)
+                  : FinancialPrecision.microUnitsToUnits(installments
+                      .where((i) => i.status == 'recorded')
+                      .fold<int>(
+                          0, (sum, i) => sum + (i.unitsMicroUnits ?? 0)));
+
+              final currentValuationPaise = linkedHolding != null
+                  ? linkedHolding.currentValuationPaise
+                  : confirmedInvestedPaise;
+
+              return Column(
+                children: [
+                  // Installment counts row
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _metricColumn(
+                        label: 'TOTAL INSTALLMENTS',
+                        value: '$totalCount',
+                        isDark: isDark,
+                      ),
+                      _metricColumn(
+                        label: 'PAST (ACTUAL)',
+                        value:
+                            '${pastInstallments.length} (${CurrencyFormatter.formatPaise(confirmedInvestedPaise)})',
+                        valueColor: AppColors.asset,
+                        isDark: isDark,
+                      ),
+                      _metricColumn(
+                        label: 'FUTURE (PLANNED)',
+                        value:
+                            '${futureInstallments.length} (${CurrencyFormatter.formatPaise(plannedFuturePaise)})',
+                        valueColor: AppColors.scheduled,
+                        isDark: isDark,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+
+                  // Units & Current Valuation row
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _metricColumn(
+                        label: 'UNITS ACCUMULATED',
+                        value: unitsAccumulated.toStringAsFixed(3),
+                        isDark: isDark,
+                      ),
+                      _metricColumn(
+                        label: 'CURRENT VALUATION',
+                        value: CurrencyFormatter.formatPaise(
+                            currentValuationPaise),
+                        valueColor: AppColors.asset,
+                        isDark: isDark,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+
+                  // Valuation Status Badge & Action
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            pendingValuationCount > 0
+                                ? Icons.warning_amber_rounded
+                                : Icons.check_circle_outline_rounded,
+                            size: 14,
+                            color: pendingValuationCount > 0
+                                ? AppColors.warning
+                                : AppColors.asset,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            pendingValuationCount > 0
+                                ? '$pendingValuationCount installment(s) pending valuation'
+                                : 'All past installments valued',
+                            style: AppTypography.labelSmall.copyWith(
+                              color: pendingValuationCount > 0
+                                  ? AppColors.warning
+                                  : AppColors.asset,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (pendingValuationCount > 0)
+                        TextButton(
+                          onPressed: () => _retryValuation(context, ref),
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          child: const Text('Retry Valuation',
+                              style: TextStyle(fontSize: 12)),
+                        ),
+                    ],
+                  ),
+                ],
+              );
+            },
+            loading: () => const SizedBox.shrink(),
+            error: (_, __) => const SizedBox.shrink(),
+          ),
+
           const SizedBox(height: AppSpacing.xs),
 
           // Dates Summary
@@ -202,6 +355,35 @@ class SipCard extends ConsumerWidget {
     );
   }
 
+  Widget _metricColumn({
+    required String label,
+    required String value,
+    Color? valueColor,
+    required bool isDark,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: AppTypography.labelSmall.copyWith(
+            color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+            fontSize: 9,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          value,
+          style: AppTypography.labelMedium.copyWith(
+            fontWeight: FontWeight.bold,
+            color: valueColor,
+          ),
+        ),
+      ],
+    );
+  }
+
   BadgeType _badgeTypeForStatus(String status) {
     switch (status.toLowerCase()) {
       case 'active':
@@ -215,20 +397,6 @@ class SipCard extends ConsumerWidget {
         return BadgeType.liability;
       default:
         return BadgeType.neutral;
-    }
-  }
-
-  String _formatDayOrdinal(int day) {
-    if (day >= 11 && day <= 13) return '${day}th';
-    switch (day % 10) {
-      case 1:
-        return '${day}st';
-      case 2:
-        return '${day}nd';
-      case 3:
-        return '${day}rd';
-      default:
-        return '${day}th';
     }
   }
 
@@ -246,5 +414,20 @@ class SipCard extends ConsumerWidget {
       context: context,
       builder: (_) => EditSipScheduleDialog(sip: sip),
     );
+  }
+
+  Future<void> _retryValuation(BuildContext context, WidgetRef ref) async {
+    final sipsDao = ref.read(sipsDaoProvider);
+    final count = await sipsDao.revaluePendingInstallments(sip.schemeCode);
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(count > 0
+              ? 'Successfully valued $count pending installment(s)!'
+              : 'Historical NAV still pending for some dates.'),
+          backgroundColor: count > 0 ? AppColors.asset : AppColors.warning,
+        ),
+      );
+    }
   }
 }

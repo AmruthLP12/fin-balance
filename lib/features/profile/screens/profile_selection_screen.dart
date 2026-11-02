@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/constants/app_constants.dart';
 import '../../../core/providers/database_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/fin_card.dart';
+import '../../../core/widgets/finbalance_logo.dart';
 import '../../../core/widgets/status_badge.dart';
 import '../widgets/profile_avatar.dart';
 import '../widgets/profile_form_dialog.dart';
@@ -41,46 +41,15 @@ class ProfileSelectionScreen extends ConsumerWidget {
                   const SizedBox(height: AppSpacing.lg),
 
                   // Brand & Header
-                  Center(
-                    child: Container(
-                      width: 56,
-                      height: 56,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [
-                            AppColors.brandPrimary,
-                            AppColors.brandPrimaryLight,
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius:
-                            BorderRadius.circular(AppSpacing.radiusMd),
-                        boxShadow: [
-                          BoxShadow(
-                            color:
-                                AppColors.brandPrimary.withValues(alpha: 0.3),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.account_balance_wallet_rounded,
-                        color: Colors.white,
-                        size: 30,
-                      ),
+                  const Center(
+                    child: FinBalanceLogo(
+                      size: 64,
+                      showText: true,
+                      showTagline: true,
+                      axis: Axis.vertical,
                     ),
                   ),
-                  const SizedBox(height: AppSpacing.md),
-                  Text(
-                    AppConstants.appName,
-                    textAlign: TextAlign.center,
-                    style: AppTypography.headlineLarge.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.xxs),
+                  const SizedBox(height: AppSpacing.sm),
                   Text(
                     'Select a profile to continue',
                     textAlign: TextAlign.center,

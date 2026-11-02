@@ -1,17 +1,18 @@
-import 'package:drift/drift.dart' as drift;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/formatting/currency_formatter.dart';
 import '../../../core/formatting/date_formatter.dart';
 import '../../../core/providers/database_provider.dart';
+import '../../../core/scheduling/investment_schedule_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/widgets/fin_card.dart';
 import '../../../data/nav/models/nav_models.dart';
-import '../../../database/app_database.dart';
 import '../../../database/precision/financial_precision.dart';
 
-/// Modal dialog allowing user to add a mutual fund scheme into an active profile's asset portfolio.
+/// Modal dialog allowing user to add a mutual fund scheme into an active profile's
+/// asset portfolio via an automated investment schedule.
 class AddToProfileDialog extends ConsumerStatefulWidget {
   final MutualFundSchemeDetail scheme;
   final int? preselectedProfileId;
@@ -27,82 +28,65 @@ class AddToProfileDialog extends ConsumerStatefulWidget {
 }
 
 class _AddToProfileDialogState extends ConsumerState<AddToProfileDialog> {
+  final _formKey = GlobalKey<FormState>();
+
   late TextEditingController _amountController;
-  late TextEditingController _unitsController;
-  late TextEditingController _purchaseNavController;
+  late TextEditingController _installmentsController;
   late TextEditingController _notesController;
-  late DateTime _purchaseDate;
+
+  late DateTime _startDate;
+  late ScheduleFrequency _frequency;
+  bool _markPastAsConfirmed = true;
   int? _selectedProfileId;
   bool _isSaving = false;
-  bool _isSyncingFields = false;
 
   @override
   void initState() {
     super.initState();
-    final latestNavDouble = widget.scheme.latestNav != null
-        ? FinancialPrecision.microPaiseToNav(
-            widget.scheme.latestNav!.navMicroPaise)
-        : 100.0;
-
-    _amountController = TextEditingController(text: '10000');
-    _purchaseNavController =
-        TextEditingController(text: latestNavDouble.toStringAsFixed(4));
-    _unitsController = TextEditingController();
+    _amountController = TextEditingController(text: '500');
+    _installmentsController = TextEditingController(text: '12');
     _notesController = TextEditingController();
-    _purchaseDate = widget.scheme.latestNav?.date ?? DateTime.now();
 
+    // Default start date is today (device local date)
+    final now = DateTime.now();
+    _startDate = DateTime(now.year, now.month, now.day);
+    _frequency = ScheduleFrequency.monthly;
     _selectedProfileId = widget.preselectedProfileId;
-    _updateUnitsFromAmount();
-  }
-
-  void _updateUnitsFromAmount() {
-    if (_isSyncingFields) return;
-    _isSyncingFields = true;
-    final amountRupees = double.tryParse(_amountController.text) ?? 0.0;
-    final purchaseNav = double.tryParse(_purchaseNavController.text) ?? 0.0;
-
-    if (purchaseNav > 0) {
-      final navMicroPaise = FinancialPrecision.navToMicroPaise(purchaseNav);
-      final unitsMicro = FinancialPrecision.calculateUnitsPurchased(
-        amountPaise: FinancialPrecision.rupeesToPaise(amountRupees),
-        navMicroPaise: navMicroPaise,
-      );
-      final units = FinancialPrecision.microUnitsToUnits(unitsMicro);
-      _unitsController.text = units > 0 ? units.toStringAsFixed(4) : '';
-    }
-    _isSyncingFields = false;
-  }
-
-  void _updateAmountFromUnits() {
-    if (_isSyncingFields) return;
-    _isSyncingFields = true;
-    final units = double.tryParse(_unitsController.text) ?? 0.0;
-    final purchaseNav = double.tryParse(_purchaseNavController.text) ?? 0.0;
-
-    if (purchaseNav > 0 && units > 0) {
-      final amount = units * purchaseNav;
-      _amountController.text = amount.toStringAsFixed(2);
-    }
-    _isSyncingFields = false;
-  }
-
-  void _onPurchaseNavChanged() {
-    if (_isSyncingFields) return;
-    final amountRupees = double.tryParse(_amountController.text) ?? 0.0;
-    if (amountRupees > 0) {
-      _updateUnitsFromAmount();
-    } else {
-      _updateAmountFromUnits();
-    }
   }
 
   @override
   void dispose() {
     _amountController.dispose();
-    _unitsController.dispose();
-    _purchaseNavController.dispose();
+    _installmentsController.dispose();
     _notesController.dispose();
     super.dispose();
+  }
+
+  ScheduleSummary _calculateLiveSchedule() {
+    final amountRupees = double.tryParse(_amountController.text.trim()) ?? 0.0;
+    final amountPaise = FinancialPrecision.rupeesToPaise(amountRupees);
+    final count = int.tryParse(_installmentsController.text.trim()) ??
+        (_frequency == ScheduleFrequency.oneTime ? 1 : 12);
+
+    return InvestmentScheduleService.generateSchedule(
+      startDate: _startDate,
+      totalInstallments: count > 0 ? count : 1,
+      frequency: _frequency,
+      amountPerInstallmentPaise: amountPaise > 0 ? amountPaise : 0,
+      asOfDate: DateTime.now(),
+    );
+  }
+
+  void _onFrequencyChanged(ScheduleFrequency? newFreq) {
+    if (newFreq == null) return;
+    setState(() {
+      _frequency = newFreq;
+      if (newFreq == ScheduleFrequency.oneTime) {
+        _installmentsController.text = '1';
+      } else if (_installmentsController.text == '1') {
+        _installmentsController.text = '12';
+      }
+    });
   }
 
   @override
@@ -113,323 +97,590 @@ class _AddToProfileDialogState extends ConsumerState<AddToProfileDialog> {
     final activeProfileId = ref.watch(activeProfileIdProvider);
 
     _selectedProfileId ??= activeProfileId;
+    final schedule = _calculateLiveSchedule();
 
-    return AlertDialog(
-      title: const Text('Add to Portfolio Assets'),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              widget.scheme.schemeName,
-              style: AppTypography.titleMedium.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            if (widget.scheme.latestNav != null)
-              Text(
-                'Latest NAV: ${CurrencyFormatter.format(FinancialPrecision.microPaiseToNav(widget.scheme.latestNav!.navMicroPaise))} (${DateFormatter.formatDate(widget.scheme.latestNav!.date)})',
-                style: AppTypography.labelMedium.copyWith(
-                  color: isDark
-                      ? AppColors.darkTextSecondary
-                      : AppColors.lightTextSecondary,
-                ),
-              ),
-            const Divider(height: AppSpacing.lg),
-
-            // Profile Selection
-            Text(
-              'Select Profile',
-              style: AppTypography.labelMedium.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            profilesAsync.when(
-              data: (profiles) => DropdownButtonFormField<int>(
-                initialValue: _selectedProfileId,
-                decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                  contentPadding:
-                      EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                ),
-                items: profiles
-                    .map((p) => DropdownMenuItem(
-                          value: p.id,
-                          child: Text('${p.name} (${p.relationship})'),
-                        ))
-                    .toList(),
-                onChanged: (val) {
-                  if (val != null) setState(() => _selectedProfileId = val);
-                },
-              ),
-              loading: () => const LinearProgressIndicator(),
-              error: (_, __) => const Text('Error loading profiles'),
-            ),
-            const SizedBox(height: AppSpacing.md),
-
-            // Investment Amount
-            Text(
-              'Investment Amount (INR)',
-              style: AppTypography.labelMedium.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            TextField(
-              controller: _amountController,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(
-                prefixText: '₹ ',
-                border: OutlineInputBorder(),
-                hintText: 'e.g. 5000',
-              ),
-              onChanged: (_) => _updateUnitsFromAmount(),
-            ),
-            const SizedBox(height: AppSpacing.md),
-
-            // Purchase NAV
-            Text(
-              'Purchase NAV (INR)',
-              style: AppTypography.labelMedium.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            TextField(
-              controller: _purchaseNavController,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(
-                prefixText: '₹ ',
-                border: OutlineInputBorder(),
-                hintText: 'e.g. 150.25',
-              ),
-              onChanged: (_) => _onPurchaseNavChanged(),
-            ),
-            const SizedBox(height: AppSpacing.md),
-
-            // Units Allotted
-            Text(
-              'Units Allotted',
-              style: AppTypography.labelMedium.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            TextField(
-              controller: _unitsController,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(
-                suffixText: 'units',
-                border: OutlineInputBorder(),
-                hintText: 'e.g. 45.123',
-              ),
-              onChanged: (_) => _updateAmountFromUnits(),
-            ),
-            const SizedBox(height: AppSpacing.md),
-
-            // Purchase Date
-            Text(
-              'Purchase Date',
-              style: AppTypography.labelMedium.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            InkWell(
-              onTap: () async {
-                final picked = await showDatePicker(
-                  context: context,
-                  initialDate: _purchaseDate,
-                  firstDate: DateTime(1990),
-                  lastDate: DateTime.now().add(const Duration(days: 1)),
-                );
-                if (picked != null) {
-                  setState(() => _purchaseDate = picked);
-                }
-              },
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-                decoration: BoxDecoration(
-                  border: Border.all(
-                    color:
-                        isDark ? AppColors.darkBorder : AppColors.lightBorder,
-                  ),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Row(
+    return Dialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+      ),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 540, maxHeight: 720),
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Header
+                Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      DateFormatter.formatDate(_purchaseDate),
-                      style: AppTypography.bodyMedium,
+                    Expanded(
+                      child: Text(
+                        'Investment Schedule',
+                        style: AppTypography.titleLarge.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
-                    const Icon(Icons.calendar_today_rounded, size: 18),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
                   ],
                 ),
-              ),
-            ),
-            const SizedBox(height: AppSpacing.md),
+                const SizedBox(height: AppSpacing.xs),
 
-            // Notes
-            Text(
-              'Notes (Optional)',
-              style: AppTypography.labelMedium.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // 1. Mutual Fund Scheme Header Card
+                        FinCard(
+                          backgroundColor: isDark
+                              ? AppColors.darkSurfaceElevated
+                              : AppColors.lightSurfaceElevated,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                widget.scheme.schemeName,
+                                style: AppTypography.titleMedium.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              if (widget.scheme.fundHouse != null &&
+                                  widget.scheme.fundHouse!.isNotEmpty) ...[
+                                const SizedBox(height: 2),
+                                Text(
+                                  widget.scheme.fundHouse!,
+                                  style: AppTypography.labelSmall.copyWith(
+                                    color: isDark
+                                        ? AppColors.darkTextMuted
+                                        : AppColors.lightTextMuted,
+                                  ),
+                                ),
+                              ],
+                              const Divider(height: AppSpacing.md),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    'Latest NAV',
+                                    style: AppTypography.labelSmall.copyWith(
+                                      color: isDark
+                                          ? AppColors.darkTextMuted
+                                          : AppColors.lightTextMuted,
+                                    ),
+                                  ),
+                                  Text(
+                                    widget.scheme.latestNav != null
+                                        ? '₹${FinancialPrecision.microPaiseToNav(widget.scheme.latestNav!.navMicroPaise).toStringAsFixed(4)} (${DateFormatter.formatDate(widget.scheme.latestNav!.date)})'
+                                        : 'Awaiting NAV fetch',
+                                    style: AppTypography.labelMedium.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.brandPrimaryLight,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+
+                        // 2. Financial Profile
+                        Text(
+                          'Financial Profile',
+                          style: AppTypography.labelMedium.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.xs),
+                        profilesAsync.when(
+                          data: (profiles) => DropdownButtonFormField<int>(
+                            initialValue: _selectedProfileId,
+                            decoration: const InputDecoration(
+                              border: OutlineInputBorder(),
+                              contentPadding: EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 12),
+                            ),
+                            items: profiles
+                                .map((p) => DropdownMenuItem(
+                                      value: p.id,
+                                      child:
+                                          Text('${p.name} (${p.relationship})'),
+                                    ))
+                                .toList(),
+                            onChanged: (val) {
+                              if (val != null) {
+                                setState(() => _selectedProfileId = val);
+                              }
+                            },
+                          ),
+                          loading: () => const LinearProgressIndicator(),
+                          error: (_, __) =>
+                              const Text('Error loading profiles'),
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+
+                        // 3. Investment Amount & Frequency
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              flex: 3,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Amount per installment',
+                                    style: AppTypography.labelMedium.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const SizedBox(height: AppSpacing.xs),
+                                  TextFormField(
+                                    controller: _amountController,
+                                    keyboardType:
+                                        const TextInputType.numberWithOptions(
+                                            decimal: true),
+                                    decoration: const InputDecoration(
+                                      prefixText: '₹ ',
+                                      border: OutlineInputBorder(),
+                                      hintText: '500',
+                                    ),
+                                    onChanged: (_) => setState(() {}),
+                                    validator: (val) {
+                                      if (val == null || val.trim().isEmpty) {
+                                        return 'Enter amount';
+                                      }
+                                      final amt = double.tryParse(val.trim());
+                                      if (amt == null || amt <= 0) {
+                                        return 'Must be > 0';
+                                      }
+                                      return null;
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: AppSpacing.sm),
+                            Expanded(
+                              flex: 3,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Frequency',
+                                    style: AppTypography.labelMedium.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const SizedBox(height: AppSpacing.xs),
+                                  DropdownButtonFormField<ScheduleFrequency>(
+                                    initialValue: _frequency,
+                                    decoration: const InputDecoration(
+                                      border: OutlineInputBorder(),
+                                      contentPadding: EdgeInsets.symmetric(
+                                          horizontal: 10, vertical: 12),
+                                    ),
+                                    items: ScheduleFrequency.values
+                                        .map((f) => DropdownMenuItem(
+                                              value: f,
+                                              child: Text(f.label),
+                                            ))
+                                        .toList(),
+                                    onChanged: _onFrequencyChanged,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+
+                        // 4. Start Date & Number of Installments
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              flex: 3,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Start Date',
+                                    style: AppTypography.labelMedium.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const SizedBox(height: AppSpacing.xs),
+                                  InkWell(
+                                    onTap: () async {
+                                      final picked = await showDatePicker(
+                                        context: context,
+                                        initialDate: _startDate,
+                                        firstDate: DateTime(1990),
+                                        lastDate: DateTime(2040),
+                                      );
+                                      if (picked != null) {
+                                        setState(() => _startDate = DateTime(
+                                            picked.year,
+                                            picked.month,
+                                            picked.day));
+                                      }
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 12, vertical: 14),
+                                      decoration: BoxDecoration(
+                                        border: Border.all(
+                                          color: isDark
+                                              ? AppColors.darkBorder
+                                              : AppColors.lightBorder,
+                                        ),
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Text(
+                                            DateFormatter.formatDate(
+                                                _startDate),
+                                            style: AppTypography.bodyMedium,
+                                          ),
+                                          const Icon(
+                                              Icons.calendar_today_rounded,
+                                              size: 16),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: AppSpacing.sm),
+                            Expanded(
+                              flex: 3,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Installments',
+                                    style: AppTypography.labelMedium.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const SizedBox(height: AppSpacing.xs),
+                                  TextFormField(
+                                    controller: _installmentsController,
+                                    enabled:
+                                        _frequency != ScheduleFrequency.oneTime,
+                                    keyboardType: TextInputType.number,
+                                    decoration: InputDecoration(
+                                      border: const OutlineInputBorder(),
+                                      hintText: '12',
+                                      helperText: _frequency ==
+                                              ScheduleFrequency.oneTime
+                                          ? 'Locked for one-time'
+                                          : null,
+                                    ),
+                                    onChanged: (_) => setState(() {}),
+                                    validator: (val) {
+                                      if (_frequency ==
+                                          ScheduleFrequency.oneTime) {
+                                        return null;
+                                      }
+                                      if (val == null || val.trim().isEmpty) {
+                                        return 'Enter count';
+                                      }
+                                      final count = int.tryParse(val.trim());
+                                      if (count == null || count < 1) {
+                                        return 'Must be >= 1';
+                                      }
+                                      return null;
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+
+                        // 5. Automatic Calculation Summary Card
+                        FinCard(
+                          backgroundColor: isDark
+                              ? AppColors.darkSurfaceElevated
+                              : AppColors.lightSurfaceElevated,
+                          borderColor:
+                              AppColors.brandPrimaryLight.withAlpha(80),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    'SCHEDULE CALCULATION',
+                                    style: AppTypography.labelSmall.copyWith(
+                                      color: isDark
+                                          ? AppColors.darkTextMuted
+                                          : AppColors.lightTextMuted,
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: 0.8,
+                                    ),
+                                  ),
+                                  if (schedule.occurrences.isNotEmpty)
+                                    Text(
+                                      'Ends ${DateFormatter.formatDate(schedule.occurrences.last.scheduledDate)}',
+                                      style: AppTypography.labelSmall.copyWith(
+                                        color: AppColors.brandPrimaryLight,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                ],
+                              ),
+                              const SizedBox(height: AppSpacing.sm),
+                              Row(
+                                children: [
+                                  // Past Installments
+                                  Expanded(
+                                    child: Container(
+                                      padding:
+                                          const EdgeInsets.all(AppSpacing.sm),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.asset.withAlpha(25),
+                                        borderRadius: BorderRadius.circular(
+                                            AppSpacing.radiusSm),
+                                        border: Border.all(
+                                          color: AppColors.asset.withAlpha(60),
+                                        ),
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'PAST (ACTUAL)',
+                                            style: AppTypography.labelSmall
+                                                .copyWith(
+                                              color: AppColors.asset,
+                                              fontWeight: FontWeight.w700,
+                                              fontSize: 9,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            CurrencyFormatter.formatPaise(
+                                                schedule
+                                                    .pastInvestedAmountPaise),
+                                            style: AppTypography.titleMedium
+                                                .copyWith(
+                                              fontWeight: FontWeight.bold,
+                                              color: AppColors.asset,
+                                            ),
+                                          ),
+                                          Text(
+                                            '${schedule.pastInstallments} installment${schedule.pastInstallments == 1 ? '' : 's'}',
+                                            style: AppTypography.labelSmall
+                                                .copyWith(
+                                              color: isDark
+                                                  ? AppColors.darkTextSecondary
+                                                  : AppColors
+                                                      .lightTextSecondary,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: AppSpacing.sm),
+                                  // Future Installments
+                                  Expanded(
+                                    child: Container(
+                                      padding:
+                                          const EdgeInsets.all(AppSpacing.sm),
+                                      decoration: BoxDecoration(
+                                        color:
+                                            AppColors.scheduled.withAlpha(25),
+                                        borderRadius: BorderRadius.circular(
+                                            AppSpacing.radiusSm),
+                                        border: Border.all(
+                                          color:
+                                              AppColors.scheduled.withAlpha(60),
+                                        ),
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'FUTURE (PLANNED)',
+                                            style: AppTypography.labelSmall
+                                                .copyWith(
+                                              color: AppColors.scheduled,
+                                              fontWeight: FontWeight.w700,
+                                              fontSize: 9,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            CurrencyFormatter.formatPaise(
+                                                schedule
+                                                    .futureScheduledAmountPaise),
+                                            style: AppTypography.titleMedium
+                                                .copyWith(
+                                              fontWeight: FontWeight.bold,
+                                              color: AppColors.scheduled,
+                                            ),
+                                          ),
+                                          Text(
+                                            '${schedule.futureInstallments} installment${schedule.futureInstallments == 1 ? '' : 's'}',
+                                            style: AppTypography.labelSmall
+                                                .copyWith(
+                                              color: isDark
+                                                  ? AppColors.darkTextSecondary
+                                                  : AppColors
+                                                      .lightTextSecondary,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: AppSpacing.xs),
+                              Text(
+                                'Total scheduled: ${CurrencyFormatter.formatPaise(schedule.totalScheduledAmountPaise)} across ${schedule.totalInstallments} installments. Only past installments are included in your portfolio valuation.',
+                                style: AppTypography.labelSmall.copyWith(
+                                  color: isDark
+                                      ? AppColors.darkTextMuted
+                                      : AppColors.lightTextMuted,
+                                  fontSize: 10,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.sm),
+
+                        // 6. Confirmed Status Toggle
+                        if (schedule.pastInstallments > 0)
+                          SwitchListTile(
+                            contentPadding: EdgeInsets.zero,
+                            title: Text(
+                              'Confirm past installments as actual investments',
+                              style: AppTypography.labelMedium.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            subtitle: Text(
+                              _markPastAsConfirmed
+                                  ? 'Past installments will be added to holding units and transaction history using historical NAVs.'
+                                  : 'Past installments will remain estimated simulation records.',
+                              style: AppTypography.labelSmall.copyWith(
+                                color: isDark
+                                    ? AppColors.darkTextMuted
+                                    : AppColors.lightTextMuted,
+                              ),
+                            ),
+                            value: _markPastAsConfirmed,
+                            onChanged: (val) =>
+                                setState(() => _markPastAsConfirmed = val),
+                          ),
+
+                        // 7. Notes
+                        TextFormField(
+                          controller: _notesController,
+                          decoration: const InputDecoration(
+                            labelText: 'Description / Notes (Optional)',
+                            border: OutlineInputBorder(),
+                            hintText: 'e.g. Monthly tax saver SIP via Zerodha',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: AppSpacing.md),
+                // Actions
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed:
+                          _isSaving ? null : () => Navigator.of(context).pop(),
+                      child: const Text('Cancel'),
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    FilledButton(
+                      onPressed: _isSaving ? null : _saveSchedule,
+                      child: _isSaving
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Text('Save Schedule'),
+                    ),
+                  ],
+                ),
+              ],
             ),
-            const SizedBox(height: AppSpacing.xs),
-            TextField(
-              controller: _notesController,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                hintText: 'e.g. Initial lumpsum investment',
-              ),
-            ),
-          ],
+          ),
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: _isSaving ? null : () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
-        ),
-        FilledButton(
-          onPressed: _isSaving ? null : _saveAssetToProfile,
-          child: _isSaving
-              ? const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Text('Add Asset'),
-        ),
-      ],
     );
   }
 
-  Future<void> _saveAssetToProfile() async {
+  Future<void> _saveSchedule() async {
+    if (!_formKey.currentState!.validate()) return;
     final profileId = _selectedProfileId;
     if (profileId == null) return;
+
+    final amountRupees = double.tryParse(_amountController.text.trim()) ?? 0.0;
+    final amountPaise = FinancialPrecision.rupeesToPaise(amountRupees);
+    final count = int.tryParse(_installmentsController.text.trim()) ??
+        (_frequency == ScheduleFrequency.oneTime ? 1 : 12);
 
     setState(() => _isSaving = true);
 
     try {
-      final categoriesDao = ref.read(categoriesDaoProvider);
-      final itemsDao = ref.read(financialItemsDaoProvider);
-
-      // 1. Get or default to asset category for Mutual Funds
-      final assetCats =
-          await categoriesDao.getCategoriesByClassification('asset');
-      final mfCategory = assetCats.firstWhere(
-        (c) => c.name.toLowerCase().contains('mutual fund'),
-        orElse: () => assetCats.first,
+      final sipsDao = ref.read(sipsDaoProvider);
+      final result = await sipsDao.createInvestmentSchedule(
+        profileId: profileId,
+        schemeCode: widget.scheme.schemeCode,
+        schemeName: widget.scheme.schemeName,
+        startDate: _startDate,
+        totalInstallments: count,
+        frequency: _frequency,
+        amountPerInstallmentPaise: amountPaise,
+        markPastAsConfirmed: _markPastAsConfirmed,
+        latestNavMicroPaise: widget.scheme.latestNav?.navMicroPaise,
+        notes: _notesController.text.trim().isNotEmpty
+            ? _notesController.text.trim()
+            : null,
       );
-
-      final amountRupees = double.tryParse(_amountController.text) ?? 0.0;
-      final units = double.tryParse(_unitsController.text) ?? 0.0;
-      final purchaseNavRupees =
-          double.tryParse(_purchaseNavController.text) ?? 0.0;
-
-      final amountPaise = FinancialPrecision.rupeesToPaise(amountRupees);
-      final unitsMicro = FinancialPrecision.unitsToMicroUnits(units);
-      final purchaseNavMicro =
-          FinancialPrecision.navToMicroPaise(purchaseNavRupees);
-
-      // Latest market NAV (use scheme latestNav or purchaseNav as fallback)
-      final latestNavMicro = widget.scheme.latestNav?.navMicroPaise ??
-          (purchaseNavMicro > 0
-              ? purchaseNavMicro
-              : FinancialPrecision.navToMicroPaise(100.0));
-
-      final valuationPaise = FinancialPrecision.calculateValuationPaise(
-        unitCountMicroUnits: unitsMicro,
-        navMicroPaise: latestNavMicro,
-      );
-
-      final userNotes = _notesController.text.trim();
-
-      // 2. Check if this profile already holds this mutual fund scheme
-      final existingItem = await itemsDao.getItemByExternalCode(
-        profileId,
-        widget.scheme.schemeCode.toString(),
-      );
-
-      int itemId;
-      if (existingItem != null) {
-        final newUnitsMicro = existingItem.unitCountMicroUnits + unitsMicro;
-        final newInitialPaise = existingItem.initialValuePaise + amountPaise;
-        final newValuationPaise = FinancialPrecision.calculateValuationPaise(
-          unitCountMicroUnits: newUnitsMicro,
-          navMicroPaise: latestNavMicro,
-        );
-
-        await itemsDao.updateItem(
-          existingItem.copyWith(
-            initialValuePaise: newInitialPaise,
-            currentValuationPaise: newValuationPaise,
-            unitCountMicroUnits: newUnitsMicro,
-            updatedAt: DateTime.now().toUtc(),
-          ),
-        );
-        itemId = existingItem.id;
-      } else {
-        itemId = await itemsDao.insertItem(
-          FinancialItemsCompanion(
-            profileId: drift.Value(profileId),
-            name: drift.Value(widget.scheme.schemeName),
-            itemType: const drift.Value('asset'),
-            subType: const drift.Value('mutual_fund'),
-            categoryId: drift.Value(mfCategory.id),
-            externalCode: drift.Value(widget.scheme.schemeCode.toString()),
-            initialValuePaise: drift.Value(amountPaise),
-            currentValuationPaise: drift.Value(valuationPaise),
-            unitCountMicroUnits: drift.Value(unitsMicro),
-            startDate: drift.Value(_purchaseDate),
-            notes: userNotes.isNotEmpty
-                ? drift.Value(userNotes)
-                : const drift.Value.absent(),
-          ),
-        );
-      }
-
-      // 3. Record investment purchase transaction
-      if (amountPaise > 0 || unitsMicro > 0) {
-        final txDao = ref.read(transactionsDaoProvider);
-        await txDao.insertTransaction(
-          TransactionsCompanion(
-            profileId: drift.Value(profileId),
-            transactionType: const drift.Value('investment_purchase'),
-            categoryId: drift.Value(mfCategory.id),
-            financialItemId: drift.Value(itemId),
-            transactionDate: drift.Value(_purchaseDate),
-            amountPaise: drift.Value(amountPaise),
-            unitsMicroUnits: drift.Value(unitsMicro),
-            unitPriceMicroPaise: drift.Value(purchaseNavMicro),
-            source: const drift.Value('manual'),
-            notes: drift.Value(
-              userNotes.isNotEmpty
-                  ? userNotes
-                  : (existingItem != null
-                      ? 'Additional investment in ${widget.scheme.schemeName}'
-                      : 'Initial holding in ${widget.scheme.schemeName}'),
-            ),
-          ),
-        );
-      }
 
       if (mounted) {
         Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-                'Added "${widget.scheme.schemeName}" to profile portfolio!'),
+              'Schedule created: ${result.totalInstallments} installments (${result.pastInstallments} past, ${result.futureInstallments} planned future).',
+            ),
             backgroundColor: AppColors.asset,
           ),
         );
@@ -438,7 +689,7 @@ class _AddToProfileDialogState extends ConsumerState<AddToProfileDialog> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error adding asset: $e'),
+            content: Text('Failed to save investment schedule: $e'),
             backgroundColor: AppColors.liability,
           ),
         );

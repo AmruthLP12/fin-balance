@@ -5,6 +5,42 @@ All notable changes to the FinBalance application will be documented in this fil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-11-02
+
+### Added
+- **Redesigned Mutual Fund Investment Schedule Form (`AddToProfileDialog`):**
+  - Replaced manual single lumpsum entry with automated investment schedule generator.
+  - Configurable fields: Mutual Fund Scheme header with latest NAV and date, Financial Profile selector, Amount per installment, Start Date picker, Frequency selector (Daily, Weekly, Monthly, Quarterly, Yearly, One-time), Number of Installments (automatically locked to 1 for One-time), Description/notes, and Confirmed vs Estimated toggle.
+  - Live dynamic schedule calculation card: Real-time projection of schedule end date, total installments, past actual count and amount, future planned count and amount, and total scheduled capital.
+- **Reusable Investment Schedule Service (`InvestmentScheduleService`):**
+  - High-reliability recurring date calculator supporting daily, weekly, monthly, quarterly, yearly, and one-time schedules.
+  - Zero progressive date drift with leap-year aware month-end clamping (e.g. Jan 31 -> Feb 28/29 -> Mar 31).
+  - Dynamic local-date partitioning into Past ($\le \text{today}$) and Future ($> \text{today}$).
+- **Historical NAV-Based Unit Calculation & Valuation Lifecycle:**
+  - `MutualFundDao.getNavOnOrBefore`: Evaluates historical NAV applicable for each past installment date, with weekend (Saturday/Sunday $\rightarrow$ Friday) and market holiday fallbacks to the preceding trading day.
+  - Missing historical NAVs are recorded as `pending_valuation` without inventing synthetic quotes.
+  - Added `revaluePendingInstallments` to recover and value pending installments once historical NAV data is synced.
+  - Guaranteed financial isolation: Future installments are strictly recorded as `upcoming` simulated occurrences with null units and null purchase NAV. Future amounts are never calculated using today's NAV and never added to current portfolio valuation or net worth.
+  - Multi-schedule accumulation: Multiple investment schedules for the same scheme under the same profile accumulate units and invested capital into a unified holding without overwriting.
+- **Investment Details & Schedule Editing:**
+  - `SipCard`: Displays investment frequency, total installments, past vs future counts and amounts, confirmed invested capital, planned future investment, accumulated units, current valuation, and valuation status badge with one-tap retry for pending valuations.
+  - `EditSipScheduleDialog`: Allows modifying frequency, amount per installment, and remaining installments starting on a user-specified effective date. Updates only future occurrences on or after the effective date, strictly preserving past confirmed transactions, recorded units, and historical purchase NAVs.
+- **Complete Logo & Application Branding Redesign:**
+  - Modern geometric fintech visual identity representing Assets (+) Emerald Green (`#10B981`), Liabilities (−) Cobalt Blue (`#2563EB`), and Net Worth Equilibrium Fulcrum Golden Amber (`#F59E0B`).
+  - Android adaptive launcher vector drawables (`ic_launcher_foreground.xml`, `ic_launcher_background.xml`).
+  - Generated all Android launcher mipmap densities (`mipmap-mdpi`, `hdpi`, `xhdpi`, `xxhdpi`, `xxxhdpi`).
+  - Generated Web branding assets: `favicon.png`, `Icon-192.png`, `Icon-512.png`, `Icon-maskable-192.png`, and `Icon-maskable-512.png`.
+  - In-app vector Flutter widget `FinBalanceLogo` with light/dark theme adaptation, scalable sizing, and optional tagline ("Assets • Liabilities • Balance").
+  - Integrated `FinBalanceLogo` across `ProfileSelectionScreen`, `SettingsScreen`, and `MainScaffold`.
+
+### Testing
+- Added `test/unit/investment_schedule_calculator_test.dart` (9 tests for schedule rules, frequencies, month-end clamping, leap years, and past/future partitioning).
+- Added `test/unit/historical_nav_unit_calculation_test.dart` (6 tests for exact NAV lookup, weekend fallback, holiday fallback, missing NAV graceful handling, future NAV isolation, and integer micro-precision units).
+- Added `test/unit/investment_financial_accuracy_test.dart` (3 tests for past/future financial isolation, multi-schedule holding accumulation, and simulated vs confirmed status).
+- Added `test/unit/schedule_editing_test.dart` (schedule updates from effective date with strict preservation of historical records and transactions).
+- Added `test/unit/branding_assets_test.dart` (5 tests verifying Android mipmap files, adaptive XML drawables, web icons/favicon/manifest, and `FinBalanceLogo` widget rendering across themes).
+- Total automated test suite expanded to **114 passing tests** (0 failures).
+
 ## [0.4.0] - 2026-11-02
 
 ### Added
