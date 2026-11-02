@@ -146,6 +146,13 @@ make clean
   - Startup `ProfileSelectionScreen` providing cold-boot profile picking, "Quick Continue", and on-demand lazy loading.
   - Configurable NAV synchronization policy (`Daily`, `Weekly`, `Manual Only`) with next-eligible sync timestamp calculation and cache-first scheme viewing.
   - Profile-isolated favourite schemes with atomic toggle and reactive Drift streams.
+- [x] **Mobile UX, Navigation, Activity Ledger & Cash Flow Analysis:**
+  - Redesigned mobile form layout for adding mutual funds and liabilities with persistent top AppBar Save buttons and keyboard-friendly scroll views.
+  - Top-left return to profile picker (`ReturnToProfilesButton`) across all primary sections.
+  - Context-aware circular Floating Action Button (`+`) customized across Overview, Assets, Liabilities, and Activity tabs.
+  - Centralized NAV synchronization in Settings only with granular status and error details.
+  - Real database-driven Activity Ledger with multi-dimension filtering (type, category, date range) and transaction deletion.
+  - Dedicated Cash Flow analysis view with period selectors, savings rate calculation, and proportional category progress breakdowns (with strict internal transfer exclusion).
 - [ ] **Milestone 5 — Transaction & Valuation Engine:** Simulated installments, lump-sum purchases, redemptions, unit calculations.
 - [ ] **Milestone 6 — Dashboard & Overview:** Real-time net worth calculation, active SIPs, upcoming EMIs.
 - [ ] **Milestone 7 — Financial Analytics:** Dated-cashflow XIRR (Newton-Raphson), asset allocation, historical charts.

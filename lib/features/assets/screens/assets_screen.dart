@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/formatting/currency_formatter.dart';
 import '../../../core/providers/database_provider.dart';
-import '../../../core/providers/nav_providers.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/empty_state_view.dart';
 import '../../../core/widgets/fin_card.dart';
+import '../../../core/widgets/return_to_profiles_button.dart';
 import '../../../core/widgets/section_header.dart';
 import '../../../core/widgets/status_badge.dart';
 import '../../../database/app_database.dart';
@@ -28,7 +28,6 @@ class AssetsScreen extends ConsumerStatefulWidget {
 
 class _AssetsScreenState extends ConsumerState<AssetsScreen> {
   String _selectedCategoryFilter = 'all';
-  bool _isSyncingNav = false;
 
   @override
   Widget build(BuildContext context) {
@@ -43,21 +42,11 @@ class _AssetsScreenState extends ConsumerState<AssetsScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: const ReturnToProfilesButton(),
         title: const Text('Assets & Holdings'),
         actions: [
           const ProfileSelectorButton(),
           const SizedBox(width: AppSpacing.xs),
-          IconButton(
-            icon: _isSyncingNav
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.sync_rounded),
-            tooltip: 'Sync Portfolio NAV',
-            onPressed: _isSyncingNav ? null : _triggerPortfolioNavSync,
-          ),
           IconButton(
             icon: const Icon(Icons.search_rounded),
             tooltip: 'Search & Add Mutual Funds',
@@ -276,11 +265,6 @@ class _AssetsScreenState extends ConsumerState<AssetsScreen> {
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        icon: const Icon(Icons.add_chart_rounded),
-        label: const Text('Add Mutual Fund'),
-        onPressed: () => _openSearchScreen(context),
-      ),
     );
   }
 
@@ -343,36 +327,6 @@ class _AssetsScreenState extends ConsumerState<AssetsScreen> {
       backgroundColor: Colors.transparent,
       builder: (_) => HoldingDetailsSheet(holding: item),
     );
-  }
-
-  Future<void> _triggerPortfolioNavSync() async {
-    setState(() => _isSyncingNav = true);
-    try {
-      final syncService = ref.read(navSyncServiceProvider);
-      final summary = await syncService.syncAllPortfolioSchemes();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(summary.totalSchemes > 0
-                ? 'Updated NAV for ${summary.successCount} of ${summary.totalSchemes} schemes (${summary.primaryProvider ?? "MFapi"})'
-                : 'No tracked schemes to sync in portfolio.'),
-            backgroundColor:
-                summary.failedCount == 0 ? AppColors.asset : AppColors.warning,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('NAV sync notice: $e'),
-            backgroundColor: AppColors.liability,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isSyncingNav = false);
-    }
   }
 
   void _openAddSipDialog(BuildContext context) {

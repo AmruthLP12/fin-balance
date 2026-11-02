@@ -508,3 +508,30 @@ FinBalance treats mutual fund investments as systematic schedules rather than is
 - Full PWA Web assets (favicon, 192, 512, maskable variants).
 - Dedicated in-app `FinBalanceLogo` Flutter widget with dark/light mode responsiveness and scalable display options.
 
+---
+
+## 11. Mobile UX, Navigation, Activity Ledger & Cash Flow Analysis
+
+### 11.1 Mobile-First Addition Workflows
+- **Full-Screen Mobile Forms:** Replaced cramped desktop-style modals with edge-to-edge mobile screens utilizing persistent top AppBar Save actions.
+- **Persistent Header Save Button:** Keeps the primary call to action visible and tap-target accessible while the virtual keyboard is open or during long scrolls.
+- **Single-Column Mobile Responsiveness:** Eliminates horizontal overflow and field crowding on narrow mobile displays (< 500px).
+- **Clear Information Hierarchy:** Form fields follow a natural progression: Target Item $\rightarrow$ Amount $\rightarrow$ Start Date $\rightarrow$ Frequency $\rightarrow$ Occurrences $\rightarrow$ Profile $\rightarrow$ Notes.
+
+### 11.2 Contextual Navigation & Profile Switching
+- **Top-Left Switch Action:** Persistent `ReturnToProfilesButton` (`Icons.switch_account_rounded`) across Overview, Assets, Liabilities, Activity, and Settings screens to return to family profile selection without data reset.
+- **Context-Aware Circular Floating Action Button (`+`):** Compact circular FAB adapting its action trigger contextually:
+  - Overview: Quick action bottom sheet (Add Mutual Fund, Add Liability, Record Income, Record Expense).
+  - Assets: Asset creation options (Mutual Fund Schedule, other asset categories).
+  - Liabilities: Direct modal launch of `AddLiabilityDialog`.
+  - Activity & Cash Flow: Transaction entry sheet (Add Income, Add Expense, Add Transfer).
+  - Settings: Suppressed (`floatingActionButton: null`).
+- **Centralized Settings-Only NAV Synchronization:** Sync triggers removed from user dashboards and holdings sheets; full policy controls, status, and error diagnostics consolidated in Settings.
+
+### 11.3 Real-Database Activity Ledger & Cash Flow Analysis
+- **Activity Ledger:** Filterable transaction timeline driven by `TransactionsDao` with multi-dimension filtering (type, category, date presets, custom date range) and transaction deletion with confirmation.
+- **Cash Flow Analytics:** Period analysis (This Month, Last Month, 3 Months, 6 Months, This Year, Custom) calculating Net Inflow/Outflow and Savings Rate (`((Income - Expenses) / Income) * 100%`).
+- **Category Expenditure Breakdown:** Proportional progress indicators highlighting highest expenditure categories.
+- **Strict Transfer Exclusion:** Internal account transfers are explicitly excluded from income and expense calculations.
+
+

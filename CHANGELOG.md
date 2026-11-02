@@ -5,6 +5,50 @@ All notable changes to the FinBalance application will be documented in this fil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2026-11-02
+
+### Added
+- **Mobile UX Overhaul for Investment Addition Forms (`AddToProfileDialog`):**
+  - Converted dialog to edge-to-edge mobile page (`Scaffold` with persistent top AppBar).
+  - Placed Save action in persistent top-right AppBar header, maintaining accessibility when the soft keyboard is open or during long scrolls.
+  - Enforced single-column layout on mobile viewports with zero cramped corner gaps or horizontal overflow.
+  - Reorganized field hierarchy: Mutual Fund Scheme $\rightarrow$ Amount per installment $\rightarrow$ Start Date $\rightarrow$ Frequency $\rightarrow$ Number of Installments $\rightarrow$ Profile $\rightarrow$ Notes.
+  - Real-time non-overlapping schedule calculation card with breakdown of past actual vs future planned capital.
+  - Collapsible installment preview (`ExpansionTile`) showing upcoming deduction dates and amounts.
+- **Top-Left Return to Profile Selection (`ReturnToProfilesButton`):**
+  - Dedicated top-left action with `Icons.switch_account_rounded` integrated across Overview, Assets, Liabilities, Activity, and Settings screens.
+  - Toggles `hasSelectedInitialProfileProvider.state = false` returning to the family member selector without deleting, disconnecting, or clearing active profile data.
+  - Added dismiss button in `ProfileSelectionScreen` when an active profile exists, allowing users to return to dashboard immediately if opened accidentally.
+- **Context-Aware Circular Floating Action Button (`+`):**
+  - Replaced the large "Add Mutual Fund" text FAB with a compact circular `+` button in `MainScaffold`.
+  - Contextual behavior based on current active tab:
+    - Overview (0): Quick financial actions bottom sheet (Add Mutual Fund, Add Liability, Record Income, Record Expense).
+    - Assets (1): Asset actions bottom sheet (Mutual Fund Schedule, Other Asset classes).
+    - Liabilities (2): Direct launch of mobile-optimized `AddLiabilityDialog`.
+    - Activity & Cash Flow (3): Transaction actions bottom sheet (Add Income, Add Expense, Add Transfer).
+    - Settings (4): Suppressed (`floatingActionButton: null`).
+- **Settings-Only Centralized NAV Synchronization:**
+  - Removed all sync triggers and refresh icons from Overview AppBar, Assets AppBar, Mutual Fund cards, and detail sheets.
+  - Consolidated all sync operations in Settings: Refresh Policy (`Daily`, `Weekly`, `Manual`), Sync Schedule Status (`Last sync: ... • Next eligible: ...`), and `Sync Now` manual trigger.
+  - Detailed sync execution status: Displays updated schemes count, primary provider (`MFapi`), and granular error details on failure.
+- **Unified Activity Ledger & Filter System (`ActivityScreen`):**
+  - Connected directly to Drift database via `TransactionsDao`.
+  - Multi-dimension filter bar: Type (All, Income, Expense, Investment, Transfer), Date Presets (All, Today, This Month, Last Month, Custom Date Range), and Category filter with quick Reset.
+  - Live summary metrics: Total Income, Total Expenses, Investments, Net Cash Movement.
+  - Detailed transaction card and drill-down bottom sheet with delete confirmation dialog.
+- **Dedicated Cash Flow Analysis (`ActivityScreen` Tab 2):**
+  - Period selector: This Month, Last Month, 3 Months, 6 Months, This Year, Custom Date Range.
+  - Metric summary: Total Inflow, Total Outflow, Net Cash Flow, Savings Rate (`(Income - Expenses) / Income * 100%`).
+  - Proportional category breakdown bars for Income Sources and Expense Breakdown (sorted descending by expenditure).
+  - Quick action shortcuts: "Add Income" and "Add Expense".
+  - Strict exclusion: Internal transfers between user accounts are strictly excluded from income and expense calculations.
+
+### Testing
+- Added `test/unit/mobile_form_ux_test.dart` (3 tests verifying persistent top Save buttons, field order, mobile scrollability, and form validation).
+- Added `test/unit/activity_and_cash_flow_test.dart` (4 tests verifying income/expense calculations, savings rate, transfer exclusion, transaction deletion, and category grouping).
+- Added `test/widget/contextual_fab_and_navigation_test.dart` (3 tests verifying contextual circular FAB, ReturnToProfilesButton navigation, and Settings-only NAV refresh).
+- Total automated test suite expanded to **124 passing tests** (0 failures).
+
 ## [0.5.0] - 2026-11-02
 
 ### Added

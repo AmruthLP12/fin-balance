@@ -38,7 +38,21 @@ class ProfileSelectionScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const SizedBox(height: AppSpacing.lg),
+                  if (activeId > 0)
+                    Align(
+                      alignment: Alignment.topRight,
+                      child: IconButton(
+                        icon: const Icon(Icons.close_rounded),
+                        tooltip: 'Return to Dashboard',
+                        onPressed: () {
+                          ref
+                              .read(hasSelectedInitialProfileProvider.notifier)
+                              .state = true;
+                        },
+                      ),
+                    )
+                  else
+                    const SizedBox(height: AppSpacing.lg),
 
                   // Brand & Header
                   const Center(
@@ -159,7 +173,11 @@ class ProfileSelectionScreen extends ConsumerWidget {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Row(
+                                    Wrap(
+                                      spacing: AppSpacing.xs,
+                                      runSpacing: 2,
+                                      crossAxisAlignment:
+                                          WrapCrossAlignment.center,
                                       children: [
                                         Text(
                                           profile.name,
@@ -168,20 +186,16 @@ class ProfileSelectionScreen extends ConsumerWidget {
                                             fontWeight: FontWeight.w600,
                                           ),
                                         ),
-                                        if (isLastUsed) ...[
-                                          const SizedBox(width: AppSpacing.xs),
+                                        if (isLastUsed)
                                           const StatusBadge(
                                             label: 'Last Active',
                                             type: BadgeType.scheduled,
                                           ),
-                                        ],
-                                        if (profile.isDefault) ...[
-                                          const SizedBox(width: AppSpacing.xs),
+                                        if (profile.isDefault)
                                           const StatusBadge(
                                             label: 'Default',
                                             type: BadgeType.brand,
                                           ),
-                                        ],
                                       ],
                                     ),
                                     if (profile.relationship.isNotEmpty) ...[

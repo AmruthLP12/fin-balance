@@ -3,12 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/formatting/currency_formatter.dart';
 import '../../../core/providers/database_provider.dart';
-import '../../../core/providers/nav_providers.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/empty_state_view.dart';
 import '../../../core/widgets/fin_card.dart';
+import '../../../core/widgets/return_to_profiles_button.dart';
 import '../../../core/widgets/section_header.dart';
 import '../../../core/widgets/stat_card.dart';
 import '../../../core/widgets/status_badge.dart';
@@ -42,7 +42,9 @@ class OverviewScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
+        leading: const ReturnToProfilesButton(),
         title: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Container(
               padding: const EdgeInsets.all(6),
@@ -57,17 +59,17 @@ class OverviewScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(width: AppSpacing.sm),
-            const Text(AppConstants.appName),
+            const Flexible(
+              child: Text(
+                AppConstants.appName,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
           ],
         ),
-        actions: [
-          const ProfileSelectorButton(),
-          IconButton(
-            icon: const Icon(Icons.sync_rounded),
-            tooltip: 'Sync NAVs',
-            onPressed: () => _triggerNavSync(context, ref),
-          ),
-          const SizedBox(width: AppSpacing.xs),
+        actions: const [
+          ProfileSelectorButton(compact: true),
+          SizedBox(width: AppSpacing.sm),
         ],
       ),
       body: ListView(
@@ -301,39 +303,5 @@ class OverviewScreen extends ConsumerWidget {
         builder: (_) => const MutualFundSearchScreen(),
       ),
     );
-  }
-
-  Future<void> _triggerNavSync(BuildContext context, WidgetRef ref) async {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Checking latest NAV quotes across providers...'),
-        duration: Duration(seconds: 1),
-      ),
-    );
-
-    try {
-      final syncService = ref.read(navSyncServiceProvider);
-      final summary = await syncService.syncAllPortfolioSchemes();
-
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(summary.totalSchemes > 0
-                ? 'Updated NAV for ${summary.successCount} of ${summary.totalSchemes} schemes (${summary.primaryProvider ?? "MFapi"})'
-                : 'No tracked schemes to sync.'),
-            backgroundColor:
-                summary.failedCount == 0 ? AppColors.asset : AppColors.warning,
-          ),
-        );
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('NAV sync completed with notice: $e'),
-          ),
-        );
-      }
-    }
   }
 }

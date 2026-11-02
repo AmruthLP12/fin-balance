@@ -176,3 +176,17 @@ final sipInstallmentsProvider =
     StreamProvider.family<List<SipInstallment>, int>((ref, sipPlanId) {
   return ref.watch(sipsDaoProvider).watchInstallments(sipPlanId);
 });
+
+/// Stream provider for all active financial categories.
+final allCategoriesProvider = StreamProvider<List<FinancialCategory>>((ref) {
+  return ref.watch(categoriesDaoProvider).watchAllCategories();
+});
+
+/// Stream provider for categories filtered by profile and classification.
+final categoriesForProfileProvider = StreamProvider.family<
+    List<FinancialCategory>,
+    ({int? profileId, String? classification})>((ref, arg) {
+  return ref.watch(categoriesDaoProvider).watchCategoriesForProfile(
+      arg.profileId,
+      classification: arg.classification);
+});

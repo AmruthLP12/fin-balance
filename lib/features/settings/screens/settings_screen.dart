@@ -8,8 +8,10 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/fin_card.dart';
 import '../../../core/widgets/finbalance_logo.dart';
+import '../../../core/widgets/return_to_profiles_button.dart';
 import '../../../core/widgets/section_header.dart';
 import '../../../core/widgets/status_badge.dart';
+import '../../../data/nav/models/nav_models.dart';
 import '../../profile/screens/profile_management_screen.dart';
 
 /// Settings screen for managing application preferences, backup, and sync.
@@ -24,6 +26,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   ThemeMode _selectedTheme = ThemeMode.system;
   String _selectedCurrency = AppConstants.defaultCurrencyCode;
   bool _isSyncing = false;
+  PortfolioSyncSummary? _lastSyncSummary;
+  String? _lastSyncError;
 
   @override
   Widget build(BuildContext context) {
@@ -32,6 +36,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: const ReturnToProfilesButton(),
         title: const Text('Settings & Privacy'),
       ),
       body: ListView(
@@ -230,6 +235,48 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         : const Text('Sync Now'),
                   ),
                 ),
+                if (_lastSyncSummary != null) ...[
+                  const Divider(),
+                  ListTile(
+                    leading: Icon(
+                      _lastSyncSummary!.failedCount == 0
+                          ? Icons.check_circle_outline_rounded
+                          : Icons.warning_amber_rounded,
+                      color: _lastSyncSummary!.failedCount == 0
+                          ? AppColors.asset
+                          : AppColors.warning,
+                    ),
+                    title: Text(
+                      _lastSyncSummary!.failedCount == 0
+                          ? 'Last Sync: All Schemes Updated'
+                          : 'Last Sync: Partial Failure',
+                      style: AppTypography.titleMedium,
+                    ),
+                    subtitle: Text(
+                      'Success: ${_lastSyncSummary!.successCount} / ${_lastSyncSummary!.totalSchemes} schemes via ${_lastSyncSummary!.primaryProvider ?? "MFapi"}.${_lastSyncSummary!.failedCount > 0 ? " Failed: ${_lastSyncSummary!.failedCount}." : ""}',
+                      style: AppTypography.bodyMedium,
+                    ),
+                  ),
+                ],
+                if (_lastSyncError != null) ...[
+                  const Divider(),
+                  ListTile(
+                    leading: const Icon(
+                      Icons.error_outline_rounded,
+                      color: AppColors.liability,
+                    ),
+                    title: const Text(
+                      'Sync Error Details',
+                      style: TextStyle(color: AppColors.liability),
+                    ),
+                    subtitle: Text(
+                      _lastSyncError!,
+                      style: AppTypography.labelSmall.copyWith(
+                        color: AppColors.liability,
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -498,11 +545,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Future<void> _runManualNavSync() async {
-    setState(() => _isSyncing = true);
+    setState(() {
+      _isSyncing = true;
+      _lastSyncError = null;
+    });
     try {
       final syncService = ref.read(navSyncServiceProvider);
       final summary = await syncService.syncAllPortfolioSchemes();
       if (mounted) {
+        setState(() => _lastSyncSummary = summary);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(summary.totalSchemes > 0
@@ -515,6 +566,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       }
     } catch (e) {
       if (mounted) {
+        setState(() => _lastSyncError = e.toString());
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('NAV sync failed: $e'),

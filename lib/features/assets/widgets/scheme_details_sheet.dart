@@ -23,8 +23,6 @@ class SchemeDetailsSheet extends ConsumerStatefulWidget {
 }
 
 class _SchemeDetailsSheetState extends ConsumerState<SchemeDetailsSheet> {
-  bool _isSyncing = false;
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -206,26 +204,7 @@ class _SchemeDetailsSheetState extends ConsumerState<SchemeDetailsSheet> {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _buildFavoriteButton(details),
-                      IconButton(
-                        icon: _isSyncing
-                            ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child:
-                                    CircularProgressIndicator(strokeWidth: 2),
-                              )
-                            : const Icon(Icons.refresh_rounded, size: 20),
-                        tooltip: 'Sync Latest NAV',
-                        onPressed: _isSyncing
-                            ? null
-                            : () => _syncLatestNav(details.schemeCode),
-                      ),
-                    ],
-                  ),
+                  _buildFavoriteButton(details),
                 ],
               ),
               const SizedBox(height: AppSpacing.xs),
@@ -293,12 +272,8 @@ class _SchemeDetailsSheetState extends ConsumerState<SchemeDetailsSheet> {
               child: FilledButton.icon(
                 icon: const Icon(Icons.add_chart_rounded),
                 label: const Text('Add to Portfolio Assets'),
-                onPressed: () {
-                  showDialog<void>(
-                    context: context,
-                    builder: (_) => AddToProfileDialog(scheme: details),
-                  );
-                },
+                onPressed: () =>
+                    AddToProfileDialog.show(context, scheme: details),
               ),
             ),
             const SizedBox(width: AppSpacing.sm),
@@ -396,27 +371,6 @@ class _SchemeDetailsSheetState extends ConsumerState<SchemeDetailsSheet> {
         }
       },
     );
-  }
-
-  Future<void> _syncLatestNav(int schemeCode) async {
-    setState(() => _isSyncing = true);
-    try {
-      final syncService = ref.read(navSyncServiceProvider);
-      final res = await syncService.syncSchemeNav(schemeCode);
-      if (mounted) {
-        ref.invalidate(schemeDetailsProvider(schemeCode));
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(res.success
-                ? 'NAV synchronized from ${res.provider ?? "MFapi"}!'
-                : 'NAV sync notice: ${res.errorMessage ?? "Failed"}'),
-            backgroundColor: res.success ? AppColors.asset : AppColors.warning,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isSyncing = false);
-    }
   }
 
   Widget _buildMetaRow(String label, String value, bool isDark) {

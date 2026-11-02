@@ -106,7 +106,7 @@ class FinBalanceLogo extends StatelessWidget {
         children: [
           mark,
           SizedBox(width: size * 0.3),
-          textColumn,
+          Flexible(child: textColumn),
         ],
       );
     } else {

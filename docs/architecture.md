@@ -451,4 +451,30 @@ Widget tests:
 - **Platform Deliverables:** Android adaptive vector drawables (`ic_launcher_foreground.xml`, `ic_launcher_background.xml`), all standard Android mipmap densities (`mdpi`, `hdpi`, `xhdpi`, `xxhdpi`, `xxxhdpi`), Web icons (192, 512, maskable, favicon).
 - **In-App `FinBalanceLogo`:** In-app vector Flutter widget providing scalable, theme-aware vector rendering across `ProfileSelectionScreen`, `SettingsScreen`, and `MainScaffold`.
 
+---
+
+## 18. Mobile UX, Navigation, Activity Ledger & Cash Flow Architecture
+
+### 18.1 Mobile-First Addition Form UX
+- **Edge-to-Edge Mobile Page:** Replaced modal dialogs on mobile viewports with full-page `Scaffold` routes using `MaterialPageRoute(fullscreenDialog: true)`.
+- **Persistent Header Call-to-Action:** Positioned the primary Save action in the AppBar (`actions: [FilledButton(...)]`), maintaining thumb reachability without keyboard occlusion or needing to scroll to the bottom of the form.
+- **Single-Column Responsive Flow:** Stacks form fields vertically on compact phone viewports to prevent horizontal overflow and crowded multi-column inputs.
+- **Collapsible Inspection:** Secondary data, such as generated installment date previews, are encapsulated in collapsible `ExpansionTile` widgets to keep initial form length manageable.
+
+### 18.2 Navigation & Centralized Controls
+- **`ReturnToProfilesButton`:** Persistent top-left navigation control (`Icons.switch_account_rounded`) across Overview, Assets, Liabilities, Activity, and Settings screens. Modifies `hasSelectedInitialProfileProvider.state = false` returning to the family profile selector without destroying database connections or active session state.
+- **Context-Aware Circular Floating Action Button (`+`):** Unified circular FAB in `MainScaffold` dynamically adapting its bottom sheet actions based on the active destination index (Overview: quick add sheet; Assets: asset actions; Liabilities: direct liability modal; Activity: transaction entry; Settings: null).
+- **Settings-Only Centralized NAV Synchronization:** NAV refresh triggers and sync buttons removed from user-facing asset lists and holdings sheets. Full sync policies, status timestamps, and error diagnostics are maintained strictly within Settings.
+
+### 18.3 Activity Ledger & Cash Flow Domain Engine
+- **Database-Driven Activity Ledger:** Replaced mock activity entries with reactive queries against `TransactionsDao` filtered by active profile. Supports multi-dimension filtering:
+  - Transaction type: All, Income, Expense, Investment, Transfer.
+  - Date presets: All, Today, This Month, Last Month, Custom Date Range.
+  - Categories: Filter by category ID with instant Reset.
+  - Deletion lifecycle: Confirmation dialog triggering `TransactionsDao.deleteTransaction`.
+- **Cash Flow Analysis:** Segregated analysis view calculating Net Cash Flow (`Income - Expenses`) and Savings Rate (`((Income - Expenses) / Income) * 100%`) over selectable time intervals (This Month, Last Month, 3 Months, 6 Months, This Year, Custom).
+- **Category Proportions:** Renders proportional progress indicators for income sources and expense categories (sorted descending).
+- **Transfer Isolation:** Transactions with `transactionType == 'transfer'` are strictly excluded from income and expense aggregates to prevent artificial inflation of user cash flows.
+
+
 

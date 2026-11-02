@@ -27,8 +27,6 @@ class HoldingDetailsSheet extends ConsumerStatefulWidget {
 }
 
 class _HoldingDetailsSheetState extends ConsumerState<HoldingDetailsSheet> {
-  bool _isSyncingNav = false;
-
   int? get _schemeCode => widget.holding.externalCode != null
       ? int.tryParse(widget.holding.externalCode!)
       : null;
@@ -165,21 +163,6 @@ class _HoldingDetailsSheetState extends ConsumerState<HoldingDetailsSheet> {
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
-                              if (_schemeCode != null)
-                                IconButton(
-                                  icon: _isSyncingNav
-                                      ? const SizedBox(
-                                          width: 16,
-                                          height: 16,
-                                          child: CircularProgressIndicator(
-                                              strokeWidth: 2),
-                                        )
-                                      : const Icon(Icons.refresh_rounded,
-                                          size: 20),
-                                  tooltip: 'Sync Latest NAV',
-                                  onPressed:
-                                      _isSyncingNav ? null : _syncHoldingNav,
-                                ),
                             ],
                           ),
                           const SizedBox(height: AppSpacing.xs),
@@ -452,39 +435,6 @@ class _HoldingDetailsSheetState extends ConsumerState<HoldingDetailsSheet> {
     );
   }
 
-  Future<void> _syncHoldingNav() async {
-    final code = _schemeCode;
-    if (code == null) return;
-
-    setState(() => _isSyncingNav = true);
-    try {
-      final syncService = ref.read(navSyncServiceProvider);
-      final res = await syncService.syncSchemeNav(code);
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(res.success
-                ? 'Updated NAV for ${res.schemeName} (${res.provider ?? "MFapi"})'
-                : 'NAV sync notice: ${res.errorMessage ?? "Offline"}'),
-            backgroundColor: res.success ? AppColors.asset : AppColors.warning,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to sync NAV: $e'),
-            backgroundColor: AppColors.liability,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isSyncingNav = false);
-    }
-  }
-
   void _openEditHoldingDialog(FinancialItem holding) {
     showDialog<void>(
       context: context,
@@ -499,12 +449,10 @@ class _HoldingDetailsSheetState extends ConsumerState<HoldingDetailsSheet> {
     final syncService = ref.read(navSyncServiceProvider);
     final detail = await syncService.getOrFetchSchemeDetails(code);
     if (detail != null && mounted) {
-      await showDialog<void>(
-        context: context,
-        builder: (_) => AddToProfileDialog(
-          scheme: detail,
-          preselectedProfileId: holding.profileId,
-        ),
+      await AddToProfileDialog.show(
+        context,
+        scheme: detail,
+        preselectedProfileId: holding.profileId,
       );
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
