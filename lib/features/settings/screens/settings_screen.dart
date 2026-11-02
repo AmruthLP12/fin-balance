@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/formatting/date_formatter.dart';
 import '../../../core/providers/nav_providers.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
@@ -146,20 +147,64 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             padding: EdgeInsets.zero,
             child: Column(
               children: [
-                const ListTile(
-                  leading: Icon(Icons.sync_rounded),
-                  title: Text(
-                    'NAV Freshness Threshold',
+                ListTile(
+                  leading: const Icon(Icons.sync_rounded),
+                  title: const Text(
+                    'NAV Refresh Policy',
                     style: AppTypography.titleMedium,
                   ),
                   subtitle: Text(
-                    'Refresh after 24 hours',
+                    ref.watch(navRefreshFrequencyProvider) == 'daily'
+                        ? 'Daily (every 24 hours)'
+                        : ref.watch(navRefreshFrequencyProvider) == 'weekly'
+                            ? 'Weekly (every 7 days)'
+                            : 'Manual only (on demand)',
                     style: AppTypography.bodyMedium,
                   ),
                   trailing: StatusBadge(
-                    label: '24 Hours',
+                    label: ref.watch(navRefreshFrequencyProvider).toUpperCase(),
                     type: BadgeType.neutral,
                   ),
+                  onTap: _showNavFrequencyPicker,
+                ),
+                const Divider(),
+                FutureBuilder<DateTime?>(
+                  future: ref
+                      .read(navSyncServiceProvider)
+                      .getLastSuccessfulSyncTime(),
+                  builder: (context, snapshot) {
+                    final lastSync = snapshot.data;
+                    final frequency = ref.watch(navRefreshFrequencyProvider);
+                    final nextEligible = ref
+                        .read(navSyncServiceProvider)
+                        .getNextEligibleSync(lastSync, frequency);
+
+                    final lastSyncStr = lastSync != null
+                        ? DateFormatter.formatDateTime(lastSync)
+                        : 'Never';
+                    final nextEligibleStr = frequency == 'manual'
+                        ? 'Manual only'
+                        : (nextEligible != null &&
+                                nextEligible.isBefore(DateTime.now().toUtc()))
+                            ? 'Due now'
+                            : (nextEligible != null
+                                ? DateFormatter.formatDateTime(nextEligible)
+                                : 'Now');
+
+                    return ListTile(
+                      leading: const Icon(Icons.schedule_rounded),
+                      title: const Text('Sync Schedule Status',
+                          style: AppTypography.titleMedium),
+                      subtitle: Text(
+                        'Last sync: $lastSyncStr\nNext eligible: $nextEligibleStr',
+                        style: AppTypography.labelSmall.copyWith(
+                          color: isDark
+                              ? AppColors.darkTextSecondary
+                              : AppColors.lightTextSecondary,
+                        ),
+                      ),
+                    );
+                  },
                 ),
                 const Divider(),
                 ListTile(
@@ -378,6 +423,69 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     _selectedCurrency == 'EUR' ? const Icon(Icons.check) : null,
                 onTap: () {
                   setState(() => _selectedCurrency = 'EUR');
+                  Navigator.pop(context);
+                },
+              ),
+              const SizedBox(height: AppSpacing.md),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showNavFrequencyPicker() {
+    final current = ref.read(navRefreshFrequencyProvider);
+    showModalBottomSheet<void>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius:
+            BorderRadius.vertical(top: Radius.circular(AppSpacing.radiusLg)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: AppSpacing.md),
+              const Text('NAV Refresh Frequency',
+                  style: AppTypography.titleMedium),
+              const SizedBox(height: AppSpacing.sm),
+              ListTile(
+                leading: const Icon(Icons.today_rounded),
+                title: const Text('Daily (24 Hours)'),
+                subtitle: const Text(
+                    'Default for active investors tracking daily market moves'),
+                trailing: current == 'daily' ? const Icon(Icons.check) : null,
+                onTap: () {
+                  ref
+                      .read(navRefreshFrequencyProvider.notifier)
+                      .setFrequency('daily');
+                  Navigator.pop(context);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.date_range_rounded),
+                title: const Text('Weekly (7 Days)'),
+                subtitle: const Text('Conserves battery and network bandwidth'),
+                trailing: current == 'weekly' ? const Icon(Icons.check) : null,
+                onTap: () {
+                  ref
+                      .read(navRefreshFrequencyProvider.notifier)
+                      .setFrequency('weekly');
+                  Navigator.pop(context);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.touch_app_rounded),
+                title: const Text('Manual Only'),
+                subtitle: const Text(
+                    'Syncs only when explicitly requested via "Sync Now"'),
+                trailing: current == 'manual' ? const Icon(Icons.check) : null,
+                onTap: () {
+                  ref
+                      .read(navRefreshFrequencyProvider.notifier)
+                      .setFrequency('manual');
                   Navigator.pop(context);
                 },
               ),

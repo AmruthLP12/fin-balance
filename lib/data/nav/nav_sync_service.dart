@@ -14,6 +14,9 @@ class NavSyncService {
   final MutualFundDao _mutualFundDao;
   final FinancialItemsDao _financialItemsDao;
   final List<NavProvider> _providers;
+  final Map<String,
+          ({DateTime timestamp, List<MutualFundSearchResult> results})>
+      _searchCache = {};
 
   NavSyncService({
     required MutualFundDao mutualFundDao,
@@ -28,10 +31,61 @@ class NavSyncService {
               AmfiProvider(),
             ];
 
+  /// Clears in-memory search query cache.
+  void clearSearchCache() {
+    _searchCache.clear();
+  }
+
+  /// Determines whether NAV synchronization is due based on the last sync timestamp
+  /// and the configured refresh policy ('daily', 'weekly', 'manual').
+  bool isSyncDue(DateTime? lastSyncedAt, String frequency) {
+    if (frequency == 'manual') return false;
+    if (lastSyncedAt == null) return true;
+    final now = DateTime.now().toUtc();
+    if (frequency == 'weekly') {
+      return now.difference(lastSyncedAt).inDays >= 7;
+    }
+    // Default 'daily' (24 hours)
+    return now.difference(lastSyncedAt).inHours >= 24;
+  }
+
+  /// Returns the next eligible sync timestamp, or null if sync is set to 'manual'.
+  DateTime? getNextEligibleSync(DateTime? lastSyncedAt, String frequency) {
+    if (frequency == 'manual') return null;
+    if (lastSyncedAt == null) return DateTime.now().toUtc();
+    if (frequency == 'weekly') {
+      return lastSyncedAt.add(const Duration(days: 7));
+    }
+    // Default 'daily'
+    return lastSyncedAt.add(const Duration(hours: 24));
+  }
+
+  /// Returns the latest successful sync timestamp recorded across any mutual fund scheme.
+  Future<DateTime?> getLastSuccessfulSyncTime() async {
+    final schemes = await _mutualFundDao.getAllSchemes();
+    DateTime? latest;
+    for (final s in schemes) {
+      if (s.lastSyncedAt != null) {
+        if (latest == null || s.lastSyncedAt!.isAfter(latest)) {
+          latest = s.lastSyncedAt;
+        }
+      }
+    }
+    return latest;
+  }
+
   /// Search mutual fund schemes using local database cache and remote providers.
+  /// Hits fast in-memory query cache if searched recently within 10 minutes.
   Future<List<MutualFundSearchResult>> searchSchemes(String query) async {
     final clean = query.trim();
     if (clean.isEmpty) return [];
+
+    final cacheKey = clean.toLowerCase();
+    final cachedEntry = _searchCache[cacheKey];
+    if (cachedEntry != null &&
+        DateTime.now().difference(cachedEntry.timestamp).inMinutes < 10) {
+      return cachedEntry.results;
+    }
 
     // 1. Check local database cache first
     final localSchemes =
@@ -76,9 +130,15 @@ class NavSyncService {
       }).toList();
 
       await _mutualFundDao.upsertSchemes(companions);
+      _searchCache[cacheKey] =
+          (timestamp: DateTime.now(), results: remoteResults);
       return remoteResults;
     }
 
+    if (localResults.isNotEmpty) {
+      _searchCache[cacheKey] =
+          (timestamp: DateTime.now(), results: localResults);
+    }
     return localResults;
   }
 
@@ -87,6 +147,7 @@ class NavSyncService {
     int schemeCode, {
     bool forceRefresh = false,
     bool includeHistoricalNav = false,
+    String refreshFrequency = 'daily',
   }) async {
     final cachedScheme = await _mutualFundDao.getSchemeByCode(schemeCode);
 
@@ -258,9 +319,25 @@ class NavSyncService {
   }
 
   /// Synchronize the latest NAV for a specific individual scheme.
-  Future<SchemeNavSyncResult> syncSchemeNav(int schemeCode) async {
+  Future<SchemeNavSyncResult> syncSchemeNav(
+    int schemeCode, {
+    bool force = true,
+    String frequency = 'daily',
+  }) async {
     final cachedScheme = await _mutualFundDao.getSchemeByCode(schemeCode);
     final schemeName = cachedScheme?.schemeName ?? 'Scheme $schemeCode';
+
+    // Respect refresh policy: if not forced and sync is not due, return cached state
+    if (!force && !isSyncDue(cachedScheme?.lastSyncedAt, frequency)) {
+      return SchemeNavSyncResult(
+        schemeCode: schemeCode,
+        schemeName: schemeName,
+        success: true,
+        navMicroPaise: cachedScheme?.latestNavMicroPaise,
+        navDate: cachedScheme?.latestNavDate,
+        provider: 'Cache-Valid (Sync Not Due)',
+      );
+    }
 
     for (final provider in _providers) {
       try {
@@ -331,7 +408,10 @@ class NavSyncService {
   }
 
   /// Sync latest NAVs for all mutual fund schemes held across all profiles and bookmarked favourites.
-  Future<PortfolioSyncSummary> syncAllPortfolioSchemes() async {
+  Future<PortfolioSyncSummary> syncAllPortfolioSchemes({
+    bool force = true,
+    String frequency = 'daily',
+  }) async {
     final distinctCodes = <int>{};
 
     // 1. Collect all mutual funds held across all profiles
@@ -348,7 +428,7 @@ class NavSyncService {
       }
     }
 
-    // 2. Collect all bookmarked favourite schemes
+    // 2. Collect all bookmarked favourite schemes (legacy + profile-specific)
     final favoriteSchemes =
         await (_mutualFundDao.db.select(_mutualFundDao.db.mutualFundSchemes)
               ..where((tbl) => tbl.isFavorite.equals(true)))
@@ -358,13 +438,20 @@ class NavSyncService {
       distinctCodes.add(s.schemeCode);
     }
 
+    final profileFavs = await _mutualFundDao.db
+        .select(_mutualFundDao.db.profileFavoriteSchemes)
+        .get();
+    for (final f in profileFavs) {
+      distinctCodes.add(f.schemeCode);
+    }
+
     final results = <SchemeNavSyncResult>[];
     int successCount = 0;
     int failedCount = 0;
     String? primaryProvider;
 
     for (final code in distinctCodes) {
-      final res = await syncSchemeNav(code);
+      final res = await syncSchemeNav(code, force: force, frequency: frequency);
       results.add(res);
       if (res.success) {
         successCount++;

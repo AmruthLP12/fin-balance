@@ -33,6 +33,19 @@ class TransactionsDao extends DatabaseAccessor<AppDatabase>
         .get();
   }
 
+  /// Get paginated transactions for a specific profile for bounded lazy-loading.
+  Future<List<Transaction>> getPaginatedTransactionsForProfile(
+    int profileId, {
+    int limit = 20,
+    int offset = 0,
+  }) {
+    return (select(transactions)
+          ..where((tbl) => tbl.profileId.equals(profileId))
+          ..orderBy([(t) => OrderingTerm.desc(t.transactionDate)])
+          ..limit(limit, offset: offset))
+        .get();
+  }
+
   /// Watch household recent transactions across all profiles.
   Stream<List<Transaction>> watchHouseholdRecentTransactions({int limit = 50}) {
     return (select(transactions)

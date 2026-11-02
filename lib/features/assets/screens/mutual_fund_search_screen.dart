@@ -183,8 +183,6 @@ class _MutualFundSearchScreenState extends ConsumerState<MutualFundSearchScreen>
                           scheme: scheme,
                           onTap: () =>
                               _openSchemeDetails(context, scheme.schemeCode),
-                          onFavoriteToggle: () =>
-                              _toggleFavorite(scheme.schemeCode, true),
                         );
                       },
                     );
@@ -243,7 +241,11 @@ class _MutualFundSearchScreenState extends ConsumerState<MutualFundSearchScreen>
               latestNavMicroPaise: fund.latestNavMicroPaise,
               latestNavDate: fund.latestNavDate,
               isFavorite: true,
-              onFavoriteToggle: () => _toggleFavorite(fund.schemeCode, false),
+              onFavoriteToggle: () => _toggleFavorite(
+                fund.schemeCode,
+                fund.schemeName,
+                fund.fundHouse,
+              ),
               onTap: () => _openSchemeDetails(context, fund.schemeCode),
             );
           },
@@ -263,15 +265,24 @@ class _MutualFundSearchScreenState extends ConsumerState<MutualFundSearchScreen>
     );
   }
 
-  Future<void> _toggleFavorite(int schemeCode, bool targetFavorite) async {
+  Future<void> _toggleFavorite(
+    int schemeCode,
+    String schemeName,
+    String? fundHouse,
+  ) async {
+    final profileId = ref.read(activeProfileIdProvider);
     final dao = ref.read(mutualFundDaoProvider);
-    await dao.setFavorite(schemeCode, targetFavorite);
+    final nowFav = await dao.toggleFavorite(
+      profileId: profileId,
+      schemeCode: schemeCode,
+      schemeName: schemeName,
+      fundHouse: fundHouse,
+    );
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(targetFavorite
-              ? 'Added to favourites!'
-              : 'Removed from favourites.'),
+          content: Text(
+              nowFav ? 'Added to favourites!' : 'Removed from favourites.'),
           duration: const Duration(seconds: 1),
         ),
       );

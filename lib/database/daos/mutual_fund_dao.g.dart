@@ -10,6 +10,8 @@ mixin _$MutualFundDaoMixin on DatabaseAccessor<AppDatabase> {
   $FinancialItemsTable get financialItems => attachedDatabase.financialItems;
   $ValuationHistoryTable get valuationHistory =>
       attachedDatabase.valuationHistory;
+  $ProfileFavoriteSchemesTable get profileFavoriteSchemes =>
+      attachedDatabase.profileFavoriteSchemes;
   MutualFundDaoManager get managers => MutualFundDaoManager(this);
 }
 
@@ -27,4 +29,7 @@ class MutualFundDaoManager {
   $$ValuationHistoryTableTableManager get valuationHistory =>
       $$ValuationHistoryTableTableManager(
           _db.attachedDatabase, _db.valuationHistory);
+  $$ProfileFavoriteSchemesTableTableManager get profileFavoriteSchemes =>
+      $$ProfileFavoriteSchemesTableTableManager(
+          _db.attachedDatabase, _db.profileFavoriteSchemes);
 }

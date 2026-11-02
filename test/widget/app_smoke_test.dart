@@ -26,6 +26,7 @@ void main() {
       ProviderScope(
         overrides: [
           databaseProvider.overrideWithValue(db),
+          hasSelectedInitialProfileProvider.overrideWith((ref) => true),
         ],
         child: const FinBalanceApp(),
       ),

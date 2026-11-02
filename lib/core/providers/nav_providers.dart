@@ -38,9 +38,50 @@ final schemeSearchResultsProvider =
   return syncService.searchSchemes(query);
 });
 
-/// Stream of all bookmarked / favourite mutual fund schemes.
+/// Configured NAV sync frequency policy ('daily', 'weekly', 'manual').
+class NavRefreshFrequencyNotifier extends StateNotifier<String> {
+  final Ref _ref;
+
+  NavRefreshFrequencyNotifier(this._ref) : super('daily') {
+    _loadFrequency();
+  }
+
+  Future<void> _loadFrequency() async {
+    final settingsDao = _ref.read(appSettingsDaoProvider);
+    final saved = await settingsDao.getSetting('nav_refresh_frequency');
+    if (saved != null &&
+        (saved == 'daily' || saved == 'weekly' || saved == 'manual')) {
+      state = saved;
+    }
+  }
+
+  Future<void> setFrequency(String newFrequency) async {
+    state = newFrequency;
+    final settingsDao = _ref.read(appSettingsDaoProvider);
+    await settingsDao.setSetting('nav_refresh_frequency', newFrequency);
+  }
+}
+
+final navRefreshFrequencyProvider =
+    StateNotifierProvider<NavRefreshFrequencyNotifier, String>((ref) {
+  return NavRefreshFrequencyNotifier(ref);
+});
+
+/// Stream of all bookmarked / favourite mutual fund schemes for the active profile.
 final favoriteSchemesProvider = StreamProvider<List<MutualFundScheme>>((ref) {
-  return ref.watch(mutualFundDaoProvider).watchFavoriteSchemes();
+  final profileId = ref.watch(activeProfileIdProvider);
+  return ref
+      .watch(mutualFundDaoProvider)
+      .watchFavoriteSchemesForProfile(profileId);
+});
+
+/// Stream of whether a scheme is favorited by the active profile.
+final isSchemeFavoriteProvider =
+    StreamProvider.family<bool, int>((ref, schemeCode) {
+  final profileId = ref.watch(activeProfileIdProvider);
+  return ref
+      .watch(mutualFundDaoProvider)
+      .watchIsSchemeFavorite(profileId, schemeCode);
 });
 
 /// Future provider for fetching details of a specific mutual fund scheme.
@@ -48,8 +89,12 @@ final schemeDetailsProvider =
     FutureProvider.family<MutualFundSchemeDetail?, int>(
         (ref, schemeCode) async {
   final syncService = ref.watch(navSyncServiceProvider);
-  return syncService.getOrFetchSchemeDetails(schemeCode,
-      includeHistoricalNav: true);
+  final frequency = ref.watch(navRefreshFrequencyProvider);
+  return syncService.getOrFetchSchemeDetails(
+    schemeCode,
+    includeHistoricalNav: true,
+    refreshFrequency: frequency,
+  );
 });
 
 /// Stream provider for locally cached scheme master data.

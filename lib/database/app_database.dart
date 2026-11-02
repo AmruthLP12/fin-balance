@@ -7,6 +7,7 @@ import 'daos/financial_items_dao.dart';
 import 'daos/mutual_fund_dao.dart';
 import 'daos/profiles_dao.dart';
 import 'daos/recurring_transactions_dao.dart';
+import 'daos/sips_dao.dart';
 import 'daos/transactions_dao.dart';
 import 'daos/valuations_dao.dart';
 import 'tables/app_settings.dart';
@@ -16,7 +17,11 @@ import 'tables/financial_items.dart';
 import 'tables/financial_profiles.dart';
 import 'tables/mutual_fund_schemes.dart';
 import 'tables/nav_history.dart';
+import 'tables/profile_favorite_schemes.dart';
 import 'tables/recurring_transactions.dart';
+import 'tables/sip_installments.dart';
+import 'tables/sip_plans.dart';
+import 'tables/sip_schedule_periods.dart';
 import 'tables/transactions.dart';
 import 'tables/valuation_history.dart';
 
@@ -35,6 +40,10 @@ part 'app_database.g.dart';
     AppSettings,
     MutualFundSchemes,
     NavHistory,
+    ProfileFavoriteSchemes,
+    SipPlans,
+    SipSchedulePeriods,
+    SipInstallments,
   ],
   daos: [
     ProfilesDao,
@@ -46,6 +55,7 @@ part 'app_database.g.dart';
     RecurringTransactionsDao,
     AppSettingsDao,
     MutualFundDao,
+    SipsDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -55,7 +65,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration {
@@ -68,6 +78,12 @@ class AppDatabase extends _$AppDatabase {
         if (from < 2) {
           await m.createTable(mutualFundSchemes);
           await m.createTable(navHistory);
+        }
+        if (from < 3) {
+          await m.createTable(profileFavoriteSchemes);
+          await m.createTable(sipPlans);
+          await m.createTable(sipSchedulePeriods);
+          await m.createTable(sipInstallments);
         }
       },
       beforeOpen: (details) async {

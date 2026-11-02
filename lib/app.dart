@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/constants/app_constants.dart';
+import 'core/providers/database_provider.dart';
 import 'core/providers/theme_provider.dart';
 import 'core/theme/app_theme.dart';
 import 'features/navigation/screens/main_scaffold.dart';
+import 'features/profile/screens/profile_selection_screen.dart';
 
 /// Root application widget for FinBalance.
 class FinBalanceApp extends ConsumerWidget {
@@ -12,6 +14,7 @@ class FinBalanceApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(themeModeProvider);
+    final hasSelectedProfile = ref.watch(hasSelectedInitialProfileProvider);
 
     return MaterialApp(
       title: AppConstants.appName,
@@ -19,7 +22,9 @@ class FinBalanceApp extends ConsumerWidget {
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: themeMode,
-      home: const MainScaffold(),
+      home: hasSelectedProfile
+          ? const MainScaffold()
+          : const ProfileSelectionScreen(),
     );
   }
 }

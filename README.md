@@ -139,7 +139,13 @@ make clean
   - Connected `OverviewScreen` to calculate dynamic Net Worth, Total Assets, and Total Liabilities scoped to active profile.
   - Enabled Flutter Web compilation with `DriftWebOptions`, `sqlite3.wasm`, and `drift_worker.js`.
   - Added responsive layout with `NavigationRail` for desktop/tablet screens (>= 720px) and bottom `NavigationBar` for mobile screens.
-- [ ] **Milestone 4 — SIP & Commitment Scheduling:** Independent recurring date generator, leap year & month-end handlers, duplicate prevention.
+- [x] **Milestone 4 — Flexible SIP Scheduling, NAV Caching Policy & Profile Startup:**
+  - Flexible multi-period SIP architecture (`SipPlans`, `SipSchedulePeriods`, `SipInstallments`) supporting step-up, step-down, and changing deduction days over time.
+  - Zero-drift month-end clamping with `RecurringDateCalculator` handling leap years (Feb 28/29) and 30-day months without progressive drift.
+  - Bulk historical SIP entry with distinction between actual confirmed past investments and simulated projections.
+  - Startup `ProfileSelectionScreen` providing cold-boot profile picking, "Quick Continue", and on-demand lazy loading.
+  - Configurable NAV synchronization policy (`Daily`, `Weekly`, `Manual Only`) with next-eligible sync timestamp calculation and cache-first scheme viewing.
+  - Profile-isolated favourite schemes with atomic toggle and reactive Drift streams.
 - [ ] **Milestone 5 — Transaction & Valuation Engine:** Simulated installments, lump-sum purchases, redemptions, unit calculations.
 - [ ] **Milestone 6 — Dashboard & Overview:** Real-time net worth calculation, active SIPs, upcoming EMIs.
 - [ ] **Milestone 7 — Financial Analytics:** Dated-cashflow XIRR (Newton-Raphson), asset allocation, historical charts.

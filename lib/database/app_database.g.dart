@@ -6082,6 +6082,2255 @@ class NavHistoryCompanion extends UpdateCompanion<NavHistoryData> {
   }
 }
 
+class $ProfileFavoriteSchemesTable extends ProfileFavoriteSchemes
+    with TableInfo<$ProfileFavoriteSchemesTable, ProfileFavoriteScheme> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ProfileFavoriteSchemesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _profileIdMeta =
+      const VerificationMeta('profileId');
+  @override
+  late final GeneratedColumn<int> profileId = GeneratedColumn<int>(
+      'profile_id', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: true,
+      $customConstraints:
+          'NOT NULL REFERENCES financial_profiles(id) ON DELETE CASCADE');
+  static const VerificationMeta _schemeCodeMeta =
+      const VerificationMeta('schemeCode');
+  @override
+  late final GeneratedColumn<int> schemeCode = GeneratedColumn<int>(
+      'scheme_code', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: true,
+      $customConstraints:
+          'NOT NULL REFERENCES mutual_fund_schemes(scheme_code) ON DELETE CASCADE');
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  @override
+  List<GeneratedColumn> get $columns => [id, profileId, schemeCode, createdAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'profile_favorite_schemes';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<ProfileFavoriteScheme> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('profile_id')) {
+      context.handle(_profileIdMeta,
+          profileId.isAcceptableOrUnknown(data['profile_id']!, _profileIdMeta));
+    } else if (isInserting) {
+      context.missing(_profileIdMeta);
+    }
+    if (data.containsKey('scheme_code')) {
+      context.handle(
+          _schemeCodeMeta,
+          schemeCode.isAcceptableOrUnknown(
+              data['scheme_code']!, _schemeCodeMeta));
+    } else if (isInserting) {
+      context.missing(_schemeCodeMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+        {profileId, schemeCode},
+      ];
+  @override
+  ProfileFavoriteScheme map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ProfileFavoriteScheme(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      profileId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}profile_id'])!,
+      schemeCode: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}scheme_code'])!,
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+    );
+  }
+
+  @override
+  $ProfileFavoriteSchemesTable createAlias(String alias) {
+    return $ProfileFavoriteSchemesTable(attachedDatabase, alias);
+  }
+}
+
+class ProfileFavoriteScheme extends DataClass
+    implements Insertable<ProfileFavoriteScheme> {
+  final int id;
+
+  /// Profile scoping: Favourites are owned by a specific profile
+  final int profileId;
+
+  /// Scheme code: Unique identifier of the mutual fund scheme
+  final int schemeCode;
+  final DateTime createdAt;
+  const ProfileFavoriteScheme(
+      {required this.id,
+      required this.profileId,
+      required this.schemeCode,
+      required this.createdAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['profile_id'] = Variable<int>(profileId);
+    map['scheme_code'] = Variable<int>(schemeCode);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  ProfileFavoriteSchemesCompanion toCompanion(bool nullToAbsent) {
+    return ProfileFavoriteSchemesCompanion(
+      id: Value(id),
+      profileId: Value(profileId),
+      schemeCode: Value(schemeCode),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory ProfileFavoriteScheme.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ProfileFavoriteScheme(
+      id: serializer.fromJson<int>(json['id']),
+      profileId: serializer.fromJson<int>(json['profileId']),
+      schemeCode: serializer.fromJson<int>(json['schemeCode']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'profileId': serializer.toJson<int>(profileId),
+      'schemeCode': serializer.toJson<int>(schemeCode),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  ProfileFavoriteScheme copyWith(
+          {int? id, int? profileId, int? schemeCode, DateTime? createdAt}) =>
+      ProfileFavoriteScheme(
+        id: id ?? this.id,
+        profileId: profileId ?? this.profileId,
+        schemeCode: schemeCode ?? this.schemeCode,
+        createdAt: createdAt ?? this.createdAt,
+      );
+  ProfileFavoriteScheme copyWithCompanion(
+      ProfileFavoriteSchemesCompanion data) {
+    return ProfileFavoriteScheme(
+      id: data.id.present ? data.id.value : this.id,
+      profileId: data.profileId.present ? data.profileId.value : this.profileId,
+      schemeCode:
+          data.schemeCode.present ? data.schemeCode.value : this.schemeCode,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ProfileFavoriteScheme(')
+          ..write('id: $id, ')
+          ..write('profileId: $profileId, ')
+          ..write('schemeCode: $schemeCode, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, profileId, schemeCode, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ProfileFavoriteScheme &&
+          other.id == this.id &&
+          other.profileId == this.profileId &&
+          other.schemeCode == this.schemeCode &&
+          other.createdAt == this.createdAt);
+}
+
+class ProfileFavoriteSchemesCompanion
+    extends UpdateCompanion<ProfileFavoriteScheme> {
+  final Value<int> id;
+  final Value<int> profileId;
+  final Value<int> schemeCode;
+  final Value<DateTime> createdAt;
+  const ProfileFavoriteSchemesCompanion({
+    this.id = const Value.absent(),
+    this.profileId = const Value.absent(),
+    this.schemeCode = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  ProfileFavoriteSchemesCompanion.insert({
+    this.id = const Value.absent(),
+    required int profileId,
+    required int schemeCode,
+    this.createdAt = const Value.absent(),
+  })  : profileId = Value(profileId),
+        schemeCode = Value(schemeCode);
+  static Insertable<ProfileFavoriteScheme> custom({
+    Expression<int>? id,
+    Expression<int>? profileId,
+    Expression<int>? schemeCode,
+    Expression<DateTime>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (profileId != null) 'profile_id': profileId,
+      if (schemeCode != null) 'scheme_code': schemeCode,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  ProfileFavoriteSchemesCompanion copyWith(
+      {Value<int>? id,
+      Value<int>? profileId,
+      Value<int>? schemeCode,
+      Value<DateTime>? createdAt}) {
+    return ProfileFavoriteSchemesCompanion(
+      id: id ?? this.id,
+      profileId: profileId ?? this.profileId,
+      schemeCode: schemeCode ?? this.schemeCode,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (profileId.present) {
+      map['profile_id'] = Variable<int>(profileId.value);
+    }
+    if (schemeCode.present) {
+      map['scheme_code'] = Variable<int>(schemeCode.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ProfileFavoriteSchemesCompanion(')
+          ..write('id: $id, ')
+          ..write('profileId: $profileId, ')
+          ..write('schemeCode: $schemeCode, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $SipPlansTable extends SipPlans with TableInfo<$SipPlansTable, SipPlan> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SipPlansTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _profileIdMeta =
+      const VerificationMeta('profileId');
+  @override
+  late final GeneratedColumn<int> profileId = GeneratedColumn<int>(
+      'profile_id', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: true,
+      $customConstraints:
+          'NOT NULL REFERENCES financial_profiles(id) ON DELETE CASCADE');
+  static const VerificationMeta _financialItemIdMeta =
+      const VerificationMeta('financialItemId');
+  @override
+  late final GeneratedColumn<int> financialItemId = GeneratedColumn<int>(
+      'financial_item_id', aliasedName, true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      $customConstraints: 'REFERENCES financial_items(id) ON DELETE SET NULL');
+  static const VerificationMeta _schemeCodeMeta =
+      const VerificationMeta('schemeCode');
+  @override
+  late final GeneratedColumn<int> schemeCode = GeneratedColumn<int>(
+      'scheme_code', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: true,
+      $customConstraints:
+          'NOT NULL REFERENCES mutual_fund_schemes(scheme_code) ON DELETE RESTRICT');
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+      'name', aliasedName, false,
+      additionalChecks:
+          GeneratedColumn.checkTextLength(minTextLength: 1, maxTextLength: 200),
+      type: DriftSqlType.string,
+      requiredDuringInsert: true);
+  static const VerificationMeta _startDateMeta =
+      const VerificationMeta('startDate');
+  @override
+  late final GeneratedColumn<DateTime> startDate = GeneratedColumn<DateTime>(
+      'start_date', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _endDateMeta =
+      const VerificationMeta('endDate');
+  @override
+  late final GeneratedColumn<DateTime> endDate = GeneratedColumn<DateTime>(
+      'end_date', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+      'status', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('active'));
+  static const VerificationMeta _notesMeta = const VerificationMeta('notes');
+  @override
+  late final GeneratedColumn<String> notes = GeneratedColumn<String>(
+      'notes', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        profileId,
+        financialItemId,
+        schemeCode,
+        name,
+        startDate,
+        endDate,
+        status,
+        notes,
+        createdAt,
+        updatedAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'sip_plans';
+  @override
+  VerificationContext validateIntegrity(Insertable<SipPlan> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('profile_id')) {
+      context.handle(_profileIdMeta,
+          profileId.isAcceptableOrUnknown(data['profile_id']!, _profileIdMeta));
+    } else if (isInserting) {
+      context.missing(_profileIdMeta);
+    }
+    if (data.containsKey('financial_item_id')) {
+      context.handle(
+          _financialItemIdMeta,
+          financialItemId.isAcceptableOrUnknown(
+              data['financial_item_id']!, _financialItemIdMeta));
+    }
+    if (data.containsKey('scheme_code')) {
+      context.handle(
+          _schemeCodeMeta,
+          schemeCode.isAcceptableOrUnknown(
+              data['scheme_code']!, _schemeCodeMeta));
+    } else if (isInserting) {
+      context.missing(_schemeCodeMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+          _nameMeta, name.isAcceptableOrUnknown(data['name']!, _nameMeta));
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('start_date')) {
+      context.handle(_startDateMeta,
+          startDate.isAcceptableOrUnknown(data['start_date']!, _startDateMeta));
+    } else if (isInserting) {
+      context.missing(_startDateMeta);
+    }
+    if (data.containsKey('end_date')) {
+      context.handle(_endDateMeta,
+          endDate.isAcceptableOrUnknown(data['end_date']!, _endDateMeta));
+    }
+    if (data.containsKey('status')) {
+      context.handle(_statusMeta,
+          status.isAcceptableOrUnknown(data['status']!, _statusMeta));
+    }
+    if (data.containsKey('notes')) {
+      context.handle(
+          _notesMeta, notes.isAcceptableOrUnknown(data['notes']!, _notesMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  SipPlan map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SipPlan(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      profileId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}profile_id'])!,
+      financialItemId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}financial_item_id']),
+      schemeCode: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}scheme_code'])!,
+      name: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}name'])!,
+      startDate: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}start_date'])!,
+      endDate: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}end_date']),
+      status: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}status'])!,
+      notes: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}notes']),
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at'])!,
+    );
+  }
+
+  @override
+  $SipPlansTable createAlias(String alias) {
+    return $SipPlansTable(attachedDatabase, alias);
+  }
+}
+
+class SipPlan extends DataClass implements Insertable<SipPlan> {
+  final int id;
+
+  /// Profile scoping: Every SIP belongs to a specific financial profile
+  final int profileId;
+
+  /// Optional link to existing FinancialItems asset holding
+  final int? financialItemId;
+
+  /// Mutual fund scheme code
+  final int schemeCode;
+
+  /// User-defined display name for this SIP (e.g., 'Parag Parikh Monthly SIP')
+  final String name;
+
+  /// Master start date when SIP was first initiated
+  final DateTime startDate;
+
+  /// Optional planned conclusion date (null if ongoing indefinitely)
+  final DateTime? endDate;
+
+  /// Status: 'active', 'paused', 'stopped', 'completed'
+  final String status;
+
+  /// General description or notes
+  final String? notes;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  const SipPlan(
+      {required this.id,
+      required this.profileId,
+      this.financialItemId,
+      required this.schemeCode,
+      required this.name,
+      required this.startDate,
+      this.endDate,
+      required this.status,
+      this.notes,
+      required this.createdAt,
+      required this.updatedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['profile_id'] = Variable<int>(profileId);
+    if (!nullToAbsent || financialItemId != null) {
+      map['financial_item_id'] = Variable<int>(financialItemId);
+    }
+    map['scheme_code'] = Variable<int>(schemeCode);
+    map['name'] = Variable<String>(name);
+    map['start_date'] = Variable<DateTime>(startDate);
+    if (!nullToAbsent || endDate != null) {
+      map['end_date'] = Variable<DateTime>(endDate);
+    }
+    map['status'] = Variable<String>(status);
+    if (!nullToAbsent || notes != null) {
+      map['notes'] = Variable<String>(notes);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  SipPlansCompanion toCompanion(bool nullToAbsent) {
+    return SipPlansCompanion(
+      id: Value(id),
+      profileId: Value(profileId),
+      financialItemId: financialItemId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(financialItemId),
+      schemeCode: Value(schemeCode),
+      name: Value(name),
+      startDate: Value(startDate),
+      endDate: endDate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(endDate),
+      status: Value(status),
+      notes:
+          notes == null && nullToAbsent ? const Value.absent() : Value(notes),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory SipPlan.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SipPlan(
+      id: serializer.fromJson<int>(json['id']),
+      profileId: serializer.fromJson<int>(json['profileId']),
+      financialItemId: serializer.fromJson<int?>(json['financialItemId']),
+      schemeCode: serializer.fromJson<int>(json['schemeCode']),
+      name: serializer.fromJson<String>(json['name']),
+      startDate: serializer.fromJson<DateTime>(json['startDate']),
+      endDate: serializer.fromJson<DateTime?>(json['endDate']),
+      status: serializer.fromJson<String>(json['status']),
+      notes: serializer.fromJson<String?>(json['notes']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'profileId': serializer.toJson<int>(profileId),
+      'financialItemId': serializer.toJson<int?>(financialItemId),
+      'schemeCode': serializer.toJson<int>(schemeCode),
+      'name': serializer.toJson<String>(name),
+      'startDate': serializer.toJson<DateTime>(startDate),
+      'endDate': serializer.toJson<DateTime?>(endDate),
+      'status': serializer.toJson<String>(status),
+      'notes': serializer.toJson<String?>(notes),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  SipPlan copyWith(
+          {int? id,
+          int? profileId,
+          Value<int?> financialItemId = const Value.absent(),
+          int? schemeCode,
+          String? name,
+          DateTime? startDate,
+          Value<DateTime?> endDate = const Value.absent(),
+          String? status,
+          Value<String?> notes = const Value.absent(),
+          DateTime? createdAt,
+          DateTime? updatedAt}) =>
+      SipPlan(
+        id: id ?? this.id,
+        profileId: profileId ?? this.profileId,
+        financialItemId: financialItemId.present
+            ? financialItemId.value
+            : this.financialItemId,
+        schemeCode: schemeCode ?? this.schemeCode,
+        name: name ?? this.name,
+        startDate: startDate ?? this.startDate,
+        endDate: endDate.present ? endDate.value : this.endDate,
+        status: status ?? this.status,
+        notes: notes.present ? notes.value : this.notes,
+        createdAt: createdAt ?? this.createdAt,
+        updatedAt: updatedAt ?? this.updatedAt,
+      );
+  SipPlan copyWithCompanion(SipPlansCompanion data) {
+    return SipPlan(
+      id: data.id.present ? data.id.value : this.id,
+      profileId: data.profileId.present ? data.profileId.value : this.profileId,
+      financialItemId: data.financialItemId.present
+          ? data.financialItemId.value
+          : this.financialItemId,
+      schemeCode:
+          data.schemeCode.present ? data.schemeCode.value : this.schemeCode,
+      name: data.name.present ? data.name.value : this.name,
+      startDate: data.startDate.present ? data.startDate.value : this.startDate,
+      endDate: data.endDate.present ? data.endDate.value : this.endDate,
+      status: data.status.present ? data.status.value : this.status,
+      notes: data.notes.present ? data.notes.value : this.notes,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SipPlan(')
+          ..write('id: $id, ')
+          ..write('profileId: $profileId, ')
+          ..write('financialItemId: $financialItemId, ')
+          ..write('schemeCode: $schemeCode, ')
+          ..write('name: $name, ')
+          ..write('startDate: $startDate, ')
+          ..write('endDate: $endDate, ')
+          ..write('status: $status, ')
+          ..write('notes: $notes, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, profileId, financialItemId, schemeCode,
+      name, startDate, endDate, status, notes, createdAt, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SipPlan &&
+          other.id == this.id &&
+          other.profileId == this.profileId &&
+          other.financialItemId == this.financialItemId &&
+          other.schemeCode == this.schemeCode &&
+          other.name == this.name &&
+          other.startDate == this.startDate &&
+          other.endDate == this.endDate &&
+          other.status == this.status &&
+          other.notes == this.notes &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class SipPlansCompanion extends UpdateCompanion<SipPlan> {
+  final Value<int> id;
+  final Value<int> profileId;
+  final Value<int?> financialItemId;
+  final Value<int> schemeCode;
+  final Value<String> name;
+  final Value<DateTime> startDate;
+  final Value<DateTime?> endDate;
+  final Value<String> status;
+  final Value<String?> notes;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  const SipPlansCompanion({
+    this.id = const Value.absent(),
+    this.profileId = const Value.absent(),
+    this.financialItemId = const Value.absent(),
+    this.schemeCode = const Value.absent(),
+    this.name = const Value.absent(),
+    this.startDate = const Value.absent(),
+    this.endDate = const Value.absent(),
+    this.status = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  });
+  SipPlansCompanion.insert({
+    this.id = const Value.absent(),
+    required int profileId,
+    this.financialItemId = const Value.absent(),
+    required int schemeCode,
+    required String name,
+    required DateTime startDate,
+    this.endDate = const Value.absent(),
+    this.status = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  })  : profileId = Value(profileId),
+        schemeCode = Value(schemeCode),
+        name = Value(name),
+        startDate = Value(startDate);
+  static Insertable<SipPlan> custom({
+    Expression<int>? id,
+    Expression<int>? profileId,
+    Expression<int>? financialItemId,
+    Expression<int>? schemeCode,
+    Expression<String>? name,
+    Expression<DateTime>? startDate,
+    Expression<DateTime>? endDate,
+    Expression<String>? status,
+    Expression<String>? notes,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (profileId != null) 'profile_id': profileId,
+      if (financialItemId != null) 'financial_item_id': financialItemId,
+      if (schemeCode != null) 'scheme_code': schemeCode,
+      if (name != null) 'name': name,
+      if (startDate != null) 'start_date': startDate,
+      if (endDate != null) 'end_date': endDate,
+      if (status != null) 'status': status,
+      if (notes != null) 'notes': notes,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+    });
+  }
+
+  SipPlansCompanion copyWith(
+      {Value<int>? id,
+      Value<int>? profileId,
+      Value<int?>? financialItemId,
+      Value<int>? schemeCode,
+      Value<String>? name,
+      Value<DateTime>? startDate,
+      Value<DateTime?>? endDate,
+      Value<String>? status,
+      Value<String?>? notes,
+      Value<DateTime>? createdAt,
+      Value<DateTime>? updatedAt}) {
+    return SipPlansCompanion(
+      id: id ?? this.id,
+      profileId: profileId ?? this.profileId,
+      financialItemId: financialItemId ?? this.financialItemId,
+      schemeCode: schemeCode ?? this.schemeCode,
+      name: name ?? this.name,
+      startDate: startDate ?? this.startDate,
+      endDate: endDate ?? this.endDate,
+      status: status ?? this.status,
+      notes: notes ?? this.notes,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (profileId.present) {
+      map['profile_id'] = Variable<int>(profileId.value);
+    }
+    if (financialItemId.present) {
+      map['financial_item_id'] = Variable<int>(financialItemId.value);
+    }
+    if (schemeCode.present) {
+      map['scheme_code'] = Variable<int>(schemeCode.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (startDate.present) {
+      map['start_date'] = Variable<DateTime>(startDate.value);
+    }
+    if (endDate.present) {
+      map['end_date'] = Variable<DateTime>(endDate.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (notes.present) {
+      map['notes'] = Variable<String>(notes.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SipPlansCompanion(')
+          ..write('id: $id, ')
+          ..write('profileId: $profileId, ')
+          ..write('financialItemId: $financialItemId, ')
+          ..write('schemeCode: $schemeCode, ')
+          ..write('name: $name, ')
+          ..write('startDate: $startDate, ')
+          ..write('endDate: $endDate, ')
+          ..write('status: $status, ')
+          ..write('notes: $notes, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $SipSchedulePeriodsTable extends SipSchedulePeriods
+    with TableInfo<$SipSchedulePeriodsTable, SipSchedulePeriod> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SipSchedulePeriodsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _sipPlanIdMeta =
+      const VerificationMeta('sipPlanId');
+  @override
+  late final GeneratedColumn<int> sipPlanId = GeneratedColumn<int>(
+      'sip_plan_id', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: true,
+      $customConstraints:
+          'NOT NULL REFERENCES sip_plans(id) ON DELETE CASCADE');
+  static const VerificationMeta _effectiveFromMeta =
+      const VerificationMeta('effectiveFrom');
+  @override
+  late final GeneratedColumn<DateTime> effectiveFrom =
+      GeneratedColumn<DateTime>('effective_from', aliasedName, false,
+          type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _effectiveToMeta =
+      const VerificationMeta('effectiveTo');
+  @override
+  late final GeneratedColumn<DateTime> effectiveTo = GeneratedColumn<DateTime>(
+      'effective_to', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _amountPaiseMeta =
+      const VerificationMeta('amountPaise');
+  @override
+  late final GeneratedColumn<int> amountPaise = GeneratedColumn<int>(
+      'amount_paise', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _deductionDayMeta =
+      const VerificationMeta('deductionDay');
+  @override
+  late final GeneratedColumn<int> deductionDay = GeneratedColumn<int>(
+      'deduction_day', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _frequencyMeta =
+      const VerificationMeta('frequency');
+  @override
+  late final GeneratedColumn<String> frequency = GeneratedColumn<String>(
+      'frequency', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('monthly'));
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+      'status', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('active'));
+  static const VerificationMeta _notesMeta = const VerificationMeta('notes');
+  @override
+  late final GeneratedColumn<String> notes = GeneratedColumn<String>(
+      'notes', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        sipPlanId,
+        effectiveFrom,
+        effectiveTo,
+        amountPaise,
+        deductionDay,
+        frequency,
+        status,
+        notes,
+        createdAt,
+        updatedAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'sip_schedule_periods';
+  @override
+  VerificationContext validateIntegrity(Insertable<SipSchedulePeriod> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('sip_plan_id')) {
+      context.handle(
+          _sipPlanIdMeta,
+          sipPlanId.isAcceptableOrUnknown(
+              data['sip_plan_id']!, _sipPlanIdMeta));
+    } else if (isInserting) {
+      context.missing(_sipPlanIdMeta);
+    }
+    if (data.containsKey('effective_from')) {
+      context.handle(
+          _effectiveFromMeta,
+          effectiveFrom.isAcceptableOrUnknown(
+              data['effective_from']!, _effectiveFromMeta));
+    } else if (isInserting) {
+      context.missing(_effectiveFromMeta);
+    }
+    if (data.containsKey('effective_to')) {
+      context.handle(
+          _effectiveToMeta,
+          effectiveTo.isAcceptableOrUnknown(
+              data['effective_to']!, _effectiveToMeta));
+    }
+    if (data.containsKey('amount_paise')) {
+      context.handle(
+          _amountPaiseMeta,
+          amountPaise.isAcceptableOrUnknown(
+              data['amount_paise']!, _amountPaiseMeta));
+    } else if (isInserting) {
+      context.missing(_amountPaiseMeta);
+    }
+    if (data.containsKey('deduction_day')) {
+      context.handle(
+          _deductionDayMeta,
+          deductionDay.isAcceptableOrUnknown(
+              data['deduction_day']!, _deductionDayMeta));
+    } else if (isInserting) {
+      context.missing(_deductionDayMeta);
+    }
+    if (data.containsKey('frequency')) {
+      context.handle(_frequencyMeta,
+          frequency.isAcceptableOrUnknown(data['frequency']!, _frequencyMeta));
+    }
+    if (data.containsKey('status')) {
+      context.handle(_statusMeta,
+          status.isAcceptableOrUnknown(data['status']!, _statusMeta));
+    }
+    if (data.containsKey('notes')) {
+      context.handle(
+          _notesMeta, notes.isAcceptableOrUnknown(data['notes']!, _notesMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  SipSchedulePeriod map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SipSchedulePeriod(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      sipPlanId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}sip_plan_id'])!,
+      effectiveFrom: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime, data['${effectivePrefix}effective_from'])!,
+      effectiveTo: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}effective_to']),
+      amountPaise: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}amount_paise'])!,
+      deductionDay: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}deduction_day'])!,
+      frequency: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}frequency'])!,
+      status: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}status'])!,
+      notes: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}notes']),
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at'])!,
+    );
+  }
+
+  @override
+  $SipSchedulePeriodsTable createAlias(String alias) {
+    return $SipSchedulePeriodsTable(attachedDatabase, alias);
+  }
+}
+
+class SipSchedulePeriod extends DataClass
+    implements Insertable<SipSchedulePeriod> {
+  final int id;
+
+  /// Parent SIP plan reference
+  final int sipPlanId;
+
+  /// Effective starting date for this period's configuration
+  final DateTime effectiveFrom;
+
+  /// Optional ending date when this period was superseded or completed (null if currently active)
+  final DateTime? effectiveTo;
+
+  /// Scheduled investment amount in Paise (e.g. ₹500.00 = 50,000 paise)
+  final int amountPaise;
+
+  /// Deduction day of the month (1-31). Handled with month-end clamping (e.g. 31st clamps to 28th/29th Feb)
+  final int deductionDay;
+
+  /// Investment frequency: 'monthly', 'quarterly'
+  final String frequency;
+
+  /// Status: 'active', 'superseded', 'completed'
+  final String status;
+  final String? notes;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  const SipSchedulePeriod(
+      {required this.id,
+      required this.sipPlanId,
+      required this.effectiveFrom,
+      this.effectiveTo,
+      required this.amountPaise,
+      required this.deductionDay,
+      required this.frequency,
+      required this.status,
+      this.notes,
+      required this.createdAt,
+      required this.updatedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['sip_plan_id'] = Variable<int>(sipPlanId);
+    map['effective_from'] = Variable<DateTime>(effectiveFrom);
+    if (!nullToAbsent || effectiveTo != null) {
+      map['effective_to'] = Variable<DateTime>(effectiveTo);
+    }
+    map['amount_paise'] = Variable<int>(amountPaise);
+    map['deduction_day'] = Variable<int>(deductionDay);
+    map['frequency'] = Variable<String>(frequency);
+    map['status'] = Variable<String>(status);
+    if (!nullToAbsent || notes != null) {
+      map['notes'] = Variable<String>(notes);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  SipSchedulePeriodsCompanion toCompanion(bool nullToAbsent) {
+    return SipSchedulePeriodsCompanion(
+      id: Value(id),
+      sipPlanId: Value(sipPlanId),
+      effectiveFrom: Value(effectiveFrom),
+      effectiveTo: effectiveTo == null && nullToAbsent
+          ? const Value.absent()
+          : Value(effectiveTo),
+      amountPaise: Value(amountPaise),
+      deductionDay: Value(deductionDay),
+      frequency: Value(frequency),
+      status: Value(status),
+      notes:
+          notes == null && nullToAbsent ? const Value.absent() : Value(notes),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory SipSchedulePeriod.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SipSchedulePeriod(
+      id: serializer.fromJson<int>(json['id']),
+      sipPlanId: serializer.fromJson<int>(json['sipPlanId']),
+      effectiveFrom: serializer.fromJson<DateTime>(json['effectiveFrom']),
+      effectiveTo: serializer.fromJson<DateTime?>(json['effectiveTo']),
+      amountPaise: serializer.fromJson<int>(json['amountPaise']),
+      deductionDay: serializer.fromJson<int>(json['deductionDay']),
+      frequency: serializer.fromJson<String>(json['frequency']),
+      status: serializer.fromJson<String>(json['status']),
+      notes: serializer.fromJson<String?>(json['notes']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'sipPlanId': serializer.toJson<int>(sipPlanId),
+      'effectiveFrom': serializer.toJson<DateTime>(effectiveFrom),
+      'effectiveTo': serializer.toJson<DateTime?>(effectiveTo),
+      'amountPaise': serializer.toJson<int>(amountPaise),
+      'deductionDay': serializer.toJson<int>(deductionDay),
+      'frequency': serializer.toJson<String>(frequency),
+      'status': serializer.toJson<String>(status),
+      'notes': serializer.toJson<String?>(notes),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  SipSchedulePeriod copyWith(
+          {int? id,
+          int? sipPlanId,
+          DateTime? effectiveFrom,
+          Value<DateTime?> effectiveTo = const Value.absent(),
+          int? amountPaise,
+          int? deductionDay,
+          String? frequency,
+          String? status,
+          Value<String?> notes = const Value.absent(),
+          DateTime? createdAt,
+          DateTime? updatedAt}) =>
+      SipSchedulePeriod(
+        id: id ?? this.id,
+        sipPlanId: sipPlanId ?? this.sipPlanId,
+        effectiveFrom: effectiveFrom ?? this.effectiveFrom,
+        effectiveTo: effectiveTo.present ? effectiveTo.value : this.effectiveTo,
+        amountPaise: amountPaise ?? this.amountPaise,
+        deductionDay: deductionDay ?? this.deductionDay,
+        frequency: frequency ?? this.frequency,
+        status: status ?? this.status,
+        notes: notes.present ? notes.value : this.notes,
+        createdAt: createdAt ?? this.createdAt,
+        updatedAt: updatedAt ?? this.updatedAt,
+      );
+  SipSchedulePeriod copyWithCompanion(SipSchedulePeriodsCompanion data) {
+    return SipSchedulePeriod(
+      id: data.id.present ? data.id.value : this.id,
+      sipPlanId: data.sipPlanId.present ? data.sipPlanId.value : this.sipPlanId,
+      effectiveFrom: data.effectiveFrom.present
+          ? data.effectiveFrom.value
+          : this.effectiveFrom,
+      effectiveTo:
+          data.effectiveTo.present ? data.effectiveTo.value : this.effectiveTo,
+      amountPaise:
+          data.amountPaise.present ? data.amountPaise.value : this.amountPaise,
+      deductionDay: data.deductionDay.present
+          ? data.deductionDay.value
+          : this.deductionDay,
+      frequency: data.frequency.present ? data.frequency.value : this.frequency,
+      status: data.status.present ? data.status.value : this.status,
+      notes: data.notes.present ? data.notes.value : this.notes,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SipSchedulePeriod(')
+          ..write('id: $id, ')
+          ..write('sipPlanId: $sipPlanId, ')
+          ..write('effectiveFrom: $effectiveFrom, ')
+          ..write('effectiveTo: $effectiveTo, ')
+          ..write('amountPaise: $amountPaise, ')
+          ..write('deductionDay: $deductionDay, ')
+          ..write('frequency: $frequency, ')
+          ..write('status: $status, ')
+          ..write('notes: $notes, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      id,
+      sipPlanId,
+      effectiveFrom,
+      effectiveTo,
+      amountPaise,
+      deductionDay,
+      frequency,
+      status,
+      notes,
+      createdAt,
+      updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SipSchedulePeriod &&
+          other.id == this.id &&
+          other.sipPlanId == this.sipPlanId &&
+          other.effectiveFrom == this.effectiveFrom &&
+          other.effectiveTo == this.effectiveTo &&
+          other.amountPaise == this.amountPaise &&
+          other.deductionDay == this.deductionDay &&
+          other.frequency == this.frequency &&
+          other.status == this.status &&
+          other.notes == this.notes &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class SipSchedulePeriodsCompanion extends UpdateCompanion<SipSchedulePeriod> {
+  final Value<int> id;
+  final Value<int> sipPlanId;
+  final Value<DateTime> effectiveFrom;
+  final Value<DateTime?> effectiveTo;
+  final Value<int> amountPaise;
+  final Value<int> deductionDay;
+  final Value<String> frequency;
+  final Value<String> status;
+  final Value<String?> notes;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  const SipSchedulePeriodsCompanion({
+    this.id = const Value.absent(),
+    this.sipPlanId = const Value.absent(),
+    this.effectiveFrom = const Value.absent(),
+    this.effectiveTo = const Value.absent(),
+    this.amountPaise = const Value.absent(),
+    this.deductionDay = const Value.absent(),
+    this.frequency = const Value.absent(),
+    this.status = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  });
+  SipSchedulePeriodsCompanion.insert({
+    this.id = const Value.absent(),
+    required int sipPlanId,
+    required DateTime effectiveFrom,
+    this.effectiveTo = const Value.absent(),
+    required int amountPaise,
+    required int deductionDay,
+    this.frequency = const Value.absent(),
+    this.status = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  })  : sipPlanId = Value(sipPlanId),
+        effectiveFrom = Value(effectiveFrom),
+        amountPaise = Value(amountPaise),
+        deductionDay = Value(deductionDay);
+  static Insertable<SipSchedulePeriod> custom({
+    Expression<int>? id,
+    Expression<int>? sipPlanId,
+    Expression<DateTime>? effectiveFrom,
+    Expression<DateTime>? effectiveTo,
+    Expression<int>? amountPaise,
+    Expression<int>? deductionDay,
+    Expression<String>? frequency,
+    Expression<String>? status,
+    Expression<String>? notes,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (sipPlanId != null) 'sip_plan_id': sipPlanId,
+      if (effectiveFrom != null) 'effective_from': effectiveFrom,
+      if (effectiveTo != null) 'effective_to': effectiveTo,
+      if (amountPaise != null) 'amount_paise': amountPaise,
+      if (deductionDay != null) 'deduction_day': deductionDay,
+      if (frequency != null) 'frequency': frequency,
+      if (status != null) 'status': status,
+      if (notes != null) 'notes': notes,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+    });
+  }
+
+  SipSchedulePeriodsCompanion copyWith(
+      {Value<int>? id,
+      Value<int>? sipPlanId,
+      Value<DateTime>? effectiveFrom,
+      Value<DateTime?>? effectiveTo,
+      Value<int>? amountPaise,
+      Value<int>? deductionDay,
+      Value<String>? frequency,
+      Value<String>? status,
+      Value<String?>? notes,
+      Value<DateTime>? createdAt,
+      Value<DateTime>? updatedAt}) {
+    return SipSchedulePeriodsCompanion(
+      id: id ?? this.id,
+      sipPlanId: sipPlanId ?? this.sipPlanId,
+      effectiveFrom: effectiveFrom ?? this.effectiveFrom,
+      effectiveTo: effectiveTo ?? this.effectiveTo,
+      amountPaise: amountPaise ?? this.amountPaise,
+      deductionDay: deductionDay ?? this.deductionDay,
+      frequency: frequency ?? this.frequency,
+      status: status ?? this.status,
+      notes: notes ?? this.notes,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (sipPlanId.present) {
+      map['sip_plan_id'] = Variable<int>(sipPlanId.value);
+    }
+    if (effectiveFrom.present) {
+      map['effective_from'] = Variable<DateTime>(effectiveFrom.value);
+    }
+    if (effectiveTo.present) {
+      map['effective_to'] = Variable<DateTime>(effectiveTo.value);
+    }
+    if (amountPaise.present) {
+      map['amount_paise'] = Variable<int>(amountPaise.value);
+    }
+    if (deductionDay.present) {
+      map['deduction_day'] = Variable<int>(deductionDay.value);
+    }
+    if (frequency.present) {
+      map['frequency'] = Variable<String>(frequency.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (notes.present) {
+      map['notes'] = Variable<String>(notes.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SipSchedulePeriodsCompanion(')
+          ..write('id: $id, ')
+          ..write('sipPlanId: $sipPlanId, ')
+          ..write('effectiveFrom: $effectiveFrom, ')
+          ..write('effectiveTo: $effectiveTo, ')
+          ..write('amountPaise: $amountPaise, ')
+          ..write('deductionDay: $deductionDay, ')
+          ..write('frequency: $frequency, ')
+          ..write('status: $status, ')
+          ..write('notes: $notes, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $SipInstallmentsTable extends SipInstallments
+    with TableInfo<$SipInstallmentsTable, SipInstallment> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SipInstallmentsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _sipPlanIdMeta =
+      const VerificationMeta('sipPlanId');
+  @override
+  late final GeneratedColumn<int> sipPlanId = GeneratedColumn<int>(
+      'sip_plan_id', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: true,
+      $customConstraints:
+          'NOT NULL REFERENCES sip_plans(id) ON DELETE CASCADE');
+  static const VerificationMeta _schedulePeriodIdMeta =
+      const VerificationMeta('schedulePeriodId');
+  @override
+  late final GeneratedColumn<int> schedulePeriodId = GeneratedColumn<int>(
+      'schedule_period_id', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: true,
+      $customConstraints:
+          'NOT NULL REFERENCES sip_schedule_periods(id) ON DELETE CASCADE');
+  static const VerificationMeta _profileIdMeta =
+      const VerificationMeta('profileId');
+  @override
+  late final GeneratedColumn<int> profileId = GeneratedColumn<int>(
+      'profile_id', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: true,
+      $customConstraints:
+          'NOT NULL REFERENCES financial_profiles(id) ON DELETE CASCADE');
+  static const VerificationMeta _scheduledDateMeta =
+      const VerificationMeta('scheduledDate');
+  @override
+  late final GeneratedColumn<DateTime> scheduledDate =
+      GeneratedColumn<DateTime>('scheduled_date', aliasedName, false,
+          type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _expectedAmountPaiseMeta =
+      const VerificationMeta('expectedAmountPaise');
+  @override
+  late final GeneratedColumn<int> expectedAmountPaise = GeneratedColumn<int>(
+      'expected_amount_paise', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+      'status', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('upcoming'));
+  static const VerificationMeta _isSimulatedMeta =
+      const VerificationMeta('isSimulated');
+  @override
+  late final GeneratedColumn<bool> isSimulated = GeneratedColumn<bool>(
+      'is_simulated', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("is_simulated" IN (0, 1))'),
+      defaultValue: const Constant(true));
+  static const VerificationMeta _actualInvestmentDateMeta =
+      const VerificationMeta('actualInvestmentDate');
+  @override
+  late final GeneratedColumn<DateTime> actualInvestmentDate =
+      GeneratedColumn<DateTime>('actual_investment_date', aliasedName, true,
+          type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _actualAmountPaiseMeta =
+      const VerificationMeta('actualAmountPaise');
+  @override
+  late final GeneratedColumn<int> actualAmountPaise = GeneratedColumn<int>(
+      'actual_amount_paise', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _purchaseNavMicroPaiseMeta =
+      const VerificationMeta('purchaseNavMicroPaise');
+  @override
+  late final GeneratedColumn<int> purchaseNavMicroPaise = GeneratedColumn<int>(
+      'purchase_nav_micro_paise', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _unitsMicroUnitsMeta =
+      const VerificationMeta('unitsMicroUnits');
+  @override
+  late final GeneratedColumn<int> unitsMicroUnits = GeneratedColumn<int>(
+      'units_micro_units', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _transactionIdMeta =
+      const VerificationMeta('transactionId');
+  @override
+  late final GeneratedColumn<int> transactionId = GeneratedColumn<int>(
+      'transaction_id', aliasedName, true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      $customConstraints: 'REFERENCES transactions(id) ON DELETE SET NULL');
+  static const VerificationMeta _notesMeta = const VerificationMeta('notes');
+  @override
+  late final GeneratedColumn<String> notes = GeneratedColumn<String>(
+      'notes', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        sipPlanId,
+        schedulePeriodId,
+        profileId,
+        scheduledDate,
+        expectedAmountPaise,
+        status,
+        isSimulated,
+        actualInvestmentDate,
+        actualAmountPaise,
+        purchaseNavMicroPaise,
+        unitsMicroUnits,
+        transactionId,
+        notes,
+        createdAt,
+        updatedAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'sip_installments';
+  @override
+  VerificationContext validateIntegrity(Insertable<SipInstallment> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('sip_plan_id')) {
+      context.handle(
+          _sipPlanIdMeta,
+          sipPlanId.isAcceptableOrUnknown(
+              data['sip_plan_id']!, _sipPlanIdMeta));
+    } else if (isInserting) {
+      context.missing(_sipPlanIdMeta);
+    }
+    if (data.containsKey('schedule_period_id')) {
+      context.handle(
+          _schedulePeriodIdMeta,
+          schedulePeriodId.isAcceptableOrUnknown(
+              data['schedule_period_id']!, _schedulePeriodIdMeta));
+    } else if (isInserting) {
+      context.missing(_schedulePeriodIdMeta);
+    }
+    if (data.containsKey('profile_id')) {
+      context.handle(_profileIdMeta,
+          profileId.isAcceptableOrUnknown(data['profile_id']!, _profileIdMeta));
+    } else if (isInserting) {
+      context.missing(_profileIdMeta);
+    }
+    if (data.containsKey('scheduled_date')) {
+      context.handle(
+          _scheduledDateMeta,
+          scheduledDate.isAcceptableOrUnknown(
+              data['scheduled_date']!, _scheduledDateMeta));
+    } else if (isInserting) {
+      context.missing(_scheduledDateMeta);
+    }
+    if (data.containsKey('expected_amount_paise')) {
+      context.handle(
+          _expectedAmountPaiseMeta,
+          expectedAmountPaise.isAcceptableOrUnknown(
+              data['expected_amount_paise']!, _expectedAmountPaiseMeta));
+    } else if (isInserting) {
+      context.missing(_expectedAmountPaiseMeta);
+    }
+    if (data.containsKey('status')) {
+      context.handle(_statusMeta,
+          status.isAcceptableOrUnknown(data['status']!, _statusMeta));
+    }
+    if (data.containsKey('is_simulated')) {
+      context.handle(
+          _isSimulatedMeta,
+          isSimulated.isAcceptableOrUnknown(
+              data['is_simulated']!, _isSimulatedMeta));
+    }
+    if (data.containsKey('actual_investment_date')) {
+      context.handle(
+          _actualInvestmentDateMeta,
+          actualInvestmentDate.isAcceptableOrUnknown(
+              data['actual_investment_date']!, _actualInvestmentDateMeta));
+    }
+    if (data.containsKey('actual_amount_paise')) {
+      context.handle(
+          _actualAmountPaiseMeta,
+          actualAmountPaise.isAcceptableOrUnknown(
+              data['actual_amount_paise']!, _actualAmountPaiseMeta));
+    }
+    if (data.containsKey('purchase_nav_micro_paise')) {
+      context.handle(
+          _purchaseNavMicroPaiseMeta,
+          purchaseNavMicroPaise.isAcceptableOrUnknown(
+              data['purchase_nav_micro_paise']!, _purchaseNavMicroPaiseMeta));
+    }
+    if (data.containsKey('units_micro_units')) {
+      context.handle(
+          _unitsMicroUnitsMeta,
+          unitsMicroUnits.isAcceptableOrUnknown(
+              data['units_micro_units']!, _unitsMicroUnitsMeta));
+    }
+    if (data.containsKey('transaction_id')) {
+      context.handle(
+          _transactionIdMeta,
+          transactionId.isAcceptableOrUnknown(
+              data['transaction_id']!, _transactionIdMeta));
+    }
+    if (data.containsKey('notes')) {
+      context.handle(
+          _notesMeta, notes.isAcceptableOrUnknown(data['notes']!, _notesMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+        {sipPlanId, scheduledDate},
+      ];
+  @override
+  SipInstallment map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SipInstallment(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      sipPlanId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}sip_plan_id'])!,
+      schedulePeriodId: attachedDatabase.typeMapping.read(
+          DriftSqlType.int, data['${effectivePrefix}schedule_period_id'])!,
+      profileId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}profile_id'])!,
+      scheduledDate: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime, data['${effectivePrefix}scheduled_date'])!,
+      expectedAmountPaise: attachedDatabase.typeMapping.read(
+          DriftSqlType.int, data['${effectivePrefix}expected_amount_paise'])!,
+      status: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}status'])!,
+      isSimulated: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}is_simulated'])!,
+      actualInvestmentDate: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime,
+          data['${effectivePrefix}actual_investment_date']),
+      actualAmountPaise: attachedDatabase.typeMapping.read(
+          DriftSqlType.int, data['${effectivePrefix}actual_amount_paise']),
+      purchaseNavMicroPaise: attachedDatabase.typeMapping.read(
+          DriftSqlType.int, data['${effectivePrefix}purchase_nav_micro_paise']),
+      unitsMicroUnits: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}units_micro_units']),
+      transactionId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}transaction_id']),
+      notes: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}notes']),
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at'])!,
+    );
+  }
+
+  @override
+  $SipInstallmentsTable createAlias(String alias) {
+    return $SipInstallmentsTable(attachedDatabase, alias);
+  }
+}
+
+class SipInstallment extends DataClass implements Insertable<SipInstallment> {
+  final int id;
+
+  /// Parent SIP plan reference
+  final int sipPlanId;
+
+  /// The specific schedule period under which this installment was generated
+  final int schedulePeriodId;
+
+  /// Profile scoping
+  final int profileId;
+
+  /// Scheduled investment date
+  final DateTime scheduledDate;
+
+  /// Expected scheduled amount in Paise
+  final int expectedAmountPaise;
+
+  /// Status: 'upcoming', 'recorded', 'skipped', 'cancelled', 'pending_valuation'
+  final String status;
+
+  /// Distinguishes automatically generated/simulated installments from confirmed user investments
+  final bool isSimulated;
+
+  /// Actual investment date confirmed by the user (may differ from scheduledDate)
+  final DateTime? actualInvestmentDate;
+
+  /// Actual amount invested in Paise (may differ from expectedAmountPaise)
+  final int? actualAmountPaise;
+
+  /// Actual purchase NAV in micro-paise
+  final int? purchaseNavMicroPaise;
+
+  /// Units allotted in micro-units (1.0 unit = 1,000,000 micro-units)
+  final int? unitsMicroUnits;
+
+  /// Link to financial transaction record once confirmed
+  final int? transactionId;
+  final String? notes;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  const SipInstallment(
+      {required this.id,
+      required this.sipPlanId,
+      required this.schedulePeriodId,
+      required this.profileId,
+      required this.scheduledDate,
+      required this.expectedAmountPaise,
+      required this.status,
+      required this.isSimulated,
+      this.actualInvestmentDate,
+      this.actualAmountPaise,
+      this.purchaseNavMicroPaise,
+      this.unitsMicroUnits,
+      this.transactionId,
+      this.notes,
+      required this.createdAt,
+      required this.updatedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['sip_plan_id'] = Variable<int>(sipPlanId);
+    map['schedule_period_id'] = Variable<int>(schedulePeriodId);
+    map['profile_id'] = Variable<int>(profileId);
+    map['scheduled_date'] = Variable<DateTime>(scheduledDate);
+    map['expected_amount_paise'] = Variable<int>(expectedAmountPaise);
+    map['status'] = Variable<String>(status);
+    map['is_simulated'] = Variable<bool>(isSimulated);
+    if (!nullToAbsent || actualInvestmentDate != null) {
+      map['actual_investment_date'] = Variable<DateTime>(actualInvestmentDate);
+    }
+    if (!nullToAbsent || actualAmountPaise != null) {
+      map['actual_amount_paise'] = Variable<int>(actualAmountPaise);
+    }
+    if (!nullToAbsent || purchaseNavMicroPaise != null) {
+      map['purchase_nav_micro_paise'] = Variable<int>(purchaseNavMicroPaise);
+    }
+    if (!nullToAbsent || unitsMicroUnits != null) {
+      map['units_micro_units'] = Variable<int>(unitsMicroUnits);
+    }
+    if (!nullToAbsent || transactionId != null) {
+      map['transaction_id'] = Variable<int>(transactionId);
+    }
+    if (!nullToAbsent || notes != null) {
+      map['notes'] = Variable<String>(notes);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  SipInstallmentsCompanion toCompanion(bool nullToAbsent) {
+    return SipInstallmentsCompanion(
+      id: Value(id),
+      sipPlanId: Value(sipPlanId),
+      schedulePeriodId: Value(schedulePeriodId),
+      profileId: Value(profileId),
+      scheduledDate: Value(scheduledDate),
+      expectedAmountPaise: Value(expectedAmountPaise),
+      status: Value(status),
+      isSimulated: Value(isSimulated),
+      actualInvestmentDate: actualInvestmentDate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(actualInvestmentDate),
+      actualAmountPaise: actualAmountPaise == null && nullToAbsent
+          ? const Value.absent()
+          : Value(actualAmountPaise),
+      purchaseNavMicroPaise: purchaseNavMicroPaise == null && nullToAbsent
+          ? const Value.absent()
+          : Value(purchaseNavMicroPaise),
+      unitsMicroUnits: unitsMicroUnits == null && nullToAbsent
+          ? const Value.absent()
+          : Value(unitsMicroUnits),
+      transactionId: transactionId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(transactionId),
+      notes:
+          notes == null && nullToAbsent ? const Value.absent() : Value(notes),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory SipInstallment.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SipInstallment(
+      id: serializer.fromJson<int>(json['id']),
+      sipPlanId: serializer.fromJson<int>(json['sipPlanId']),
+      schedulePeriodId: serializer.fromJson<int>(json['schedulePeriodId']),
+      profileId: serializer.fromJson<int>(json['profileId']),
+      scheduledDate: serializer.fromJson<DateTime>(json['scheduledDate']),
+      expectedAmountPaise:
+          serializer.fromJson<int>(json['expectedAmountPaise']),
+      status: serializer.fromJson<String>(json['status']),
+      isSimulated: serializer.fromJson<bool>(json['isSimulated']),
+      actualInvestmentDate:
+          serializer.fromJson<DateTime?>(json['actualInvestmentDate']),
+      actualAmountPaise: serializer.fromJson<int?>(json['actualAmountPaise']),
+      purchaseNavMicroPaise:
+          serializer.fromJson<int?>(json['purchaseNavMicroPaise']),
+      unitsMicroUnits: serializer.fromJson<int?>(json['unitsMicroUnits']),
+      transactionId: serializer.fromJson<int?>(json['transactionId']),
+      notes: serializer.fromJson<String?>(json['notes']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'sipPlanId': serializer.toJson<int>(sipPlanId),
+      'schedulePeriodId': serializer.toJson<int>(schedulePeriodId),
+      'profileId': serializer.toJson<int>(profileId),
+      'scheduledDate': serializer.toJson<DateTime>(scheduledDate),
+      'expectedAmountPaise': serializer.toJson<int>(expectedAmountPaise),
+      'status': serializer.toJson<String>(status),
+      'isSimulated': serializer.toJson<bool>(isSimulated),
+      'actualInvestmentDate':
+          serializer.toJson<DateTime?>(actualInvestmentDate),
+      'actualAmountPaise': serializer.toJson<int?>(actualAmountPaise),
+      'purchaseNavMicroPaise': serializer.toJson<int?>(purchaseNavMicroPaise),
+      'unitsMicroUnits': serializer.toJson<int?>(unitsMicroUnits),
+      'transactionId': serializer.toJson<int?>(transactionId),
+      'notes': serializer.toJson<String?>(notes),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  SipInstallment copyWith(
+          {int? id,
+          int? sipPlanId,
+          int? schedulePeriodId,
+          int? profileId,
+          DateTime? scheduledDate,
+          int? expectedAmountPaise,
+          String? status,
+          bool? isSimulated,
+          Value<DateTime?> actualInvestmentDate = const Value.absent(),
+          Value<int?> actualAmountPaise = const Value.absent(),
+          Value<int?> purchaseNavMicroPaise = const Value.absent(),
+          Value<int?> unitsMicroUnits = const Value.absent(),
+          Value<int?> transactionId = const Value.absent(),
+          Value<String?> notes = const Value.absent(),
+          DateTime? createdAt,
+          DateTime? updatedAt}) =>
+      SipInstallment(
+        id: id ?? this.id,
+        sipPlanId: sipPlanId ?? this.sipPlanId,
+        schedulePeriodId: schedulePeriodId ?? this.schedulePeriodId,
+        profileId: profileId ?? this.profileId,
+        scheduledDate: scheduledDate ?? this.scheduledDate,
+        expectedAmountPaise: expectedAmountPaise ?? this.expectedAmountPaise,
+        status: status ?? this.status,
+        isSimulated: isSimulated ?? this.isSimulated,
+        actualInvestmentDate: actualInvestmentDate.present
+            ? actualInvestmentDate.value
+            : this.actualInvestmentDate,
+        actualAmountPaise: actualAmountPaise.present
+            ? actualAmountPaise.value
+            : this.actualAmountPaise,
+        purchaseNavMicroPaise: purchaseNavMicroPaise.present
+            ? purchaseNavMicroPaise.value
+            : this.purchaseNavMicroPaise,
+        unitsMicroUnits: unitsMicroUnits.present
+            ? unitsMicroUnits.value
+            : this.unitsMicroUnits,
+        transactionId:
+            transactionId.present ? transactionId.value : this.transactionId,
+        notes: notes.present ? notes.value : this.notes,
+        createdAt: createdAt ?? this.createdAt,
+        updatedAt: updatedAt ?? this.updatedAt,
+      );
+  SipInstallment copyWithCompanion(SipInstallmentsCompanion data) {
+    return SipInstallment(
+      id: data.id.present ? data.id.value : this.id,
+      sipPlanId: data.sipPlanId.present ? data.sipPlanId.value : this.sipPlanId,
+      schedulePeriodId: data.schedulePeriodId.present
+          ? data.schedulePeriodId.value
+          : this.schedulePeriodId,
+      profileId: data.profileId.present ? data.profileId.value : this.profileId,
+      scheduledDate: data.scheduledDate.present
+          ? data.scheduledDate.value
+          : this.scheduledDate,
+      expectedAmountPaise: data.expectedAmountPaise.present
+          ? data.expectedAmountPaise.value
+          : this.expectedAmountPaise,
+      status: data.status.present ? data.status.value : this.status,
+      isSimulated:
+          data.isSimulated.present ? data.isSimulated.value : this.isSimulated,
+      actualInvestmentDate: data.actualInvestmentDate.present
+          ? data.actualInvestmentDate.value
+          : this.actualInvestmentDate,
+      actualAmountPaise: data.actualAmountPaise.present
+          ? data.actualAmountPaise.value
+          : this.actualAmountPaise,
+      purchaseNavMicroPaise: data.purchaseNavMicroPaise.present
+          ? data.purchaseNavMicroPaise.value
+          : this.purchaseNavMicroPaise,
+      unitsMicroUnits: data.unitsMicroUnits.present
+          ? data.unitsMicroUnits.value
+          : this.unitsMicroUnits,
+      transactionId: data.transactionId.present
+          ? data.transactionId.value
+          : this.transactionId,
+      notes: data.notes.present ? data.notes.value : this.notes,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SipInstallment(')
+          ..write('id: $id, ')
+          ..write('sipPlanId: $sipPlanId, ')
+          ..write('schedulePeriodId: $schedulePeriodId, ')
+          ..write('profileId: $profileId, ')
+          ..write('scheduledDate: $scheduledDate, ')
+          ..write('expectedAmountPaise: $expectedAmountPaise, ')
+          ..write('status: $status, ')
+          ..write('isSimulated: $isSimulated, ')
+          ..write('actualInvestmentDate: $actualInvestmentDate, ')
+          ..write('actualAmountPaise: $actualAmountPaise, ')
+          ..write('purchaseNavMicroPaise: $purchaseNavMicroPaise, ')
+          ..write('unitsMicroUnits: $unitsMicroUnits, ')
+          ..write('transactionId: $transactionId, ')
+          ..write('notes: $notes, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      id,
+      sipPlanId,
+      schedulePeriodId,
+      profileId,
+      scheduledDate,
+      expectedAmountPaise,
+      status,
+      isSimulated,
+      actualInvestmentDate,
+      actualAmountPaise,
+      purchaseNavMicroPaise,
+      unitsMicroUnits,
+      transactionId,
+      notes,
+      createdAt,
+      updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SipInstallment &&
+          other.id == this.id &&
+          other.sipPlanId == this.sipPlanId &&
+          other.schedulePeriodId == this.schedulePeriodId &&
+          other.profileId == this.profileId &&
+          other.scheduledDate == this.scheduledDate &&
+          other.expectedAmountPaise == this.expectedAmountPaise &&
+          other.status == this.status &&
+          other.isSimulated == this.isSimulated &&
+          other.actualInvestmentDate == this.actualInvestmentDate &&
+          other.actualAmountPaise == this.actualAmountPaise &&
+          other.purchaseNavMicroPaise == this.purchaseNavMicroPaise &&
+          other.unitsMicroUnits == this.unitsMicroUnits &&
+          other.transactionId == this.transactionId &&
+          other.notes == this.notes &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class SipInstallmentsCompanion extends UpdateCompanion<SipInstallment> {
+  final Value<int> id;
+  final Value<int> sipPlanId;
+  final Value<int> schedulePeriodId;
+  final Value<int> profileId;
+  final Value<DateTime> scheduledDate;
+  final Value<int> expectedAmountPaise;
+  final Value<String> status;
+  final Value<bool> isSimulated;
+  final Value<DateTime?> actualInvestmentDate;
+  final Value<int?> actualAmountPaise;
+  final Value<int?> purchaseNavMicroPaise;
+  final Value<int?> unitsMicroUnits;
+  final Value<int?> transactionId;
+  final Value<String?> notes;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  const SipInstallmentsCompanion({
+    this.id = const Value.absent(),
+    this.sipPlanId = const Value.absent(),
+    this.schedulePeriodId = const Value.absent(),
+    this.profileId = const Value.absent(),
+    this.scheduledDate = const Value.absent(),
+    this.expectedAmountPaise = const Value.absent(),
+    this.status = const Value.absent(),
+    this.isSimulated = const Value.absent(),
+    this.actualInvestmentDate = const Value.absent(),
+    this.actualAmountPaise = const Value.absent(),
+    this.purchaseNavMicroPaise = const Value.absent(),
+    this.unitsMicroUnits = const Value.absent(),
+    this.transactionId = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  });
+  SipInstallmentsCompanion.insert({
+    this.id = const Value.absent(),
+    required int sipPlanId,
+    required int schedulePeriodId,
+    required int profileId,
+    required DateTime scheduledDate,
+    required int expectedAmountPaise,
+    this.status = const Value.absent(),
+    this.isSimulated = const Value.absent(),
+    this.actualInvestmentDate = const Value.absent(),
+    this.actualAmountPaise = const Value.absent(),
+    this.purchaseNavMicroPaise = const Value.absent(),
+    this.unitsMicroUnits = const Value.absent(),
+    this.transactionId = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  })  : sipPlanId = Value(sipPlanId),
+        schedulePeriodId = Value(schedulePeriodId),
+        profileId = Value(profileId),
+        scheduledDate = Value(scheduledDate),
+        expectedAmountPaise = Value(expectedAmountPaise);
+  static Insertable<SipInstallment> custom({
+    Expression<int>? id,
+    Expression<int>? sipPlanId,
+    Expression<int>? schedulePeriodId,
+    Expression<int>? profileId,
+    Expression<DateTime>? scheduledDate,
+    Expression<int>? expectedAmountPaise,
+    Expression<String>? status,
+    Expression<bool>? isSimulated,
+    Expression<DateTime>? actualInvestmentDate,
+    Expression<int>? actualAmountPaise,
+    Expression<int>? purchaseNavMicroPaise,
+    Expression<int>? unitsMicroUnits,
+    Expression<int>? transactionId,
+    Expression<String>? notes,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (sipPlanId != null) 'sip_plan_id': sipPlanId,
+      if (schedulePeriodId != null) 'schedule_period_id': schedulePeriodId,
+      if (profileId != null) 'profile_id': profileId,
+      if (scheduledDate != null) 'scheduled_date': scheduledDate,
+      if (expectedAmountPaise != null)
+        'expected_amount_paise': expectedAmountPaise,
+      if (status != null) 'status': status,
+      if (isSimulated != null) 'is_simulated': isSimulated,
+      if (actualInvestmentDate != null)
+        'actual_investment_date': actualInvestmentDate,
+      if (actualAmountPaise != null) 'actual_amount_paise': actualAmountPaise,
+      if (purchaseNavMicroPaise != null)
+        'purchase_nav_micro_paise': purchaseNavMicroPaise,
+      if (unitsMicroUnits != null) 'units_micro_units': unitsMicroUnits,
+      if (transactionId != null) 'transaction_id': transactionId,
+      if (notes != null) 'notes': notes,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+    });
+  }
+
+  SipInstallmentsCompanion copyWith(
+      {Value<int>? id,
+      Value<int>? sipPlanId,
+      Value<int>? schedulePeriodId,
+      Value<int>? profileId,
+      Value<DateTime>? scheduledDate,
+      Value<int>? expectedAmountPaise,
+      Value<String>? status,
+      Value<bool>? isSimulated,
+      Value<DateTime?>? actualInvestmentDate,
+      Value<int?>? actualAmountPaise,
+      Value<int?>? purchaseNavMicroPaise,
+      Value<int?>? unitsMicroUnits,
+      Value<int?>? transactionId,
+      Value<String?>? notes,
+      Value<DateTime>? createdAt,
+      Value<DateTime>? updatedAt}) {
+    return SipInstallmentsCompanion(
+      id: id ?? this.id,
+      sipPlanId: sipPlanId ?? this.sipPlanId,
+      schedulePeriodId: schedulePeriodId ?? this.schedulePeriodId,
+      profileId: profileId ?? this.profileId,
+      scheduledDate: scheduledDate ?? this.scheduledDate,
+      expectedAmountPaise: expectedAmountPaise ?? this.expectedAmountPaise,
+      status: status ?? this.status,
+      isSimulated: isSimulated ?? this.isSimulated,
+      actualInvestmentDate: actualInvestmentDate ?? this.actualInvestmentDate,
+      actualAmountPaise: actualAmountPaise ?? this.actualAmountPaise,
+      purchaseNavMicroPaise:
+          purchaseNavMicroPaise ?? this.purchaseNavMicroPaise,
+      unitsMicroUnits: unitsMicroUnits ?? this.unitsMicroUnits,
+      transactionId: transactionId ?? this.transactionId,
+      notes: notes ?? this.notes,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (sipPlanId.present) {
+      map['sip_plan_id'] = Variable<int>(sipPlanId.value);
+    }
+    if (schedulePeriodId.present) {
+      map['schedule_period_id'] = Variable<int>(schedulePeriodId.value);
+    }
+    if (profileId.present) {
+      map['profile_id'] = Variable<int>(profileId.value);
+    }
+    if (scheduledDate.present) {
+      map['scheduled_date'] = Variable<DateTime>(scheduledDate.value);
+    }
+    if (expectedAmountPaise.present) {
+      map['expected_amount_paise'] = Variable<int>(expectedAmountPaise.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (isSimulated.present) {
+      map['is_simulated'] = Variable<bool>(isSimulated.value);
+    }
+    if (actualInvestmentDate.present) {
+      map['actual_investment_date'] =
+          Variable<DateTime>(actualInvestmentDate.value);
+    }
+    if (actualAmountPaise.present) {
+      map['actual_amount_paise'] = Variable<int>(actualAmountPaise.value);
+    }
+    if (purchaseNavMicroPaise.present) {
+      map['purchase_nav_micro_paise'] =
+          Variable<int>(purchaseNavMicroPaise.value);
+    }
+    if (unitsMicroUnits.present) {
+      map['units_micro_units'] = Variable<int>(unitsMicroUnits.value);
+    }
+    if (transactionId.present) {
+      map['transaction_id'] = Variable<int>(transactionId.value);
+    }
+    if (notes.present) {
+      map['notes'] = Variable<String>(notes.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SipInstallmentsCompanion(')
+          ..write('id: $id, ')
+          ..write('sipPlanId: $sipPlanId, ')
+          ..write('schedulePeriodId: $schedulePeriodId, ')
+          ..write('profileId: $profileId, ')
+          ..write('scheduledDate: $scheduledDate, ')
+          ..write('expectedAmountPaise: $expectedAmountPaise, ')
+          ..write('status: $status, ')
+          ..write('isSimulated: $isSimulated, ')
+          ..write('actualInvestmentDate: $actualInvestmentDate, ')
+          ..write('actualAmountPaise: $actualAmountPaise, ')
+          ..write('purchaseNavMicroPaise: $purchaseNavMicroPaise, ')
+          ..write('unitsMicroUnits: $unitsMicroUnits, ')
+          ..write('transactionId: $transactionId, ')
+          ..write('notes: $notes, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -6101,6 +8350,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $MutualFundSchemesTable mutualFundSchemes =
       $MutualFundSchemesTable(this);
   late final $NavHistoryTable navHistory = $NavHistoryTable(this);
+  late final $ProfileFavoriteSchemesTable profileFavoriteSchemes =
+      $ProfileFavoriteSchemesTable(this);
+  late final $SipPlansTable sipPlans = $SipPlansTable(this);
+  late final $SipSchedulePeriodsTable sipSchedulePeriods =
+      $SipSchedulePeriodsTable(this);
+  late final $SipInstallmentsTable sipInstallments =
+      $SipInstallmentsTable(this);
   late final Index idxCategoryClassification = Index(
       'idx_category_classification',
       'CREATE INDEX idx_category_classification ON financial_categories (classification)');
@@ -6145,6 +8401,28 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       'CREATE INDEX idx_scheme_favorite ON mutual_fund_schemes (is_favorite)');
   late final Index idxNavSchemeDate = Index('idx_nav_scheme_date',
       'CREATE INDEX idx_nav_scheme_date ON nav_history (scheme_code, nav_date)');
+  late final Index idxFavProfile = Index('idx_fav_profile',
+      'CREATE INDEX idx_fav_profile ON profile_favorite_schemes (profile_id)');
+  late final Index idxFavScheme = Index('idx_fav_scheme',
+      'CREATE INDEX idx_fav_scheme ON profile_favorite_schemes (scheme_code)');
+  late final Index idxSipProfile = Index('idx_sip_profile',
+      'CREATE INDEX idx_sip_profile ON sip_plans (profile_id)');
+  late final Index idxSipStatus = Index(
+      'idx_sip_status', 'CREATE INDEX idx_sip_status ON sip_plans (status)');
+  late final Index idxSipScheme = Index('idx_sip_scheme',
+      'CREATE INDEX idx_sip_scheme ON sip_plans (scheme_code)');
+  late final Index idxPeriodSip = Index('idx_period_sip',
+      'CREATE INDEX idx_period_sip ON sip_schedule_periods (sip_plan_id)');
+  late final Index idxPeriodDates = Index('idx_period_dates',
+      'CREATE INDEX idx_period_dates ON sip_schedule_periods (effective_from, effective_to)');
+  late final Index idxInstallmentSip = Index('idx_installment_sip',
+      'CREATE INDEX idx_installment_sip ON sip_installments (sip_plan_id)');
+  late final Index idxInstallmentProfile = Index('idx_installment_profile',
+      'CREATE INDEX idx_installment_profile ON sip_installments (profile_id)');
+  late final Index idxInstallmentStatus = Index('idx_installment_status',
+      'CREATE INDEX idx_installment_status ON sip_installments (status)');
+  late final Index idxInstallmentDate = Index('idx_installment_date',
+      'CREATE INDEX idx_installment_date ON sip_installments (scheduled_date)');
   late final ProfilesDao profilesDao = ProfilesDao(this as AppDatabase);
   late final CategoriesDao categoriesDao = CategoriesDao(this as AppDatabase);
   late final AccountsDao accountsDao = AccountsDao(this as AppDatabase);
@@ -6158,6 +8436,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final AppSettingsDao appSettingsDao =
       AppSettingsDao(this as AppDatabase);
   late final MutualFundDao mutualFundDao = MutualFundDao(this as AppDatabase);
+  late final SipsDao sipsDao = SipsDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -6173,6 +8452,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         appSettings,
         mutualFundSchemes,
         navHistory,
+        profileFavoriteSchemes,
+        sipPlans,
+        sipSchedulePeriods,
+        sipInstallments,
         idxCategoryClassification,
         idxCategoryProfile,
         idxAccountType,
@@ -6193,7 +8476,18 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         idxSchemeName,
         idxSchemeFundHouse,
         idxSchemeFavorite,
-        idxNavSchemeDate
+        idxNavSchemeDate,
+        idxFavProfile,
+        idxFavScheme,
+        idxSipProfile,
+        idxSipStatus,
+        idxSipScheme,
+        idxPeriodSip,
+        idxPeriodDates,
+        idxInstallmentSip,
+        idxInstallmentProfile,
+        idxInstallmentStatus,
+        idxInstallmentDate
       ];
 }
 
@@ -8935,6 +11229,1024 @@ typedef $$NavHistoryTableProcessedTableManager = ProcessedTableManager<
     ),
     NavHistoryData,
     PrefetchHooks Function()>;
+typedef $$ProfileFavoriteSchemesTableCreateCompanionBuilder
+    = ProfileFavoriteSchemesCompanion Function({
+  Value<int> id,
+  required int profileId,
+  required int schemeCode,
+  Value<DateTime> createdAt,
+});
+typedef $$ProfileFavoriteSchemesTableUpdateCompanionBuilder
+    = ProfileFavoriteSchemesCompanion Function({
+  Value<int> id,
+  Value<int> profileId,
+  Value<int> schemeCode,
+  Value<DateTime> createdAt,
+});
+
+class $$ProfileFavoriteSchemesTableFilterComposer
+    extends Composer<_$AppDatabase, $ProfileFavoriteSchemesTable> {
+  $$ProfileFavoriteSchemesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get profileId => $composableBuilder(
+      column: $table.profileId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get schemeCode => $composableBuilder(
+      column: $table.schemeCode, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$ProfileFavoriteSchemesTableOrderingComposer
+    extends Composer<_$AppDatabase, $ProfileFavoriteSchemesTable> {
+  $$ProfileFavoriteSchemesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get profileId => $composableBuilder(
+      column: $table.profileId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get schemeCode => $composableBuilder(
+      column: $table.schemeCode, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$ProfileFavoriteSchemesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ProfileFavoriteSchemesTable> {
+  $$ProfileFavoriteSchemesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get profileId =>
+      $composableBuilder(column: $table.profileId, builder: (column) => column);
+
+  GeneratedColumn<int> get schemeCode => $composableBuilder(
+      column: $table.schemeCode, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+}
+
+class $$ProfileFavoriteSchemesTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $ProfileFavoriteSchemesTable,
+    ProfileFavoriteScheme,
+    $$ProfileFavoriteSchemesTableFilterComposer,
+    $$ProfileFavoriteSchemesTableOrderingComposer,
+    $$ProfileFavoriteSchemesTableAnnotationComposer,
+    $$ProfileFavoriteSchemesTableCreateCompanionBuilder,
+    $$ProfileFavoriteSchemesTableUpdateCompanionBuilder,
+    (
+      ProfileFavoriteScheme,
+      BaseReferences<_$AppDatabase, $ProfileFavoriteSchemesTable,
+          ProfileFavoriteScheme>
+    ),
+    ProfileFavoriteScheme,
+    PrefetchHooks Function()> {
+  $$ProfileFavoriteSchemesTableTableManager(
+      _$AppDatabase db, $ProfileFavoriteSchemesTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ProfileFavoriteSchemesTableFilterComposer(
+                  $db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ProfileFavoriteSchemesTableOrderingComposer(
+                  $db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ProfileFavoriteSchemesTableAnnotationComposer(
+                  $db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<int> profileId = const Value.absent(),
+            Value<int> schemeCode = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+          }) =>
+              ProfileFavoriteSchemesCompanion(
+            id: id,
+            profileId: profileId,
+            schemeCode: schemeCode,
+            createdAt: createdAt,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required int profileId,
+            required int schemeCode,
+            Value<DateTime> createdAt = const Value.absent(),
+          }) =>
+              ProfileFavoriteSchemesCompanion.insert(
+            id: id,
+            profileId: profileId,
+            schemeCode: schemeCode,
+            createdAt: createdAt,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$ProfileFavoriteSchemesTableProcessedTableManager
+    = ProcessedTableManager<
+        _$AppDatabase,
+        $ProfileFavoriteSchemesTable,
+        ProfileFavoriteScheme,
+        $$ProfileFavoriteSchemesTableFilterComposer,
+        $$ProfileFavoriteSchemesTableOrderingComposer,
+        $$ProfileFavoriteSchemesTableAnnotationComposer,
+        $$ProfileFavoriteSchemesTableCreateCompanionBuilder,
+        $$ProfileFavoriteSchemesTableUpdateCompanionBuilder,
+        (
+          ProfileFavoriteScheme,
+          BaseReferences<_$AppDatabase, $ProfileFavoriteSchemesTable,
+              ProfileFavoriteScheme>
+        ),
+        ProfileFavoriteScheme,
+        PrefetchHooks Function()>;
+typedef $$SipPlansTableCreateCompanionBuilder = SipPlansCompanion Function({
+  Value<int> id,
+  required int profileId,
+  Value<int?> financialItemId,
+  required int schemeCode,
+  required String name,
+  required DateTime startDate,
+  Value<DateTime?> endDate,
+  Value<String> status,
+  Value<String?> notes,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+});
+typedef $$SipPlansTableUpdateCompanionBuilder = SipPlansCompanion Function({
+  Value<int> id,
+  Value<int> profileId,
+  Value<int?> financialItemId,
+  Value<int> schemeCode,
+  Value<String> name,
+  Value<DateTime> startDate,
+  Value<DateTime?> endDate,
+  Value<String> status,
+  Value<String?> notes,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+});
+
+class $$SipPlansTableFilterComposer
+    extends Composer<_$AppDatabase, $SipPlansTable> {
+  $$SipPlansTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get profileId => $composableBuilder(
+      column: $table.profileId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get financialItemId => $composableBuilder(
+      column: $table.financialItemId,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get schemeCode => $composableBuilder(
+      column: $table.schemeCode, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get name => $composableBuilder(
+      column: $table.name, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get startDate => $composableBuilder(
+      column: $table.startDate, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get endDate => $composableBuilder(
+      column: $table.endDate, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get status => $composableBuilder(
+      column: $table.status, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get notes => $composableBuilder(
+      column: $table.notes, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$SipPlansTableOrderingComposer
+    extends Composer<_$AppDatabase, $SipPlansTable> {
+  $$SipPlansTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get profileId => $composableBuilder(
+      column: $table.profileId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get financialItemId => $composableBuilder(
+      column: $table.financialItemId,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get schemeCode => $composableBuilder(
+      column: $table.schemeCode, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get name => $composableBuilder(
+      column: $table.name, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get startDate => $composableBuilder(
+      column: $table.startDate, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get endDate => $composableBuilder(
+      column: $table.endDate, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get status => $composableBuilder(
+      column: $table.status, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get notes => $composableBuilder(
+      column: $table.notes, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$SipPlansTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SipPlansTable> {
+  $$SipPlansTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get profileId =>
+      $composableBuilder(column: $table.profileId, builder: (column) => column);
+
+  GeneratedColumn<int> get financialItemId => $composableBuilder(
+      column: $table.financialItemId, builder: (column) => column);
+
+  GeneratedColumn<int> get schemeCode => $composableBuilder(
+      column: $table.schemeCode, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get startDate =>
+      $composableBuilder(column: $table.startDate, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get endDate =>
+      $composableBuilder(column: $table.endDate, builder: (column) => column);
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<String> get notes =>
+      $composableBuilder(column: $table.notes, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$SipPlansTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $SipPlansTable,
+    SipPlan,
+    $$SipPlansTableFilterComposer,
+    $$SipPlansTableOrderingComposer,
+    $$SipPlansTableAnnotationComposer,
+    $$SipPlansTableCreateCompanionBuilder,
+    $$SipPlansTableUpdateCompanionBuilder,
+    (SipPlan, BaseReferences<_$AppDatabase, $SipPlansTable, SipPlan>),
+    SipPlan,
+    PrefetchHooks Function()> {
+  $$SipPlansTableTableManager(_$AppDatabase db, $SipPlansTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SipPlansTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SipPlansTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SipPlansTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<int> profileId = const Value.absent(),
+            Value<int?> financialItemId = const Value.absent(),
+            Value<int> schemeCode = const Value.absent(),
+            Value<String> name = const Value.absent(),
+            Value<DateTime> startDate = const Value.absent(),
+            Value<DateTime?> endDate = const Value.absent(),
+            Value<String> status = const Value.absent(),
+            Value<String?> notes = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+          }) =>
+              SipPlansCompanion(
+            id: id,
+            profileId: profileId,
+            financialItemId: financialItemId,
+            schemeCode: schemeCode,
+            name: name,
+            startDate: startDate,
+            endDate: endDate,
+            status: status,
+            notes: notes,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required int profileId,
+            Value<int?> financialItemId = const Value.absent(),
+            required int schemeCode,
+            required String name,
+            required DateTime startDate,
+            Value<DateTime?> endDate = const Value.absent(),
+            Value<String> status = const Value.absent(),
+            Value<String?> notes = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+          }) =>
+              SipPlansCompanion.insert(
+            id: id,
+            profileId: profileId,
+            financialItemId: financialItemId,
+            schemeCode: schemeCode,
+            name: name,
+            startDate: startDate,
+            endDate: endDate,
+            status: status,
+            notes: notes,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$SipPlansTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $SipPlansTable,
+    SipPlan,
+    $$SipPlansTableFilterComposer,
+    $$SipPlansTableOrderingComposer,
+    $$SipPlansTableAnnotationComposer,
+    $$SipPlansTableCreateCompanionBuilder,
+    $$SipPlansTableUpdateCompanionBuilder,
+    (SipPlan, BaseReferences<_$AppDatabase, $SipPlansTable, SipPlan>),
+    SipPlan,
+    PrefetchHooks Function()>;
+typedef $$SipSchedulePeriodsTableCreateCompanionBuilder
+    = SipSchedulePeriodsCompanion Function({
+  Value<int> id,
+  required int sipPlanId,
+  required DateTime effectiveFrom,
+  Value<DateTime?> effectiveTo,
+  required int amountPaise,
+  required int deductionDay,
+  Value<String> frequency,
+  Value<String> status,
+  Value<String?> notes,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+});
+typedef $$SipSchedulePeriodsTableUpdateCompanionBuilder
+    = SipSchedulePeriodsCompanion Function({
+  Value<int> id,
+  Value<int> sipPlanId,
+  Value<DateTime> effectiveFrom,
+  Value<DateTime?> effectiveTo,
+  Value<int> amountPaise,
+  Value<int> deductionDay,
+  Value<String> frequency,
+  Value<String> status,
+  Value<String?> notes,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+});
+
+class $$SipSchedulePeriodsTableFilterComposer
+    extends Composer<_$AppDatabase, $SipSchedulePeriodsTable> {
+  $$SipSchedulePeriodsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get sipPlanId => $composableBuilder(
+      column: $table.sipPlanId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get effectiveFrom => $composableBuilder(
+      column: $table.effectiveFrom, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get effectiveTo => $composableBuilder(
+      column: $table.effectiveTo, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get amountPaise => $composableBuilder(
+      column: $table.amountPaise, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get deductionDay => $composableBuilder(
+      column: $table.deductionDay, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get frequency => $composableBuilder(
+      column: $table.frequency, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get status => $composableBuilder(
+      column: $table.status, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get notes => $composableBuilder(
+      column: $table.notes, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$SipSchedulePeriodsTableOrderingComposer
+    extends Composer<_$AppDatabase, $SipSchedulePeriodsTable> {
+  $$SipSchedulePeriodsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get sipPlanId => $composableBuilder(
+      column: $table.sipPlanId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get effectiveFrom => $composableBuilder(
+      column: $table.effectiveFrom,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get effectiveTo => $composableBuilder(
+      column: $table.effectiveTo, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get amountPaise => $composableBuilder(
+      column: $table.amountPaise, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get deductionDay => $composableBuilder(
+      column: $table.deductionDay,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get frequency => $composableBuilder(
+      column: $table.frequency, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get status => $composableBuilder(
+      column: $table.status, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get notes => $composableBuilder(
+      column: $table.notes, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$SipSchedulePeriodsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SipSchedulePeriodsTable> {
+  $$SipSchedulePeriodsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get sipPlanId =>
+      $composableBuilder(column: $table.sipPlanId, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get effectiveFrom => $composableBuilder(
+      column: $table.effectiveFrom, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get effectiveTo => $composableBuilder(
+      column: $table.effectiveTo, builder: (column) => column);
+
+  GeneratedColumn<int> get amountPaise => $composableBuilder(
+      column: $table.amountPaise, builder: (column) => column);
+
+  GeneratedColumn<int> get deductionDay => $composableBuilder(
+      column: $table.deductionDay, builder: (column) => column);
+
+  GeneratedColumn<String> get frequency =>
+      $composableBuilder(column: $table.frequency, builder: (column) => column);
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<String> get notes =>
+      $composableBuilder(column: $table.notes, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$SipSchedulePeriodsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $SipSchedulePeriodsTable,
+    SipSchedulePeriod,
+    $$SipSchedulePeriodsTableFilterComposer,
+    $$SipSchedulePeriodsTableOrderingComposer,
+    $$SipSchedulePeriodsTableAnnotationComposer,
+    $$SipSchedulePeriodsTableCreateCompanionBuilder,
+    $$SipSchedulePeriodsTableUpdateCompanionBuilder,
+    (
+      SipSchedulePeriod,
+      BaseReferences<_$AppDatabase, $SipSchedulePeriodsTable, SipSchedulePeriod>
+    ),
+    SipSchedulePeriod,
+    PrefetchHooks Function()> {
+  $$SipSchedulePeriodsTableTableManager(
+      _$AppDatabase db, $SipSchedulePeriodsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SipSchedulePeriodsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SipSchedulePeriodsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SipSchedulePeriodsTableAnnotationComposer(
+                  $db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<int> sipPlanId = const Value.absent(),
+            Value<DateTime> effectiveFrom = const Value.absent(),
+            Value<DateTime?> effectiveTo = const Value.absent(),
+            Value<int> amountPaise = const Value.absent(),
+            Value<int> deductionDay = const Value.absent(),
+            Value<String> frequency = const Value.absent(),
+            Value<String> status = const Value.absent(),
+            Value<String?> notes = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+          }) =>
+              SipSchedulePeriodsCompanion(
+            id: id,
+            sipPlanId: sipPlanId,
+            effectiveFrom: effectiveFrom,
+            effectiveTo: effectiveTo,
+            amountPaise: amountPaise,
+            deductionDay: deductionDay,
+            frequency: frequency,
+            status: status,
+            notes: notes,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required int sipPlanId,
+            required DateTime effectiveFrom,
+            Value<DateTime?> effectiveTo = const Value.absent(),
+            required int amountPaise,
+            required int deductionDay,
+            Value<String> frequency = const Value.absent(),
+            Value<String> status = const Value.absent(),
+            Value<String?> notes = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+          }) =>
+              SipSchedulePeriodsCompanion.insert(
+            id: id,
+            sipPlanId: sipPlanId,
+            effectiveFrom: effectiveFrom,
+            effectiveTo: effectiveTo,
+            amountPaise: amountPaise,
+            deductionDay: deductionDay,
+            frequency: frequency,
+            status: status,
+            notes: notes,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$SipSchedulePeriodsTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $SipSchedulePeriodsTable,
+    SipSchedulePeriod,
+    $$SipSchedulePeriodsTableFilterComposer,
+    $$SipSchedulePeriodsTableOrderingComposer,
+    $$SipSchedulePeriodsTableAnnotationComposer,
+    $$SipSchedulePeriodsTableCreateCompanionBuilder,
+    $$SipSchedulePeriodsTableUpdateCompanionBuilder,
+    (
+      SipSchedulePeriod,
+      BaseReferences<_$AppDatabase, $SipSchedulePeriodsTable, SipSchedulePeriod>
+    ),
+    SipSchedulePeriod,
+    PrefetchHooks Function()>;
+typedef $$SipInstallmentsTableCreateCompanionBuilder = SipInstallmentsCompanion
+    Function({
+  Value<int> id,
+  required int sipPlanId,
+  required int schedulePeriodId,
+  required int profileId,
+  required DateTime scheduledDate,
+  required int expectedAmountPaise,
+  Value<String> status,
+  Value<bool> isSimulated,
+  Value<DateTime?> actualInvestmentDate,
+  Value<int?> actualAmountPaise,
+  Value<int?> purchaseNavMicroPaise,
+  Value<int?> unitsMicroUnits,
+  Value<int?> transactionId,
+  Value<String?> notes,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+});
+typedef $$SipInstallmentsTableUpdateCompanionBuilder = SipInstallmentsCompanion
+    Function({
+  Value<int> id,
+  Value<int> sipPlanId,
+  Value<int> schedulePeriodId,
+  Value<int> profileId,
+  Value<DateTime> scheduledDate,
+  Value<int> expectedAmountPaise,
+  Value<String> status,
+  Value<bool> isSimulated,
+  Value<DateTime?> actualInvestmentDate,
+  Value<int?> actualAmountPaise,
+  Value<int?> purchaseNavMicroPaise,
+  Value<int?> unitsMicroUnits,
+  Value<int?> transactionId,
+  Value<String?> notes,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+});
+
+class $$SipInstallmentsTableFilterComposer
+    extends Composer<_$AppDatabase, $SipInstallmentsTable> {
+  $$SipInstallmentsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get sipPlanId => $composableBuilder(
+      column: $table.sipPlanId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get schedulePeriodId => $composableBuilder(
+      column: $table.schedulePeriodId,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get profileId => $composableBuilder(
+      column: $table.profileId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get scheduledDate => $composableBuilder(
+      column: $table.scheduledDate, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get expectedAmountPaise => $composableBuilder(
+      column: $table.expectedAmountPaise,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get status => $composableBuilder(
+      column: $table.status, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get isSimulated => $composableBuilder(
+      column: $table.isSimulated, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get actualInvestmentDate => $composableBuilder(
+      column: $table.actualInvestmentDate,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get actualAmountPaise => $composableBuilder(
+      column: $table.actualAmountPaise,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get purchaseNavMicroPaise => $composableBuilder(
+      column: $table.purchaseNavMicroPaise,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get unitsMicroUnits => $composableBuilder(
+      column: $table.unitsMicroUnits,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get transactionId => $composableBuilder(
+      column: $table.transactionId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get notes => $composableBuilder(
+      column: $table.notes, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$SipInstallmentsTableOrderingComposer
+    extends Composer<_$AppDatabase, $SipInstallmentsTable> {
+  $$SipInstallmentsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get sipPlanId => $composableBuilder(
+      column: $table.sipPlanId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get schedulePeriodId => $composableBuilder(
+      column: $table.schedulePeriodId,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get profileId => $composableBuilder(
+      column: $table.profileId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get scheduledDate => $composableBuilder(
+      column: $table.scheduledDate,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get expectedAmountPaise => $composableBuilder(
+      column: $table.expectedAmountPaise,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get status => $composableBuilder(
+      column: $table.status, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get isSimulated => $composableBuilder(
+      column: $table.isSimulated, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get actualInvestmentDate => $composableBuilder(
+      column: $table.actualInvestmentDate,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get actualAmountPaise => $composableBuilder(
+      column: $table.actualAmountPaise,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get purchaseNavMicroPaise => $composableBuilder(
+      column: $table.purchaseNavMicroPaise,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get unitsMicroUnits => $composableBuilder(
+      column: $table.unitsMicroUnits,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get transactionId => $composableBuilder(
+      column: $table.transactionId,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get notes => $composableBuilder(
+      column: $table.notes, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$SipInstallmentsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SipInstallmentsTable> {
+  $$SipInstallmentsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get sipPlanId =>
+      $composableBuilder(column: $table.sipPlanId, builder: (column) => column);
+
+  GeneratedColumn<int> get schedulePeriodId => $composableBuilder(
+      column: $table.schedulePeriodId, builder: (column) => column);
+
+  GeneratedColumn<int> get profileId =>
+      $composableBuilder(column: $table.profileId, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get scheduledDate => $composableBuilder(
+      column: $table.scheduledDate, builder: (column) => column);
+
+  GeneratedColumn<int> get expectedAmountPaise => $composableBuilder(
+      column: $table.expectedAmountPaise, builder: (column) => column);
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<bool> get isSimulated => $composableBuilder(
+      column: $table.isSimulated, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get actualInvestmentDate => $composableBuilder(
+      column: $table.actualInvestmentDate, builder: (column) => column);
+
+  GeneratedColumn<int> get actualAmountPaise => $composableBuilder(
+      column: $table.actualAmountPaise, builder: (column) => column);
+
+  GeneratedColumn<int> get purchaseNavMicroPaise => $composableBuilder(
+      column: $table.purchaseNavMicroPaise, builder: (column) => column);
+
+  GeneratedColumn<int> get unitsMicroUnits => $composableBuilder(
+      column: $table.unitsMicroUnits, builder: (column) => column);
+
+  GeneratedColumn<int> get transactionId => $composableBuilder(
+      column: $table.transactionId, builder: (column) => column);
+
+  GeneratedColumn<String> get notes =>
+      $composableBuilder(column: $table.notes, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$SipInstallmentsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $SipInstallmentsTable,
+    SipInstallment,
+    $$SipInstallmentsTableFilterComposer,
+    $$SipInstallmentsTableOrderingComposer,
+    $$SipInstallmentsTableAnnotationComposer,
+    $$SipInstallmentsTableCreateCompanionBuilder,
+    $$SipInstallmentsTableUpdateCompanionBuilder,
+    (
+      SipInstallment,
+      BaseReferences<_$AppDatabase, $SipInstallmentsTable, SipInstallment>
+    ),
+    SipInstallment,
+    PrefetchHooks Function()> {
+  $$SipInstallmentsTableTableManager(
+      _$AppDatabase db, $SipInstallmentsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SipInstallmentsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SipInstallmentsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SipInstallmentsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<int> sipPlanId = const Value.absent(),
+            Value<int> schedulePeriodId = const Value.absent(),
+            Value<int> profileId = const Value.absent(),
+            Value<DateTime> scheduledDate = const Value.absent(),
+            Value<int> expectedAmountPaise = const Value.absent(),
+            Value<String> status = const Value.absent(),
+            Value<bool> isSimulated = const Value.absent(),
+            Value<DateTime?> actualInvestmentDate = const Value.absent(),
+            Value<int?> actualAmountPaise = const Value.absent(),
+            Value<int?> purchaseNavMicroPaise = const Value.absent(),
+            Value<int?> unitsMicroUnits = const Value.absent(),
+            Value<int?> transactionId = const Value.absent(),
+            Value<String?> notes = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+          }) =>
+              SipInstallmentsCompanion(
+            id: id,
+            sipPlanId: sipPlanId,
+            schedulePeriodId: schedulePeriodId,
+            profileId: profileId,
+            scheduledDate: scheduledDate,
+            expectedAmountPaise: expectedAmountPaise,
+            status: status,
+            isSimulated: isSimulated,
+            actualInvestmentDate: actualInvestmentDate,
+            actualAmountPaise: actualAmountPaise,
+            purchaseNavMicroPaise: purchaseNavMicroPaise,
+            unitsMicroUnits: unitsMicroUnits,
+            transactionId: transactionId,
+            notes: notes,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required int sipPlanId,
+            required int schedulePeriodId,
+            required int profileId,
+            required DateTime scheduledDate,
+            required int expectedAmountPaise,
+            Value<String> status = const Value.absent(),
+            Value<bool> isSimulated = const Value.absent(),
+            Value<DateTime?> actualInvestmentDate = const Value.absent(),
+            Value<int?> actualAmountPaise = const Value.absent(),
+            Value<int?> purchaseNavMicroPaise = const Value.absent(),
+            Value<int?> unitsMicroUnits = const Value.absent(),
+            Value<int?> transactionId = const Value.absent(),
+            Value<String?> notes = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+          }) =>
+              SipInstallmentsCompanion.insert(
+            id: id,
+            sipPlanId: sipPlanId,
+            schedulePeriodId: schedulePeriodId,
+            profileId: profileId,
+            scheduledDate: scheduledDate,
+            expectedAmountPaise: expectedAmountPaise,
+            status: status,
+            isSimulated: isSimulated,
+            actualInvestmentDate: actualInvestmentDate,
+            actualAmountPaise: actualAmountPaise,
+            purchaseNavMicroPaise: purchaseNavMicroPaise,
+            unitsMicroUnits: unitsMicroUnits,
+            transactionId: transactionId,
+            notes: notes,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$SipInstallmentsTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $SipInstallmentsTable,
+    SipInstallment,
+    $$SipInstallmentsTableFilterComposer,
+    $$SipInstallmentsTableOrderingComposer,
+    $$SipInstallmentsTableAnnotationComposer,
+    $$SipInstallmentsTableCreateCompanionBuilder,
+    $$SipInstallmentsTableUpdateCompanionBuilder,
+    (
+      SipInstallment,
+      BaseReferences<_$AppDatabase, $SipInstallmentsTable, SipInstallment>
+    ),
+    SipInstallment,
+    PrefetchHooks Function()>;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -8959,4 +12271,13 @@ class $AppDatabaseManager {
       $$MutualFundSchemesTableTableManager(_db, _db.mutualFundSchemes);
   $$NavHistoryTableTableManager get navHistory =>
       $$NavHistoryTableTableManager(_db, _db.navHistory);
+  $$ProfileFavoriteSchemesTableTableManager get profileFavoriteSchemes =>
+      $$ProfileFavoriteSchemesTableTableManager(
+          _db, _db.profileFavoriteSchemes);
+  $$SipPlansTableTableManager get sipPlans =>
+      $$SipPlansTableTableManager(_db, _db.sipPlans);
+  $$SipSchedulePeriodsTableTableManager get sipSchedulePeriods =>
+      $$SipSchedulePeriodsTableTableManager(_db, _db.sipSchedulePeriods);
+  $$SipInstallmentsTableTableManager get sipInstallments =>
+      $$SipInstallmentsTableTableManager(_db, _db.sipInstallments);
 }

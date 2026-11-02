@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/formatting/currency_formatter.dart';
+import '../../../core/providers/database_provider.dart';
+import '../../../core/providers/nav_providers.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
@@ -14,7 +16,7 @@ class MutualFundCard extends ConsumerWidget {
   final MutualFundSearchResult scheme;
   final int? latestNavMicroPaise;
   final DateTime? latestNavDate;
-  final bool isFavorite;
+  final bool? isFavorite;
   final VoidCallback? onFavoriteToggle;
   final VoidCallback? onTap;
 
@@ -23,7 +25,7 @@ class MutualFundCard extends ConsumerWidget {
     required this.scheme,
     this.latestNavMicroPaise,
     this.latestNavDate,
-    this.isFavorite = false,
+    this.isFavorite,
     this.onFavoriteToggle,
     this.onTap,
   });
@@ -32,6 +34,9 @@ class MutualFundCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final favoriteAsync =
+        ref.watch(isSchemeFavoriteProvider(scheme.schemeCode));
+    final effectiveIsFavorite = isFavorite ?? (favoriteAsync.value ?? false);
 
     return FinCard(
       onTap: onTap,
@@ -53,15 +58,44 @@ class MutualFundCard extends ConsumerWidget {
               ),
               IconButton(
                 icon: Icon(
-                  isFavorite ? Icons.star_rounded : Icons.star_border_rounded,
-                  color: isFavorite
+                  effectiveIsFavorite
+                      ? Icons.star_rounded
+                      : Icons.star_border_rounded,
+                  color: effectiveIsFavorite
                       ? AppColors.scheduled
                       : (isDark
                           ? AppColors.darkTextMuted
                           : AppColors.lightTextMuted),
                 ),
-                tooltip: isFavorite ? 'Remove Favorite' : 'Add to Favorites',
-                onPressed: onFavoriteToggle,
+                tooltip: effectiveIsFavorite
+                    ? 'Remove Favorite'
+                    : 'Add to Favorites',
+                onPressed: () async {
+                  if (onFavoriteToggle != null) {
+                    onFavoriteToggle!();
+                  } else {
+                    final profileId = ref.read(activeProfileIdProvider);
+                    final dao = ref.read(mutualFundDaoProvider);
+                    final nowFav = await dao.toggleFavorite(
+                      profileId: profileId,
+                      schemeCode: scheme.schemeCode,
+                      schemeName: scheme.schemeName,
+                      fundHouse: scheme.fundHouse,
+                      planType: scheme.planType,
+                      optionType: scheme.optionType,
+                    );
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(nowFav
+                              ? 'Added to favourites!'
+                              : 'Removed from favourites.'),
+                          duration: const Duration(seconds: 1),
+                        ),
+                      );
+                    }
+                  }
+                },
                 constraints: const BoxConstraints(),
                 padding: EdgeInsets.zero,
               ),

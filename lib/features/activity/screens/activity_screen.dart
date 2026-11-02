@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/formatting/currency_formatter.dart';
+import '../../../core/formatting/date_formatter.dart';
+import '../../../core/providers/database_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
@@ -10,13 +13,14 @@ import '../../../core/widgets/status_badge.dart';
 
 /// Activity & Cash Flow screen for tracking transactions, simulated SIP installments,
 /// loan EMI payments, and adjustments.
-class ActivityScreen extends StatelessWidget {
+class ActivityScreen extends ConsumerWidget {
   const ActivityScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final transactionsAsync = ref.watch(activeProfileTransactionsProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -119,21 +123,89 @@ class ActivityScreen extends StatelessWidget {
 
           const SectionHeader(title: 'Transaction Timeline'),
           const SizedBox(height: AppSpacing.md),
-          EmptyStateView(
-            icon: Icons.receipt_long_rounded,
-            title: 'No Recorded Activity',
-            description:
-                'Scheduled SIP contributions, debt repayments, and manual adjustments will appear in this unified financial ledger.',
-            actionLabel: 'Record Manual Entry',
-            onAction: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text(
-                      'Transaction recording form will arrive in Milestone 5'),
-                  duration: Duration(seconds: 2),
-                ),
+          transactionsAsync.when(
+            data: (txns) {
+              if (txns.isEmpty) {
+                return const EmptyStateView(
+                  icon: Icons.receipt_long_rounded,
+                  title: 'No Recorded Activity',
+                  description:
+                      'Scheduled SIP contributions, debt repayments, and manual adjustments will appear in this unified financial ledger.',
+                );
+              }
+
+              return Column(
+                children: txns.map((txn) {
+                  final isIncome = txn.transactionType == 'income';
+                  final isExpense = txn.transactionType == 'expense';
+                  final prefix = isIncome ? '+' : (isExpense ? '-' : '');
+                  final color = isIncome
+                      ? AppColors.asset
+                      : (isExpense
+                          ? AppColors.liability
+                          : AppColors.brandPrimaryLight);
+
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                    child: FinCard(
+                      child: Row(
+                        children: [
+                          Icon(
+                            isIncome
+                                ? Icons.arrow_downward_rounded
+                                : (isExpense
+                                    ? Icons.arrow_upward_rounded
+                                    : Icons.swap_horiz_rounded),
+                            color: color,
+                          ),
+                          const SizedBox(width: AppSpacing.md),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  txn.notes ??
+                                      txn.transactionType
+                                          .replaceAll('_', ' ')
+                                          .toUpperCase(),
+                                  style: AppTypography.titleMedium.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  DateFormatter.formatDate(txn.transactionDate),
+                                  style: AppTypography.labelSmall.copyWith(
+                                    color: isDark
+                                        ? AppColors.darkTextMuted
+                                        : AppColors.lightTextMuted,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Text(
+                            '$prefix${CurrencyFormatter.formatPaise(txn.amountPaise)}',
+                            style: AppTypography.titleMedium.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: color,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }).toList(),
               );
             },
+            loading: () => const Center(
+              child: Padding(
+                padding: EdgeInsets.all(AppSpacing.lg),
+                child: CircularProgressIndicator(),
+              ),
+            ),
+            error: (err, _) =>
+                Center(child: Text('Error loading activity: $err')),
           ),
         ],
       ),

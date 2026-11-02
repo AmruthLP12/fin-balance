@@ -7,6 +7,7 @@ import '../../database/daos/financial_items_dao.dart';
 import '../../database/daos/mutual_fund_dao.dart';
 import '../../database/daos/profiles_dao.dart';
 import '../../database/daos/recurring_transactions_dao.dart';
+import '../../database/daos/sips_dao.dart';
 import '../../database/daos/transactions_dao.dart';
 import '../../database/daos/valuations_dao.dart';
 
@@ -53,6 +54,13 @@ final appSettingsDaoProvider = Provider<AppSettingsDao>((ref) {
 final mutualFundDaoProvider = Provider<MutualFundDao>((ref) {
   return ref.watch(databaseProvider).mutualFundDao;
 });
+
+final sipsDaoProvider = Provider<SipsDao>((ref) {
+  return ref.watch(databaseProvider).sipsDao;
+});
+
+/// Tracks whether the user has picked a profile during this session's startup flow.
+final hasSelectedInitialProfileProvider = StateProvider<bool>((ref) => false);
 
 /// StateNotifier to manage active profile selection and persistence.
 class ActiveProfileNotifier extends StateNotifier<int> {
@@ -149,4 +157,22 @@ final transactionsByItemProvider =
   return ref
       .watch(transactionsDaoProvider)
       .watchTransactionsByItem(arg.profileId, arg.itemId);
+});
+
+/// Stream provider for all SIP plans belonging to the active profile.
+final activeProfileSipPlansProvider = StreamProvider<List<SipPlan>>((ref) {
+  final profileId = ref.watch(activeProfileIdProvider);
+  return ref.watch(sipsDaoProvider).watchSipsByProfile(profileId);
+});
+
+/// Stream provider for periods of a given SIP plan.
+final sipPeriodsProvider =
+    StreamProvider.family<List<SipSchedulePeriod>, int>((ref, sipPlanId) {
+  return ref.watch(sipsDaoProvider).watchSchedulePeriods(sipPlanId);
+});
+
+/// Stream provider for installments of a given SIP plan.
+final sipInstallmentsProvider =
+    StreamProvider.family<List<SipInstallment>, int>((ref, sipPlanId) {
+  return ref.watch(sipsDaoProvider).watchInstallments(sipPlanId);
 });

@@ -4,6 +4,7 @@ import '../precision/financial_precision.dart';
 import '../tables/financial_items.dart';
 import '../tables/mutual_fund_schemes.dart';
 import '../tables/nav_history.dart';
+import '../tables/profile_favorite_schemes.dart';
 import '../tables/valuation_history.dart';
 
 part 'mutual_fund_dao.g.dart';
@@ -13,6 +14,7 @@ part 'mutual_fund_dao.g.dart';
   NavHistory,
   FinancialItems,
   ValuationHistory,
+  ProfileFavoriteSchemes,
 ])
 class MutualFundDao extends DatabaseAccessor<AppDatabase>
     with _$MutualFundDaoMixin {
@@ -56,6 +58,11 @@ class MutualFundDao extends DatabaseAccessor<AppDatabase>
         .getSingleOrNull();
   }
 
+  /// Get all mutual fund schemes stored in local database.
+  Future<List<MutualFundScheme>> getAllSchemes() {
+    return select(mutualFundSchemes).get();
+  }
+
   /// Watch a single scheme by AMFI code.
   Stream<MutualFundScheme?> watchSchemeByCode(int schemeCode) {
     return (select(mutualFundSchemes)
@@ -71,7 +78,111 @@ class MutualFundDao extends DatabaseAccessor<AppDatabase>
         .watch();
   }
 
-  /// Toggle or set favorite state for a scheme.
+  /// Watch favorite/bookmarked schemes for a specific profile.
+  Stream<List<MutualFundScheme>> watchFavoriteSchemesForProfile(int profileId) {
+    final query = select(profileFavoriteSchemes).join([
+      innerJoin(
+        mutualFundSchemes,
+        mutualFundSchemes.schemeCode
+            .equalsExp(profileFavoriteSchemes.schemeCode),
+      ),
+    ])
+      ..where(profileFavoriteSchemes.profileId.equals(profileId))
+      ..orderBy([OrderingTerm.asc(mutualFundSchemes.schemeName)]);
+
+    return query.watch().map(
+        (rows) => rows.map((row) => row.readTable(mutualFundSchemes)).toList());
+  }
+
+  /// Get favorite schemes for a profile.
+  Future<List<MutualFundScheme>> getFavoriteSchemesForProfile(int profileId) {
+    final query = select(profileFavoriteSchemes).join([
+      innerJoin(
+        mutualFundSchemes,
+        mutualFundSchemes.schemeCode
+            .equalsExp(profileFavoriteSchemes.schemeCode),
+      ),
+    ])
+      ..where(profileFavoriteSchemes.profileId.equals(profileId))
+      ..orderBy([OrderingTerm.asc(mutualFundSchemes.schemeName)]);
+
+    return query.get().then(
+        (rows) => rows.map((row) => row.readTable(mutualFundSchemes)).toList());
+  }
+
+  /// Check whether a scheme is favorited by a specific profile.
+  Future<bool> isSchemeFavorite(int profileId, int schemeCode) async {
+    final record = await (select(profileFavoriteSchemes)
+          ..where((tbl) =>
+              tbl.profileId.equals(profileId) &
+              tbl.schemeCode.equals(schemeCode)))
+        .getSingleOrNull();
+    return record != null;
+  }
+
+  /// Watch whether a scheme is favorited by a specific profile.
+  Stream<bool> watchIsSchemeFavorite(int profileId, int schemeCode) {
+    return (select(profileFavoriteSchemes)
+          ..where((tbl) =>
+              tbl.profileId.equals(profileId) &
+              tbl.schemeCode.equals(schemeCode)))
+        .watchSingleOrNull()
+        .map((record) => record != null);
+  }
+
+  /// Toggle favorite state for a specific profile.
+  /// If favorited, removes it. If not favorited, adds it and ensures master scheme exists.
+  /// Returns the new favorite state (true if now favorited, false if removed).
+  Future<bool> toggleFavorite({
+    required int profileId,
+    required int schemeCode,
+    required String schemeName,
+    String? fundHouse,
+    String? planType,
+    String? optionType,
+  }) async {
+    return transaction(() async {
+      // 1. Ensure scheme master entry exists
+      await upsertScheme(
+        MutualFundSchemesCompanion(
+          schemeCode: Value(schemeCode),
+          schemeName: Value(schemeName),
+          fundHouse:
+              fundHouse != null ? Value(fundHouse) : const Value.absent(),
+          planType: planType != null ? Value(planType) : const Value.absent(),
+          optionType:
+              optionType != null ? Value(optionType) : const Value.absent(),
+        ),
+      );
+
+      // 2. Check if already favorited by this profile
+      final existing = await (select(profileFavoriteSchemes)
+            ..where((tbl) =>
+                tbl.profileId.equals(profileId) &
+                tbl.schemeCode.equals(schemeCode)))
+          .getSingleOrNull();
+
+      if (existing != null) {
+        // Remove favorite
+        await (delete(profileFavoriteSchemes)
+              ..where((tbl) => tbl.id.equals(existing.id)))
+            .go();
+        return false;
+      } else {
+        // Add favorite (unique key on {profileId, schemeCode} prevents duplicates)
+        await into(profileFavoriteSchemes).insert(
+          ProfileFavoriteSchemesCompanion(
+            profileId: Value(profileId),
+            schemeCode: Value(schemeCode),
+          ),
+          onConflict: DoNothing(),
+        );
+        return true;
+      }
+    });
+  }
+
+  /// Toggle or set favorite state for a scheme globally (backward compatibility).
   Future<void> setFavorite(int schemeCode, bool isFavorite) async {
     await (update(mutualFundSchemes)
           ..where((tbl) => tbl.schemeCode.equals(schemeCode)))

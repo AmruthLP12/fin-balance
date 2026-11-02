@@ -5,6 +5,46 @@ All notable changes to the FinBalance application will be documented in this fil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-11-02
+
+### Added
+- **Flexible SIP Scheduling & Schedule Periods:**
+  - Implemented flexible SIP model separating master plans (`SipPlans`) from schedule periods (`SipSchedulePeriods`), supporting multiple periods with varying amounts and deduction dates across an investment's lifetime.
+  - Enabled step-up and step-down adjustments (`EditSipScheduleDialog`): archives the prior schedule period and activates a new period on the effective date without manual installment recreation.
+  - Added `SipCard` to `AssetsScreen` with real-time schedule information, deduction day ordinal display, monthly amount in Paise, status badges, and management actions.
+  - Added `SipInstallmentsSheet`: drill-down ledger displaying all generated installments, simulation flags, and one-tap actions to record or skip.
+- **Bulk Historical SIP Entry:**
+  - Implemented `AddSipDialog` with dedicated tab for bulk historical SIP entry across custom date ranges (From Date to To Date, monthly amount, deduction day).
+  - Supported toggling between confirmed actual past investments (records `SipInstallments` + `Transactions` in ledger) and simulated projections (records `isSimulated: true` without inflating verified transactions).
+- **Zero-Drift Month-End Date Clamping:**
+  - Implemented `RecurringDateCalculator`: strictly clamps 31st to 28/29th Feb (leap-year aware) and 30th on 30-day months while calculating strictly from original configured day to prevent progressive date drift.
+- **Configurable NAV Caching & Refresh Policy:**
+  - Configurable sync frequency policies in `SettingsScreen` and `AppSettings`: `Daily` (24 hours), `Weekly` (7 days), and `Manual Only` (on demand).
+  - Cache-first NAV viewing: opening scheme details displays local SQLite cache immediately and avoids repeated remote provider hits when sync is not due.
+  - Added Next Eligible Sync timestamp calculation and status display in Settings (`Last sync: ... • Next eligible: ...`).
+  - Added 400ms search debounce and 10-minute in-memory query caching in `NavSyncService`.
+- **Profile-Selection Startup Flow & Lazy Loading:**
+  - Implemented `ProfileSelectionScreen` displayed on cold boot prior to loading dashboard data.
+  - Displays all family profiles, avatars, relationship badges, and a prominent "Quick Continue as [Last Profile]" card.
+  - Isolated memory and queries to active profile: zero eager loading of other profiles' portfolios or transaction history.
+  - Paginated transaction fetching in `TransactionsDao` (`getPaginatedTransactionsForProfile`) for bounded lazy loading.
+- **Profile-Isolated Favourites:**
+  - Created `ProfileFavoriteSchemes` table enforcing unique constraint on `(profileId, schemeCode)`.
+  - Added profile-scoped favourite methods in `MutualFundDao` with atomic toggling and immediate visual feedback via reactive Drift streams.
+
+### Fixed
+- **Duplicate Resource Merger Collision:**
+  - Resolved Android debug APK build failure caused by duplicate `ic_launcher` in `res/mipmap-hdpi/`.
+- **Foreign Key & Conflict Resolution in SipsDao:**
+  - Added targeted conflict resolution `onConflict: DoNothing(target: [sipPlanId, scheduledDate])` guaranteeing zero duplicate installments during schedule generation or overlapping periods.
+
+### Testing
+- Added `test/unit/sip_scheduling_test.dart` (9 tests covering leap-year clamping, drift prevention, multiple periods, bulk historical generation, simulated vs actual flags, duplicate prevention, and skipping).
+- Added `test/unit/favourites_test.dart` (4 tests covering toggle persistence, cross-profile isolation, unique key duplicate prevention, and reactive stream emission).
+- Added `test/unit/caching_policy_test.dart` (4 tests covering search query caching, daily/weekly/manual policies, eligible sync calculation, and cache-first network avoidance).
+- Added `test/widget/profile_selection_startup_test.dart` (validating cold boot profile picker and transition to main scaffold).
+- Total automated test suite expanded to **90 passing tests** (0 failures).
+
 ## [0.3.2] - 2026-10-30
 
 ### Fixed

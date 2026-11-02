@@ -12,8 +12,10 @@ import '../../../core/widgets/section_header.dart';
 import '../../../core/widgets/status_badge.dart';
 import '../../../database/app_database.dart';
 import '../../profile/widgets/profile_selector_button.dart';
+import '../widgets/add_sip_dialog.dart';
 import '../widgets/holding_card.dart';
 import '../widgets/holding_details_sheet.dart';
+import '../widgets/sip_card.dart';
 import 'mutual_fund_search_screen.dart';
 
 /// Assets screen for managing Mutual Funds, Stocks, FDs, Gold, and wealth holdings scoped to the active profile.
@@ -34,8 +36,10 @@ class _AssetsScreenState extends ConsumerState<AssetsScreen> {
     final isDark = theme.brightness == Brightness.dark;
     final activeProfileAsync = ref.watch(activeProfileProvider);
     final assetsAsync = ref.watch(activeProfileAssetsProvider);
+    final sipsAsync = ref.watch(activeProfileSipPlansProvider);
 
     final profileName = activeProfileAsync.value?.name ?? 'Profile';
+    final sips = sipsAsync.value ?? [];
 
     return Scaffold(
       appBar: AppBar(
@@ -213,6 +217,51 @@ class _AssetsScreenState extends ConsumerState<AssetsScreen> {
                   ),
                 ),
 
+              // Active SIP Schedules Section
+              const SizedBox(height: AppSpacing.xl),
+              SectionHeader(
+                title: 'SIP Schedules (${sips.length})',
+                actionLabel: '+ Add SIP',
+                onActionTap: () => _openAddSipDialog(context),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              if (sips.isEmpty)
+                FinCard(
+                  child: Row(
+                    children: [
+                      const Icon(Icons.calendar_today_rounded,
+                          color: AppColors.scheduled),
+                      const SizedBox(width: AppSpacing.md),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('No Active SIPs',
+                                style: AppTypography.titleMedium),
+                            Text(
+                              'Set up ongoing or bulk historical SIP investments for $profileName.',
+                              style: AppTypography.labelSmall.copyWith(
+                                color: isDark
+                                    ? AppColors.darkTextSecondary
+                                    : AppColors.lightTextSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () => _openAddSipDialog(context),
+                        child: const Text('Add SIP'),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                ...sips.map((sip) => Padding(
+                      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                      child: SipCard(sip: sip),
+                    )),
+
               const SizedBox(height: 80), // FAB clearance
             ],
           );
@@ -324,6 +373,13 @@ class _AssetsScreenState extends ConsumerState<AssetsScreen> {
     } finally {
       if (mounted) setState(() => _isSyncingNav = false);
     }
+  }
+
+  void _openAddSipDialog(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      builder: (_) => const AddSipDialog(),
+    );
   }
 
   void _confirmDeleteHolding(BuildContext context, FinancialItem item) {

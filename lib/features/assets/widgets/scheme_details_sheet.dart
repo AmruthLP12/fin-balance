@@ -206,18 +206,25 @@ class _SchemeDetailsSheetState extends ConsumerState<SchemeDetailsSheet> {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  IconButton(
-                    icon: _isSyncing
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.refresh_rounded, size: 20),
-                    tooltip: 'Sync Latest NAV',
-                    onPressed: _isSyncing
-                        ? null
-                        : () => _syncLatestNav(details.schemeCode),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _buildFavoriteButton(details),
+                      IconButton(
+                        icon: _isSyncing
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Icon(Icons.refresh_rounded, size: 20),
+                        tooltip: 'Sync Latest NAV',
+                        onPressed: _isSyncing
+                            ? null
+                            : () => _syncLatestNav(details.schemeCode),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -353,6 +360,41 @@ class _SchemeDetailsSheetState extends ConsumerState<SchemeDetailsSheet> {
         ],
         const SizedBox(height: AppSpacing.xxl),
       ],
+    );
+  }
+
+  Widget _buildFavoriteButton(MutualFundSchemeDetail details) {
+    final isFavAsync = ref.watch(isSchemeFavoriteProvider(details.schemeCode));
+    final isFav = isFavAsync.value ?? false;
+
+    return IconButton(
+      icon: Icon(
+        isFav ? Icons.star_rounded : Icons.star_border_rounded,
+        color: isFav ? AppColors.scheduled : null,
+        size: 22,
+      ),
+      tooltip: isFav ? 'Remove Favorite' : 'Add to Favorites',
+      onPressed: () async {
+        final profileId = ref.read(activeProfileIdProvider);
+        final dao = ref.read(mutualFundDaoProvider);
+        final nowFav = await dao.toggleFavorite(
+          profileId: profileId,
+          schemeCode: details.schemeCode,
+          schemeName: details.schemeName,
+          fundHouse: details.fundHouse,
+          planType: details.planType,
+          optionType: details.optionType,
+        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                  nowFav ? 'Added to favourites!' : 'Removed from favourites.'),
+              duration: const Duration(seconds: 1),
+            ),
+          );
+        }
+      },
     );
   }
 
