@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart' as drift;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/formatting/currency_formatter.dart';
@@ -10,6 +11,7 @@ import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/fin_card.dart';
 import '../../../core/widgets/status_badge.dart';
 import '../../../data/nav/models/nav_models.dart';
+import '../../../database/app_database.dart';
 import '../../../database/precision/financial_precision.dart';
 
 /// Full-screen mobile-optimized dialog/page for adding a mutual fund investment schedule.
@@ -54,15 +56,20 @@ class AddToProfileDialog extends ConsumerStatefulWidget {
 class _AddToProfileDialogState extends ConsumerState<AddToProfileDialog> {
   final _formKey = GlobalKey<FormState>();
 
+  bool _isOneTime = false;
   late TextEditingController _amountController;
   late TextEditingController _installmentsController;
   late TextEditingController _notesController;
+  late TextEditingController _navController;
+  late TextEditingController _unitsController;
+  late TextEditingController _chargesController;
 
   late DateTime _startDate;
   late ScheduleFrequency _frequency;
   bool _markPastAsConfirmed = true;
   int? _selectedProfileId;
   bool _isSaving = false;
+  bool _isSyncing = false;
 
   @override
   void initState() {
@@ -70,6 +77,17 @@ class _AddToProfileDialogState extends ConsumerState<AddToProfileDialog> {
     _amountController = TextEditingController(text: '500');
     _installmentsController = TextEditingController(text: '12');
     _notesController = TextEditingController();
+    _chargesController = TextEditingController(text: '0.00');
+
+    final latestNavMicro = widget.scheme.latestNav?.navMicroPaise;
+    final nav = latestNavMicro != null && latestNavMicro > 0
+        ? FinancialPrecision.microPaiseToNav(latestNavMicro)
+        : 100.0;
+    _navController = TextEditingController(text: nav.toStringAsFixed(4));
+
+    final initialUnits = 500 / (nav > 0 ? nav : 100.0);
+    _unitsController =
+        TextEditingController(text: initialUnits.toStringAsFixed(4));
 
     final now = DateTime.now();
     _startDate = DateTime(now.year, now.month, now.day);
@@ -82,14 +100,38 @@ class _AddToProfileDialogState extends ConsumerState<AddToProfileDialog> {
     _amountController.dispose();
     _installmentsController.dispose();
     _notesController.dispose();
+    _navController.dispose();
+    _unitsController.dispose();
+    _chargesController.dispose();
     super.dispose();
+  }
+
+  void _syncUnitsFromAmount() {
+    if (_isSyncing) return;
+    _isSyncing = true;
+    final amt = double.tryParse(_amountController.text.trim()) ?? 0.0;
+    final nav = double.tryParse(_navController.text.trim()) ?? 0.0;
+    if (nav > 0 && amt >= 0) {
+      _unitsController.text = (amt / nav).toStringAsFixed(4);
+    }
+    _isSyncing = false;
+  }
+
+  void _syncAmountFromUnits() {
+    if (_isSyncing) return;
+    _isSyncing = true;
+    final units = double.tryParse(_unitsController.text.trim()) ?? 0.0;
+    final nav = double.tryParse(_navController.text.trim()) ?? 0.0;
+    if (nav > 0 && units >= 0) {
+      _amountController.text = (units * nav).toStringAsFixed(2);
+    }
+    _isSyncing = false;
   }
 
   ScheduleSummary _calculateLiveSchedule() {
     final amountRupees = double.tryParse(_amountController.text.trim()) ?? 0.0;
     final amountPaise = FinancialPrecision.rupeesToPaise(amountRupees);
-    final count = int.tryParse(_installmentsController.text.trim()) ??
-        (_frequency == ScheduleFrequency.oneTime ? 1 : 12);
+    final count = int.tryParse(_installmentsController.text.trim()) ?? 12;
 
     return InvestmentScheduleService.generateSchedule(
       startDate: _startDate,
@@ -134,7 +176,9 @@ class _AddToProfileDialogState extends ConsumerState<AddToProfileDialog> {
           Padding(
             padding: const EdgeInsets.only(right: AppSpacing.sm),
             child: FilledButton.icon(
-              onPressed: _isSaving ? null : _saveSchedule,
+              onPressed: _isSaving
+                  ? null
+                  : (_isOneTime ? _saveOneTimeInvestment : _saveSchedule),
               icon: _isSaving
                   ? const SizedBox(
                       width: 14,
@@ -158,8 +202,6 @@ class _AddToProfileDialogState extends ConsumerState<AddToProfileDialog> {
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final isWide = constraints.maxWidth >= 600;
-
             return Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 680),
@@ -175,90 +217,270 @@ class _AddToProfileDialogState extends ConsumerState<AddToProfileDialog> {
                       _buildSchemeCard(isDark),
                       const SizedBox(height: AppSpacing.md),
 
-                      // 2. Amount per installment
-                      Text(
-                        'Amount per installment',
-                        style: AppTypography.labelMedium.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: AppSpacing.xs),
-                      TextFormField(
-                        controller: _amountController,
-                        keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true),
-                        decoration: const InputDecoration(
-                          prefixText: '₹ ',
-                          border: OutlineInputBorder(),
-                          hintText: 'e.g. 500',
-                          helperText:
-                              'Amount invested on each scheduled occurrence',
-                        ),
-                        onChanged: (_) => setState(() {}),
-                        validator: (val) {
-                          if (val == null || val.trim().isEmpty) {
-                            return 'Please enter installment amount';
-                          }
-                          final amt = double.tryParse(val.trim());
-                          if (amt == null || amt <= 0) {
-                            return 'Amount must be greater than 0';
-                          }
-                          return null;
+                      // Mode Selector: One-Time Investment vs SIP Investment
+                      SegmentedButton<bool>(
+                        segments: const [
+                          ButtonSegment(
+                            value: false,
+                            label: Text('SIP Investment'),
+                            icon: Icon(Icons.repeat_rounded, size: 16),
+                          ),
+                          ButtonSegment(
+                            value: true,
+                            label: Text('One-Time Investment'),
+                            icon: Icon(Icons.flash_on_rounded, size: 16),
+                          ),
+                        ],
+                        selected: {_isOneTime},
+                        onSelectionChanged: (set) {
+                          setState(() => _isOneTime = set.first);
                         },
                       ),
                       const SizedBox(height: AppSpacing.md),
 
-                      // 3. Start Date & 4. Frequency
-                      if (isWide)
+                      if (_isOneTime) ...[
+                        // ----------------------------------------------------
+                        // A. ONE-TIME INVESTMENT FIELDS
+                        // ----------------------------------------------------
+                        _buildStartDatePicker(isDark, label: 'Investment Date'),
+                        const SizedBox(height: AppSpacing.md),
+
+                        Text(
+                          'Investment Amount (₹)',
+                          style: AppTypography.labelMedium.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.xs),
+                        TextFormField(
+                          controller: _amountController,
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
+                          decoration: const InputDecoration(
+                            prefixText: '₹ ',
+                            border: OutlineInputBorder(),
+                            hintText: 'e.g. 5000',
+                          ),
+                          onChanged: (_) => _syncUnitsFromAmount(),
+                          validator: (val) {
+                            if (val == null || val.trim().isEmpty) {
+                              return 'Enter investment amount';
+                            }
+                            final amt = double.tryParse(val.trim());
+                            if (amt == null || amt <= 0) {
+                              return 'Amount must be greater than 0';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+
                         Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Expanded(child: _buildStartDatePicker(isDark)),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Purchase NAV (₹)',
+                                    style: AppTypography.labelMedium.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const SizedBox(height: AppSpacing.xs),
+                                  TextFormField(
+                                    controller: _navController,
+                                    keyboardType:
+                                        const TextInputType.numberWithOptions(
+                                            decimal: true),
+                                    decoration: const InputDecoration(
+                                      prefixText: '₹ ',
+                                      border: OutlineInputBorder(),
+                                    ),
+                                    onChanged: (_) => _syncUnitsFromAmount(),
+                                    validator: (val) {
+                                      if (val == null || val.trim().isEmpty) {
+                                        return 'Enter NAV';
+                                      }
+                                      final n = double.tryParse(val.trim());
+                                      if (n == null || n <= 0) {
+                                        return 'Must be positive';
+                                      }
+                                      return null;
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ),
                             const SizedBox(width: AppSpacing.md),
-                            Expanded(child: _buildFrequencyPicker()),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Units Allotted',
+                                    style: AppTypography.labelMedium.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const SizedBox(height: AppSpacing.xs),
+                                  TextFormField(
+                                    controller: _unitsController,
+                                    keyboardType:
+                                        const TextInputType.numberWithOptions(
+                                            decimal: true),
+                                    decoration: const InputDecoration(
+                                      border: OutlineInputBorder(),
+                                    ),
+                                    onChanged: (_) => _syncAmountFromUnits(),
+                                    validator: (val) {
+                                      if (val == null || val.trim().isEmpty) {
+                                        return 'Enter units';
+                                      }
+                                      final n = double.tryParse(val.trim());
+                                      if (n == null || n <= 0) {
+                                        return 'Must be positive';
+                                      }
+                                      return null;
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ),
                           ],
-                        )
-                      else ...[
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+
+                        Text(
+                          'Charges / Fees (₹, Optional)',
+                          style: AppTypography.labelMedium.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.xs),
+                        TextFormField(
+                          controller: _chargesController,
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
+                          decoration: const InputDecoration(
+                            prefixText: '₹ ',
+                            border: OutlineInputBorder(),
+                            hintText: '0.00',
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                      ] else ...[
+                        // ----------------------------------------------------
+                        // B. SIP INVESTMENT FIELDS (Recurring Schedule)
+                        // ----------------------------------------------------
+                        Text(
+                          'Amount per installment',
+                          style: AppTypography.labelMedium.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.xs),
+                        TextFormField(
+                          controller: _amountController,
+                          keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true),
+                          decoration: const InputDecoration(
+                            prefixText: '₹ ',
+                            border: OutlineInputBorder(),
+                            hintText: 'e.g. 500',
+                            helperText:
+                                'Amount invested on each scheduled occurrence',
+                          ),
+                          onChanged: (_) => setState(() {}),
+                          validator: (val) {
+                            if (val == null || val.trim().isEmpty) {
+                              return 'Please enter installment amount';
+                            }
+                            final amt = double.tryParse(val.trim());
+                            if (amt == null || amt <= 0) {
+                              return 'Amount must be greater than 0';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+
                         _buildStartDatePicker(isDark),
                         const SizedBox(height: AppSpacing.md),
-                        _buildFrequencyPicker(),
-                      ],
-                      const SizedBox(height: AppSpacing.md),
 
-                      // 5. Number of Installments
-                      Text(
-                        'Number of Installments',
-                        style: AppTypography.labelMedium.copyWith(
-                          fontWeight: FontWeight.w600,
+                        // First Scheduled Deduction (Derived from Start Date)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 10),
+                          decoration: BoxDecoration(
+                            color:
+                                AppColors.brandPrimary.withValues(alpha: 0.08),
+                            borderRadius:
+                                BorderRadius.circular(AppSpacing.radiusSm),
+                            border: Border.all(
+                              color: AppColors.brandPrimary
+                                  .withValues(alpha: 0.25),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.event_available_rounded,
+                                  size: 20, color: AppColors.brandPrimary),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'First Scheduled Deduction: ${DateFormatter.formatDate(_startDate)}',
+                                  style: AppTypography.labelMedium.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.brandPrimary,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: AppSpacing.xs),
-                      TextFormField(
-                        controller: _installmentsController,
-                        enabled: _frequency != ScheduleFrequency.oneTime,
-                        keyboardType: TextInputType.number,
-                        decoration: InputDecoration(
-                          border: const OutlineInputBorder(),
-                          hintText: '12',
-                          helperText: _frequency == ScheduleFrequency.oneTime
-                              ? 'Locked to 1 for one-time contribution'
-                              : 'Total occurrences for this schedule plan',
+                        const SizedBox(height: AppSpacing.md),
+
+                        _buildFrequencyPicker(),
+                        const SizedBox(height: AppSpacing.md),
+
+                        Text(
+                          'Number of Installments',
+                          style: AppTypography.labelMedium.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
-                        onChanged: (_) => setState(() {}),
-                        validator: (val) {
-                          if (_frequency == ScheduleFrequency.oneTime) {
+                        const SizedBox(height: AppSpacing.xs),
+                        TextFormField(
+                          controller: _installmentsController,
+                          enabled: _frequency != ScheduleFrequency.oneTime,
+                          keyboardType: TextInputType.number,
+                          decoration: InputDecoration(
+                            border: const OutlineInputBorder(),
+                            hintText: _frequency == ScheduleFrequency.oneTime
+                                ? '1'
+                                : '12',
+                            helperText: _frequency == ScheduleFrequency.oneTime
+                                ? 'Locked to 1 for one-time contribution'
+                                : 'Total occurrences for this schedule plan',
+                          ),
+                          onChanged: (_) => setState(() {}),
+                          validator: (val) {
+                            if (_frequency == ScheduleFrequency.oneTime) {
+                              return null;
+                            }
+                            if (val == null || val.trim().isEmpty) {
+                              return 'Please enter number of installments';
+                            }
+                            final count = int.tryParse(val.trim());
+                            if (count == null || count < 1) {
+                              return 'Must be at least 1';
+                            }
                             return null;
-                          }
-                          if (val == null || val.trim().isEmpty) {
-                            return 'Please enter number of installments';
-                          }
-                          final count = int.tryParse(val.trim());
-                          if (count == null || count < 1) {
-                            return 'Must be at least 1';
-                          }
-                          return null;
-                        },
-                      ),
+                          },
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                      ],
                       const SizedBox(height: AppSpacing.md),
 
                       // 6. Financial Profile Selector
@@ -340,12 +562,14 @@ class _AddToProfileDialogState extends ConsumerState<AddToProfileDialog> {
                         const SizedBox(height: AppSpacing.md),
                       ],
 
-                      // 9. Redesigned Schedule Calculation Card
-                      _buildScheduleCalculationCard(schedule, isDark),
-                      const SizedBox(height: AppSpacing.md),
+                      if (!_isOneTime) ...[
+                        // 9. Redesigned Schedule Calculation Card
+                        _buildScheduleCalculationCard(schedule, isDark),
+                        const SizedBox(height: AppSpacing.md),
 
-                      // 10. Collapsible Installment Preview
-                      _buildCollapsiblePreview(schedule, isDark),
+                        // 10. Collapsible Installment Preview
+                        _buildCollapsiblePreview(schedule, isDark),
+                      ],
                       const SizedBox(height: AppSpacing.xxl),
                     ],
                   ),
@@ -426,12 +650,12 @@ class _AddToProfileDialogState extends ConsumerState<AddToProfileDialog> {
     );
   }
 
-  Widget _buildStartDatePicker(bool isDark) {
+  Widget _buildStartDatePicker(bool isDark, {String label = 'Start Date'}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Start Date',
+          label,
           style: AppTypography.labelMedium.copyWith(
             fontWeight: FontWeight.w600,
           ),
@@ -722,6 +946,114 @@ class _AddToProfileDialogState extends ConsumerState<AddToProfileDialog> {
         ),
       ),
     );
+  }
+
+  Future<void> _saveOneTimeInvestment() async {
+    if (!_formKey.currentState!.validate()) return;
+    final profileId = _selectedProfileId;
+    if (profileId == null) return;
+
+    final amountRupees = double.tryParse(_amountController.text.trim()) ?? 0.0;
+    final amountPaise = FinancialPrecision.rupeesToPaise(amountRupees);
+    final chargesRupees =
+        double.tryParse(_chargesController.text.trim()) ?? 0.0;
+    final chargesPaise = FinancialPrecision.rupeesToPaise(chargesRupees);
+    final navDouble = double.tryParse(_navController.text.trim()) ?? 0.0;
+    final navMicroPaise = FinancialPrecision.navToMicroPaise(navDouble);
+    final unitsDouble = double.tryParse(_unitsController.text.trim()) ?? 0.0;
+    final unitsMicro = FinancialPrecision.unitsToMicroUnits(unitsDouble);
+    final notes = _notesController.text.trim().isNotEmpty
+        ? _notesController.text.trim()
+        : null;
+
+    setState(() => _isSaving = true);
+    try {
+      final db = ref.read(databaseProvider);
+      await db.mutualFundDao.upsertScheme(
+        MutualFundSchemesCompanion(
+          schemeCode: drift.Value(widget.scheme.schemeCode),
+          schemeName: drift.Value(widget.scheme.schemeName),
+          fundHouse: drift.Value(widget.scheme.fundHouse),
+          latestNavMicroPaise: drift.Value(navMicroPaise),
+        ),
+      );
+
+      final existingHolding = await (db.select(db.financialItems)
+            ..where((tbl) =>
+                tbl.profileId.equals(profileId) &
+                tbl.subType.equals('mutual_fund') &
+                tbl.externalCode.equals(widget.scheme.schemeCode.toString()) &
+                tbl.status.equals('active')))
+          .getSingleOrNull();
+
+      final categories =
+          await db.categoriesDao.getCategoriesByClassification('asset');
+      final categoryId = categories.isNotEmpty ? categories.first.id : 1;
+
+      int holdingId;
+      if (existingHolding == null) {
+        holdingId = await db.into(db.financialItems).insert(
+              FinancialItemsCompanion(
+                profileId: drift.Value(profileId),
+                name: drift.Value(widget.scheme.schemeName),
+                itemType: const drift.Value('asset'),
+                subType: const drift.Value('mutual_fund'),
+                categoryId: drift.Value(categoryId),
+                currentValuationPaise: drift.Value(amountPaise),
+                initialValuePaise: const drift.Value(0),
+                unitCountMicroUnits: const drift.Value(0),
+                externalCode: drift.Value(widget.scheme.schemeCode.toString()),
+                startDate: drift.Value(_startDate),
+                status: const drift.Value('active'),
+                notes: notes != null
+                    ? drift.Value(notes)
+                    : const drift.Value.absent(),
+              ),
+            );
+      } else {
+        holdingId = existingHolding.id;
+      }
+
+      await db.transactionsDao.recordInvestmentTransaction(
+        profileId: profileId,
+        financialItemId: holdingId,
+        categoryId: categoryId,
+        transactionType: 'investment_purchase',
+        transactionDate: _startDate,
+        amountPaise: amountPaise,
+        chargesPaise: chargesPaise,
+        unitsMicroUnits: unitsMicro,
+        unitPriceMicroPaise: navMicroPaise,
+        notes: notes,
+        source: 'manual',
+      );
+
+      if (mounted) {
+        await ref
+            .read(activeProfileIdProvider.notifier)
+            .switchProfile(profileId);
+        if (!mounted) return;
+        ref.read(hasSelectedInitialProfileProvider.notifier).state = true;
+        Navigator.of(context).popUntil((route) => route.isFirst);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('One-Time Investment recorded successfully.'),
+            backgroundColor: AppColors.asset,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to save investment: $e'),
+            backgroundColor: AppColors.liability,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
   }
 
   Future<void> _saveSchedule() async {

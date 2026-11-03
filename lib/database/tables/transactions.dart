@@ -11,6 +11,7 @@ import 'package:drift/drift.dart';
 @TableIndex(name: 'idx_transaction_item', columns: {#financialItemId})
 @TableIndex(name: 'idx_transaction_type', columns: {#transactionType})
 @TableIndex(name: 'idx_transaction_sip', columns: {#sipPlanId})
+@TableIndex(name: 'idx_transaction_swp', columns: {#swpPlanId})
 @TableIndex(name: 'idx_transaction_linked', columns: {#linkedTransactionId})
 class Transactions extends Table {
   IntColumn get id => integer().autoIncrement()();
@@ -56,6 +57,11 @@ class Transactions extends Table {
   IntColumn get sipPlanId => integer()
       .nullable()
       .customConstraint('REFERENCES sip_plans(id) ON DELETE SET NULL')();
+
+  /// Optional link to parent SWP plan
+  IntColumn get swpPlanId => integer()
+      .nullable()
+      .customConstraint('REFERENCES swp_plans(id) ON DELETE SET NULL')();
 
   /// Optional link to paired transaction (e.g. Switch In <-> Switch Out)
   IntColumn get linkedTransactionId => integer()

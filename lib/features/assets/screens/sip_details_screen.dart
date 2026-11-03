@@ -18,6 +18,7 @@ import '../../../database/app_database.dart';
 import '../../../database/precision/financial_precision.dart';
 import 'add_investment_transaction_screen.dart';
 import 'add_sip_schedule_period_screen.dart';
+import 'add_swp_schedule_period_screen.dart';
 import 'edit_holding_screen.dart';
 import 'edit_sip_schedule_screen.dart';
 
@@ -145,6 +146,24 @@ class _SipDetailsScreenState extends ConsumerState<SipDetailsScreen>
         ? ref.watch(sipInstallmentsProvider(linkedSip.id))
         : null;
     final installments = installmentsAsync?.value ?? [];
+
+    // Watch SWP plans if holding exists
+    final swpsAsync = currentHolding != null
+        ? ref.watch(swpsByHoldingProvider(currentHolding.id))
+        : null;
+    final swps = swpsAsync?.value ?? [];
+    final linkedSwp = swps.firstOrNull;
+
+    // Watch SWP schedule periods
+    final swpPeriodsAsync =
+        linkedSwp != null ? ref.watch(swpPeriodsProvider(linkedSwp.id)) : null;
+    final swpSchedulePeriods = swpPeriodsAsync?.value ?? [];
+
+    // Watch SWP installments
+    final swpInstallmentsAsync = linkedSwp != null
+        ? ref.watch(swpInstallmentsProvider(linkedSwp.id))
+        : null;
+    final swpInstallments = swpInstallmentsAsync?.value ?? [];
 
     // Watch favourites
     final isFav = _schemeCode != null
@@ -311,6 +330,9 @@ class _SipDetailsScreenState extends ConsumerState<SipDetailsScreen>
             isDark: isDark,
             holding: currentHolding,
             sip: linkedSip,
+            swps: swps,
+            swpSchedulePeriods: swpSchedulePeriods,
+            swpInstallments: swpInstallments,
             scheme: scheme,
             profileName: profileName,
             transactions: transactions,
@@ -349,6 +371,9 @@ class _SipDetailsScreenState extends ConsumerState<SipDetailsScreen>
     required bool isDark,
     required FinancialItem? holding,
     required SipPlan? sip,
+    required List<SwpPlan> swps,
+    required List<SwpSchedulePeriod> swpSchedulePeriods,
+    required List<SwpInstallment> swpInstallments,
     required MutualFundScheme? scheme,
     required String profileName,
     required List<Transaction> transactions,
@@ -552,7 +577,7 @@ class _SipDetailsScreenState extends ConsumerState<SipDetailsScreen>
               ),
               const SizedBox(height: AppSpacing.md),
 
-              // 3. SIP Schedule Periods Section (Multiple periods support)
+              // 3. SIP Schedule Periods Section (Minimal format)
               _buildSipScheduleSection(
                 context: context,
                 isDark: isDark,
@@ -563,14 +588,35 @@ class _SipDetailsScreenState extends ConsumerState<SipDetailsScreen>
               ),
               const SizedBox(height: AppSpacing.md),
 
-              // 4. Investment Remarks & Lifecycle Narrative
-              _buildRemarksSection(
+              // 4. SWP Withdrawal Schedules Section (Minimal format)
+              _buildSwpScheduleSection(
+                context: context,
+                isDark: isDark,
+                holding: holding,
+                swps: swps,
+                schedulePeriods: swpSchedulePeriods,
+                installments: swpInstallments,
+              ),
+              const SizedBox(height: AppSpacing.md),
+
+              // 5. Investment Lifecycle (Chronological Point-wise events)
+              _buildLifecycleSection(
                 context: context,
                 isDark: isDark,
                 holding: holding,
                 sips: sip != null ? [sip] : [],
                 schedulePeriods: schedulePeriods,
+                swps: swps,
+                swpPeriods: swpSchedulePeriods,
                 transactions: transactions,
+              ),
+              const SizedBox(height: AppSpacing.md),
+
+              // 6. My Remarks (User notes point-wise, independently editable)
+              _buildMyRemarksSection(
+                context: context,
+                isDark: isDark,
+                holding: holding,
               ),
             ],
           ),
@@ -589,6 +635,10 @@ class _SipDetailsScreenState extends ConsumerState<SipDetailsScreen>
   }) {
     if (holding == null && sip == null) return const SizedBox.shrink();
 
+    final hasActivePeriod = schedulePeriods.any((p) => p.status == 'active');
+    final now = DateTime.now();
+    final startOfToday = DateTime(now.year, now.month, now.day);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -606,12 +656,22 @@ class _SipDetailsScreenState extends ConsumerState<SipDetailsScreen>
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (sip != null)
-                  TextButton.icon(
-                    icon: const Icon(Icons.edit_calendar_rounded, size: 16),
-                    label: const Text('Edit'),
+                if (sip != null) ...[
+                  IconButton(
+                    icon: const Icon(Icons.edit_calendar_rounded, size: 20),
+                    tooltip: 'Edit Period',
+                    visualDensity: VisualDensity.compact,
                     onPressed: () => _openEditSipSchedule(context, sip),
                   ),
+                  if (hasActivePeriod)
+                    IconButton(
+                      icon: const Icon(Icons.cancel_outlined,
+                          size: 20, color: AppColors.liability),
+                      tooltip: 'Close Period',
+                      visualDensity: VisualDensity.compact,
+                      onPressed: () => _confirmCloseSipPeriod(context, sip),
+                    ),
+                ],
                 FilledButton.tonalIcon(
                   icon: const Icon(Icons.add_rounded, size: 16),
                   label: const Text('New Period'),
@@ -659,56 +719,45 @@ class _SipDetailsScreenState extends ConsumerState<SipDetailsScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (sip != null) ...[
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          sip.name,
-                          style: AppTypography.titleMedium.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      StatusBadge(
-                        label: sip.status.toUpperCase(),
-                        type: sip.status.toLowerCase() == 'active'
-                            ? BadgeType.asset
-                            : BadgeType.neutral,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: AppSpacing.xs),
-                  const Divider(height: 1),
-                  const SizedBox(height: AppSpacing.sm),
-                ],
-
-                // List of distinct schedule periods
                 if (schedulePeriods.isNotEmpty) ...[
-                  Text(
-                    'Schedule Periods (${schedulePeriods.length}):',
-                    style: AppTypography.labelSmall.copyWith(
-                      color: isDark
-                          ? AppColors.darkTextMuted
-                          : AppColors.lightTextMuted,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
                   ...schedulePeriods.map((p) {
-                    final isSuperseded =
-                        p.status == 'superseded' || p.status == 'closed';
-                    final dateRange = p.effectiveTo != null
-                        ? '${DateFormatter.formatDate(p.effectiveFrom)} to ${DateFormatter.formatDate(p.effectiveTo!)}'
-                        : 'Since ${DateFormatter.formatDate(p.effectiveFrom)} (Ongoing)';
+                    final isClosed =
+                        p.status == 'closed' || p.status == 'superseded';
+
+                    final periodInstallments = installments
+                        .where((i) => i.schedulePeriodId == p.id)
+                        .toList();
+                    final nextInstallment = periodInstallments
+                            .where((i) =>
+                                i.status == 'upcoming' &&
+                                !i.scheduledDate.isBefore(startOfToday))
+                            .firstOrNull ??
+                        periodInstallments
+                            .where((i) => i.status == 'upcoming')
+                            .firstOrNull;
+
+                    String statusText;
+                    if (nextInstallment != null) {
+                      statusText =
+                          'Next: ${DateFormatter.formatDate(nextInstallment.scheduledDate)}';
+                    } else if (isClosed && p.effectiveTo != null) {
+                      statusText =
+                          'Ended: ${DateFormatter.formatDate(p.effectiveTo!)}';
+                    } else if (isClosed) {
+                      statusText = 'Closed';
+                    } else {
+                      statusText = 'Active';
+                    }
+
+                    final minimalText =
+                        'SIP · ${CurrencyFormatter.formatPaise(p.amountPaise)} · $statusText';
 
                     return Container(
                       margin: const EdgeInsets.only(bottom: 6),
-                      padding: const EdgeInsets.all(8),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 10),
                       decoration: BoxDecoration(
-                        color: isSuperseded
+                        color: isClosed
                             ? (isDark
                                 ? AppColors.darkSurface.withValues(alpha: 0.5)
                                 : AppColors.lightBorder.withValues(alpha: 0.3))
@@ -716,56 +765,69 @@ class _SipDetailsScreenState extends ConsumerState<SipDetailsScreen>
                         borderRadius:
                             BorderRadius.circular(AppSpacing.radiusSm),
                         border: Border.all(
-                          color: isSuperseded
+                          color: isClosed
                               ? Colors.transparent
-                              : AppColors.brandPrimary.withValues(alpha: 0.3),
+                              : AppColors.brandPrimary.withValues(alpha: 0.25),
                         ),
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Wrap(
-                                  crossAxisAlignment: WrapCrossAlignment.center,
-                                  spacing: 8,
-                                  runSpacing: 4,
-                                  children: [
-                                    Text(
-                                      '${CurrencyFormatter.formatPaise(p.amountPaise)} / ${p.frequency}',
-                                      style: AppTypography.titleMedium.copyWith(
-                                        fontWeight: FontWeight.bold,
-                                        color: isSuperseded
-                                            ? null
-                                            : AppColors.brandPrimary,
-                                      ),
-                                    ),
-                                    StatusBadge(
-                                      label: isSuperseded ? 'CLOSED' : 'ACTIVE',
-                                      type: isSuperseded
-                                          ? BadgeType.neutral
-                                          : BadgeType.asset,
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  dateRange,
-                                  style: AppTypography.labelSmall.copyWith(
-                                    color: isDark
+                            child: Text(
+                              minimalText,
+                              style: AppTypography.titleMedium.copyWith(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
+                                color: isClosed
+                                    ? (isDark
                                         ? AppColors.darkTextMuted
-                                        : AppColors.lightTextMuted,
-                                  ),
-                                ),
-                              ],
+                                        : AppColors.lightTextMuted)
+                                    : null,
+                              ),
                             ),
+                          ),
+                          StatusBadge(
+                            label: isClosed ? 'CLOSED' : 'ACTIVE',
+                            type:
+                                isClosed ? BadgeType.neutral : BadgeType.asset,
                           ),
                         ],
                       ),
                     );
                   }),
+                ] else if (sip != null) ...[
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: AppColors.brandPrimary.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                      border: Border.all(
+                        color: AppColors.brandPrimary.withValues(alpha: 0.25),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'SIP · ${sip.status.toUpperCase()}',
+                            style: AppTypography.titleMedium.copyWith(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                        StatusBadge(
+                          label: sip.status.toUpperCase(),
+                          type: sip.status.toLowerCase() == 'active'
+                              ? BadgeType.asset
+                              : BadgeType.neutral,
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ],
             ),
@@ -774,48 +836,224 @@ class _SipDetailsScreenState extends ConsumerState<SipDetailsScreen>
     );
   }
 
-  Widget _buildRemarksSection({
+  Widget _buildSwpScheduleSection({
+    required BuildContext context,
+    required bool isDark,
+    required FinancialItem? holding,
+    required List<SwpPlan> swps,
+    required List<SwpSchedulePeriod> schedulePeriods,
+    required List<SwpInstallment> installments,
+  }) {
+    if (holding == null) return const SizedBox.shrink();
+
+    final activeSwp = swps.firstOrNull;
+    final hasActivePeriod = schedulePeriods.any((p) => p.status == 'active');
+    final now = DateTime.now();
+    final startOfToday = DateTime(now.year, now.month, now.day);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          runSpacing: AppSpacing.xs,
+          children: [
+            Text(
+              'SWP Withdrawal Schedules',
+              style: AppTypography.titleMedium.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (activeSwp != null && hasActivePeriod)
+                  IconButton(
+                    icon: const Icon(Icons.cancel_outlined,
+                        size: 20, color: AppColors.liability),
+                    tooltip: 'Close SWP Period',
+                    visualDensity: VisualDensity.compact,
+                    onPressed: () => _confirmCloseSwpPeriod(context, activeSwp),
+                  ),
+                FilledButton.tonalIcon(
+                  icon: const Icon(Icons.add_rounded, size: 16),
+                  label: const Text('New SWP Period'),
+                  style: FilledButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  onPressed: () =>
+                      _openAddSwpSchedule(context, holding, activeSwp),
+                ),
+              ],
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.xs),
+        if (schedulePeriods.isEmpty && activeSwp == null)
+          FinCard(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8.0),
+              child: Center(
+                child: Column(
+                  children: [
+                    const Icon(Icons.outbox_rounded,
+                        size: 24, color: AppColors.liability),
+                    const SizedBox(height: 4),
+                    Text(
+                      'No active SWP schedule for this holding.',
+                      style: AppTypography.bodySmall.copyWith(
+                        color: isDark
+                            ? AppColors.darkTextMuted
+                            : AppColors.lightTextMuted,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    FilledButton.tonal(
+                      onPressed: () =>
+                          _openAddSwpSchedule(context, holding, activeSwp),
+                      child: const Text('Set Up SWP Schedule'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          )
+        else
+          FinCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ...schedulePeriods.map((p) {
+                  final isClosed =
+                      p.status == 'closed' || p.status == 'superseded';
+
+                  final periodInstallments = installments
+                      .where((i) => i.schedulePeriodId == p.id)
+                      .toList();
+                  final nextInstallment = periodInstallments
+                          .where((i) =>
+                              i.status == 'upcoming' &&
+                              !i.scheduledDate.isBefore(startOfToday))
+                          .firstOrNull ??
+                      periodInstallments
+                          .where((i) => i.status == 'upcoming')
+                          .firstOrNull;
+
+                  String statusText;
+                  if (nextInstallment != null) {
+                    statusText =
+                        'Next: ${DateFormatter.formatDate(nextInstallment.scheduledDate)}';
+                  } else if (isClosed && p.effectiveTo != null) {
+                    statusText =
+                        'Ended: ${DateFormatter.formatDate(p.effectiveTo!)}';
+                  } else if (isClosed) {
+                    statusText = 'Closed';
+                  } else {
+                    statusText = 'Active';
+                  }
+
+                  final valStr = p.amountPaise != null
+                      ? CurrencyFormatter.formatPaise(p.amountPaise!)
+                      : (p.unitsMicroUnits != null
+                          ? '${FinancialPrecision.microUnitsToUnits(p.unitsMicroUnits!).toStringAsFixed(4)} Units'
+                          : 'Configured Amount');
+
+                  final minimalText = 'SWP · $valStr · $statusText';
+
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 6),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: isClosed
+                          ? (isDark
+                              ? AppColors.darkSurface.withValues(alpha: 0.5)
+                              : AppColors.lightBorder.withValues(alpha: 0.3))
+                          : AppColors.liability.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                      border: Border.all(
+                        color: isClosed
+                            ? Colors.transparent
+                            : AppColors.liability.withValues(alpha: 0.25),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            minimalText,
+                            style: AppTypography.titleMedium.copyWith(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                              color: isClosed
+                                  ? (isDark
+                                      ? AppColors.darkTextMuted
+                                      : AppColors.lightTextMuted)
+                                  : null,
+                            ),
+                          ),
+                        ),
+                        StatusBadge(
+                          label: isClosed ? 'CLOSED' : 'ACTIVE',
+                          type: isClosed
+                              ? BadgeType.neutral
+                              : BadgeType.liability,
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildLifecycleSection({
     required BuildContext context,
     required bool isDark,
     required FinancialItem? holding,
     required List<SipPlan> sips,
     required List<SipSchedulePeriod> schedulePeriods,
+    required List<SwpPlan> swps,
+    required List<SwpSchedulePeriod> swpPeriods,
     required List<Transaction> transactions,
   }) {
-    final generatedSummary = holding != null
-        ? InvestmentLifecycleSummary.generateSummary(
+    final events = holding != null
+        ? InvestmentLifecycleSummary.generateLifecycleEvents(
             holding: holding,
             sips: sips,
             schedulePeriods: schedulePeriods,
+            swps: swps,
+            swpPeriods: swpPeriods,
             transactions: transactions,
           )
-        : 'Investment details active.';
-
-    final userRemarks = holding?.notes;
+        : <String>[];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Investment Remarks & Lifecycle',
+          'Investment Lifecycle',
           style: AppTypography.titleMedium.copyWith(
             fontWeight: FontWeight.bold,
           ),
         ),
-        const SizedBox(height: AppSpacing.sm),
-
-        // 1. Auto-generated lifecycle narrative
+        const SizedBox(height: AppSpacing.xs),
         FinCard(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  const Icon(Icons.auto_awesome_rounded,
+                  const Icon(Icons.history_rounded,
                       size: 16, color: AppColors.brandPrimary),
                   const SizedBox(width: 6),
                   Text(
-                    'Lifecycle Summary (Auto-Generated)',
+                    'Chronological Events',
                     style: AppTypography.labelSmall.copyWith(
                       fontWeight: FontWeight.bold,
                       color: AppColors.brandPrimary,
@@ -823,69 +1061,156 @@ class _SipDetailsScreenState extends ConsumerState<SipDetailsScreen>
                   ),
                 ],
               ),
-              const SizedBox(height: 6),
-              Text(
-                generatedSummary,
-                style: AppTypography.bodyMedium.copyWith(height: 1.45),
-              ),
+              const SizedBox(height: AppSpacing.sm),
+              if (events.isEmpty)
+                Text(
+                  'No lifecycle events recorded yet.',
+                  style: AppTypography.bodySmall.copyWith(
+                    color: isDark
+                        ? AppColors.darkTextMuted
+                        : AppColors.lightTextMuted,
+                  ),
+                )
+              else
+                ...events.map((event) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 6.0),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Padding(
+                          padding: EdgeInsets.only(top: 6, right: 8),
+                          child: Icon(Icons.circle,
+                              size: 5, color: AppColors.brandPrimary),
+                        ),
+                        Expanded(
+                          child: Text(
+                            event,
+                            style: AppTypography.bodySmall.copyWith(
+                              height: 1.4,
+                              color: isDark
+                                  ? AppColors.darkTextPrimary
+                                  : AppColors.lightTextPrimary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
             ],
           ),
         ),
-        const SizedBox(height: AppSpacing.sm),
+      ],
+    );
+  }
 
-        // 2. User-entered personal remarks (Distinguishable & Independently Editable)
+  Widget _buildMyRemarksSection({
+    required BuildContext context,
+    required bool isDark,
+    required FinancialItem? holding,
+  }) {
+    final userRemarks = holding?.notes;
+    final hasRemarks = userRemarks != null && userRemarks.trim().isNotEmpty;
+
+    final lines = hasRemarks
+        ? userRemarks
+            .split('\n')
+            .map((l) => l.trim())
+            .where((l) => l.isNotEmpty)
+            .toList()
+        : <String>[];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'My Remarks',
+              style: AppTypography.titleMedium.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            if (holding != null)
+              IconButton(
+                icon: const Icon(Icons.edit_outlined, size: 18),
+                tooltip: 'Edit Remarks',
+                visualDensity: VisualDensity.compact,
+                onPressed: () => _editPersonalRemarks(context, holding),
+              ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.xs),
         FinCard(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      const Icon(Icons.notes_rounded, size: 16),
-                      const SizedBox(width: 6),
-                      Text(
-                        'Personal Notes & Remarks',
-                        style: AppTypography.labelSmall.copyWith(
-                          fontWeight: FontWeight.bold,
+              if (!hasRemarks)
+                InkWell(
+                  onTap: holding != null
+                      ? () => _editPersonalRemarks(context, holding)
+                      : null,
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8.0),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.add_circle_outline_rounded,
+                          size: 16,
+                          color: isDark
+                              ? AppColors.darkTextMuted
+                              : AppColors.lightTextMuted,
                         ),
-                      ),
-                    ],
-                  ),
-                  if (holding != null)
-                    TextButton.icon(
-                      icon: const Icon(Icons.edit_outlined, size: 14),
-                      label: const Text('Edit Note',
-                          style: TextStyle(fontSize: 12)),
-                      style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
-                        visualDensity: VisualDensity.compact,
-                      ),
-                      onPressed: () => _editPersonalRemarks(context, holding),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'No remarks added. Tap to add notes.',
+                            style: AppTypography.bodySmall.copyWith(
+                              fontStyle: FontStyle.italic,
+                              color: isDark
+                                  ? AppColors.darkTextMuted
+                                  : AppColors.lightTextMuted,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                ],
-              ),
-              const SizedBox(height: 6),
-              Text(
-                userRemarks != null && userRemarks.trim().isNotEmpty
-                    ? userRemarks
-                    : 'No personal notes added yet. Tap Edit Note to record your personal strategy, target timeframe, or reasons for SIP adjustments.',
-                style: AppTypography.bodySmall.copyWith(
-                  fontStyle:
-                      userRemarks != null && userRemarks.trim().isNotEmpty
-                          ? FontStyle.normal
-                          : FontStyle.italic,
-                  color: userRemarks != null && userRemarks.trim().isNotEmpty
-                      ? (isDark
-                          ? AppColors.darkTextPrimary
-                          : AppColors.lightTextPrimary)
-                      : (isDark
-                          ? AppColors.darkTextMuted
-                          : AppColors.lightTextMuted),
-                  height: 1.4,
-                ),
-              ),
+                  ),
+                )
+              else
+                ...lines.map((line) {
+                  final cleanLine = line.replaceFirst(RegExp(r'^[-*•]\s*'), '');
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 6.0),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(top: 6, right: 8),
+                          child: Icon(Icons.circle,
+                              size: 5,
+                              color: isDark
+                                  ? AppColors.darkTextMuted
+                                  : AppColors.lightTextMuted),
+                        ),
+                        Expanded(
+                          child: Text(
+                            cleanLine,
+                            style: AppTypography.bodySmall.copyWith(
+                              height: 1.4,
+                              color: isDark
+                                  ? AppColors.darkTextPrimary
+                                  : AppColors.lightTextPrimary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
             ],
           ),
         ),
@@ -1560,6 +1885,104 @@ class _SipDetailsScreenState extends ConsumerState<SipDetailsScreen>
       if (sip != null) {
         ref.invalidate(sipPeriodsProvider(sip.id));
         ref.invalidate(sipInstallmentsProvider(sip.id));
+      }
+    }
+  }
+
+  Future<void> _confirmCloseSipPeriod(
+    BuildContext context,
+    SipPlan sip,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Close SIP Schedule Period?'),
+        content: Text(
+          'This will close the active schedule period for "${sip.name}" as of today and cancel remaining upcoming planned installments.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppColors.liability),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Close Period'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      final sipsDao = ref.read(sipsDaoProvider);
+      await sipsDao.closeSchedulePeriod(sipPlanId: sip.id);
+      ref.invalidate(activeProfileSipPlansProvider);
+      ref.invalidate(sipPeriodsProvider(sip.id));
+      ref.invalidate(sipInstallmentsProvider(sip.id));
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('SIP schedule period closed.')),
+        );
+      }
+    }
+  }
+
+  Future<void> _openAddSwpSchedule(
+    BuildContext context,
+    FinancialItem? holding,
+    SwpPlan? swp,
+  ) async {
+    if (holding == null) return;
+    final result = await AddSwpSchedulePeriodScreen.push(
+      context,
+      holding: holding,
+      existingSwp: swp,
+    );
+    if (result == true && mounted) {
+      ref.invalidate(swpsByHoldingProvider);
+      if (swp != null) {
+        ref.invalidate(swpPeriodsProvider(swp.id));
+        ref.invalidate(swpInstallmentsProvider(swp.id));
+      }
+    }
+  }
+
+  Future<void> _confirmCloseSwpPeriod(
+    BuildContext context,
+    SwpPlan swp,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Close SWP Schedule Period?'),
+        content: Text(
+          'This will close the active SWP schedule period for "${swp.name}" as of today and cancel remaining upcoming planned withdrawals.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppColors.liability),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Close Period'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      final swpsDao = ref.read(swpsDaoProvider);
+      await swpsDao.closeSchedulePeriod(swpPlanId: swp.id);
+      ref.invalidate(swpsByHoldingProvider);
+      ref.invalidate(swpPeriodsProvider(swp.id));
+      ref.invalidate(swpInstallmentsProvider(swp.id));
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('SWP schedule period closed.')),
+        );
       }
     }
   }

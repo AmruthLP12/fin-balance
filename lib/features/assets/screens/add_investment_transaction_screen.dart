@@ -1,12 +1,16 @@
+import 'package:drift/drift.dart' as drift;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/formatting/currency_formatter.dart';
 import '../../../core/formatting/date_formatter.dart';
 import '../../../core/providers/database_provider.dart';
+import '../../../core/providers/nav_providers.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/fin_card.dart';
+import '../../../core/widgets/status_badge.dart';
+import '../../../data/nav/models/nav_models.dart';
 import '../../../database/app_database.dart';
 import '../../../database/precision/financial_precision.dart';
 
@@ -57,6 +61,10 @@ class _AddInvestmentTransactionScreenState
 
   int? _selectedSipId;
   int? _selectedLinkedHoldingId;
+  MutualFundSearchResult? _selectedSwitchScheme;
+  double? _switchSchemeNav;
+  DateTime? _switchSchemeNavDate;
+  String? _switchSchemeFundHouse;
   bool _isSaving = false;
   bool _isSyncing = false;
 
@@ -153,8 +161,237 @@ class _AddInvestmentTransactionScreenState
     }
   }
 
+  void _showTransactionHelp(BuildContext context, bool isDark) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: isDark ? AppColors.darkSurface : AppColors.lightSurface,
+      shape: const RoundedRectangleBorder(
+        borderRadius:
+            BorderRadius.vertical(top: Radius.circular(AppSpacing.radiusMd)),
+      ),
+      builder: (ctx) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.75,
+          minChildSize: 0.5,
+          maxChildSize: 0.95,
+          expand: false,
+          builder: (_, scrollController) {
+            final helpItems = [
+              (
+                title: 'One-time Investment / Purchase',
+                desc:
+                    'Lump-sum purchase of units using cash capital. Increases holding units and invested capital.',
+                icon: Icons.add_shopping_cart_rounded,
+                color: AppColors.brandPrimary,
+              ),
+              (
+                title: 'SIP Investment',
+                desc:
+                    'Recurring automated installment credited towards your investment schedule period.',
+                icon: Icons.alarm_on_rounded,
+                color: AppColors.brandPrimary,
+              ),
+              (
+                title: 'IDCW Reinvestment',
+                desc:
+                    'Dividend declared by the mutual fund scheme is used to purchase additional units. Increases units held with no cash payout.',
+                icon: Icons.autorenew_rounded,
+                color: AppColors.brandPrimary,
+              ),
+              (
+                title: 'IDCW Payout',
+                desc:
+                    'Dividend paid directly as cash into your bank account. Recorded as an income inflow while your units held remain unchanged.',
+                icon: Icons.payments_outlined,
+                color: AppColors.asset,
+              ),
+              (
+                title: 'Redemption',
+                desc:
+                    'Selling mutual fund units for cash back to your bank account. Reduces units held and generates cash inflow.',
+                icon: Icons.money_off_csred_rounded,
+                color: AppColors.asset,
+              ),
+              (
+                title: 'SWP Withdrawal',
+                desc:
+                    'Systematic periodic withdrawal of cash or units from your holding into your bank account according to your schedule.',
+                icon: Icons.outbox_rounded,
+                color: AppColors.asset,
+              ),
+              (
+                title: 'Switch Out',
+                desc:
+                    'Transferring units and capital out of this fund into another target fund scheme. Reduces units held here.',
+                icon: Icons.swap_horiz_rounded,
+                color: AppColors.liability,
+              ),
+              (
+                title: 'Switch In',
+                desc:
+                    'Transferring units and capital into this fund from another source fund scheme. Increases units held here.',
+                icon: Icons.swap_horiz_rounded,
+                color: AppColors.brandPrimary,
+              ),
+            ];
+
+            return Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Transaction Type Explanations',
+                        style: AppTypography.titleMedium.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close_rounded),
+                        onPressed: () => Navigator.pop(ctx),
+                      ),
+                    ],
+                  ),
+                ),
+                const Divider(height: 1),
+                Expanded(
+                  child: ListView.separated(
+                    controller: scrollController,
+                    padding: const EdgeInsets.all(AppSpacing.md),
+                    itemCount: helpItems.length,
+                    separatorBuilder: (_, __) =>
+                        const SizedBox(height: AppSpacing.sm),
+                    itemBuilder: (_, idx) {
+                      final item = helpItems[idx];
+                      return Container(
+                        padding: const EdgeInsets.all(AppSpacing.sm),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? AppColors.darkBackground.withValues(alpha: 0.6)
+                              : AppColors.lightBackground,
+                          borderRadius:
+                              BorderRadius.circular(AppSpacing.radiusSm),
+                          border: Border.all(
+                            color: isDark
+                                ? AppColors.darkBorder
+                                : AppColors.lightBorder,
+                          ),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: item.color.withValues(alpha: 0.12),
+                                shape: BoxShape.circle,
+                              ),
+                              child:
+                                  Icon(item.icon, size: 20, color: item.color),
+                            ),
+                            const SizedBox(width: AppSpacing.sm),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    item.title,
+                                    style: AppTypography.titleMedium.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    item.desc,
+                                    style: AppTypography.bodySmall.copyWith(
+                                      color: isDark
+                                          ? AppColors.darkTextMuted
+                                          : AppColors.lightTextMuted,
+                                      height: 1.35,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _openSchemePicker() async {
+    final picked = await showDialog<MutualFundSearchResult>(
+      context: context,
+      builder: (_) => const _SchemePickerSearchDialog(),
+    );
+    if (picked != null && mounted) {
+      setState(() {
+        _selectedSwitchScheme = picked;
+        _switchSchemeFundHouse = picked.fundHouse;
+      });
+
+      // Fetch latest NAV for selected scheme
+      try {
+        final syncService = ref.read(navSyncServiceProvider);
+        final details =
+            await syncService.getOrFetchSchemeDetails(picked.schemeCode);
+        if (details != null && details.latestNav != null && mounted) {
+          setState(() {
+            _switchSchemeNav = FinancialPrecision.microPaiseToNav(
+                details.latestNav!.navMicroPaise);
+            _switchSchemeNavDate = details.latestNav!.date;
+            if (details.fundHouse != null) {
+              _switchSchemeFundHouse = details.fundHouse;
+            }
+          });
+        }
+      } catch (_) {
+        final db = ref.read(databaseProvider);
+        final s = await db.mutualFundDao.getSchemeByCode(picked.schemeCode);
+        if (s != null && s.latestNavMicroPaise != null && mounted) {
+          setState(() {
+            _switchSchemeNav =
+                FinancialPrecision.microPaiseToNav(s.latestNavMicroPaise!);
+            _switchSchemeNavDate = s.latestNavDate;
+            if (s.fundHouse != null) {
+              _switchSchemeFundHouse = s.fundHouse;
+            }
+          });
+        }
+      }
+    }
+  }
+
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
+
+    if (_selectedType == 'switch_in' || _selectedType == 'switch_out') {
+      if (_selectedSwitchScheme == null && _selectedLinkedHoldingId == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              _selectedType == 'switch_out'
+                  ? 'Please select the destination scheme to switch into.'
+                  : 'Please select the source scheme to switch out from.',
+            ),
+            backgroundColor: AppColors.liability,
+          ),
+        );
+        return;
+      }
+    }
 
     setState(() => _isSaving = true);
     try {
@@ -180,35 +417,102 @@ class _AddInvestmentTransactionScreenState
           : null;
 
       // Handle Switch between holdings
-      if ((_selectedType == 'switch_in' || _selectedType == 'switch_out') &&
-          _selectedLinkedHoldingId != null) {
-        final sourceId = _selectedType == 'switch_out'
-            ? widget.holding.id
-            : _selectedLinkedHoldingId!;
-        final destId = _selectedType == 'switch_in'
-            ? widget.holding.id
-            : _selectedLinkedHoldingId!;
+      if (_selectedType == 'switch_in' || _selectedType == 'switch_out') {
+        int targetHoldingId;
+        String targetSchemeName = '';
 
-        final destHolding = await db.financialItemsDao.getItemById(destId);
+        if (_selectedSwitchScheme != null) {
+          targetSchemeName = _selectedSwitchScheme!.schemeName;
+          final existing = await (db.select(db.financialItems)
+                ..where((tbl) =>
+                    tbl.profileId.equals(widget.holding.profileId) &
+                    tbl.externalCode
+                        .equals(_selectedSwitchScheme!.schemeCode.toString())))
+              .get();
+
+          if (existing.isNotEmpty) {
+            targetHoldingId = existing.first.id;
+          } else {
+            // Auto-create new asset holding record with 0 initial contribution
+            targetHoldingId = await db.financialItemsDao.insertItem(
+              FinancialItemsCompanion(
+                profileId: drift.Value(widget.holding.profileId),
+                categoryId: drift.Value(widget.holding.categoryId),
+                name: drift.Value(_selectedSwitchScheme!.schemeName),
+                itemType: const drift.Value('asset'),
+                subType: const drift.Value('mutual_fund'),
+                externalCode:
+                    drift.Value(_selectedSwitchScheme!.schemeCode.toString()),
+                notes: drift.Value(_switchSchemeFundHouse ??
+                    _selectedSwitchScheme!.fundHouse ??
+                    'Direct Mutual Fund'),
+                initialValuePaise: const drift.Value(0),
+                currentValuationPaise: const drift.Value(0),
+                unitCountMicroUnits: const drift.Value(0),
+                startDate: drift.Value(_transactionDate),
+                status: const drift.Value('active'),
+              ),
+            );
+          }
+        } else {
+          targetHoldingId = _selectedLinkedHoldingId!;
+          final h = await db.financialItemsDao.getItemById(targetHoldingId);
+          targetSchemeName = h?.name ?? 'Other Scheme';
+        }
+
+        final sourceId =
+            _selectedType == 'switch_out' ? widget.holding.id : targetHoldingId;
+        final destId =
+            _selectedType == 'switch_in' ? widget.holding.id : targetHoldingId;
+        final sourceName = _selectedType == 'switch_out'
+            ? widget.holding.name
+            : targetSchemeName;
+        final destName = _selectedType == 'switch_in'
+            ? widget.holding.name
+            : targetSchemeName;
+
         int destNavMicro = navMicroPaise;
-        if (destHolding != null) {
-          final sCode = int.tryParse(destHolding.externalCode ?? '');
-          if (sCode != null) {
-            final s = await db.mutualFundDao.getSchemeByCode(sCode);
-            if (s != null &&
-                s.latestNavMicroPaise != null &&
-                s.latestNavMicroPaise! > 0) {
-              destNavMicro = s.latestNavMicroPaise!;
+        if (_switchSchemeNav != null && _switchSchemeNav! > 0) {
+          destNavMicro = FinancialPrecision.navToMicroPaise(_switchSchemeNav!);
+        } else {
+          final destHolding = await db.financialItemsDao.getItemById(destId);
+          if (destHolding != null) {
+            final sCode = int.tryParse(destHolding.externalCode ?? '');
+            if (sCode != null) {
+              final s = await db.mutualFundDao.getSchemeByCode(sCode);
+              if (s != null &&
+                  s.latestNavMicroPaise != null &&
+                  s.latestNavMicroPaise! > 0) {
+                destNavMicro = s.latestNavMicroPaise!;
+              }
             }
           }
         }
+
+        final sNav =
+            _selectedType == 'switch_out' ? navMicroPaise : destNavMicro;
+        final dNav =
+            _selectedType == 'switch_in' ? navMicroPaise : destNavMicro;
 
         final netTransferPaise = (grossAmountPaise - chargesPaise)
             .clamp(0, double.maxFinite.toInt());
         final destUnitsMicro = FinancialPrecision.calculateUnitsPurchased(
           amountPaise: netTransferPaise,
-          navMicroPaise: destNavMicro,
+          navMicroPaise: dNav,
         );
+        final sourceUnitsMicro = _selectedType == 'switch_out'
+            ? unitsMicro
+            : FinancialPrecision.calculateUnitsPurchased(
+                amountPaise: grossAmountPaise,
+                navMicroPaise: sNav,
+              );
+
+        final sNotes = notes != null
+            ? '$notes • Switched out to $destName'
+            : 'Switched out to $destName';
+        final dNotes = notes != null
+            ? '$notes • Switched in from $sourceName'
+            : 'Switched in from $sourceName';
 
         await txDao.recordSwitchBetweenHoldings(
           profileId: widget.holding.profileId,
@@ -218,12 +522,15 @@ class _AddInvestmentTransactionScreenState
           transactionDate: _transactionDate,
           switchAmountPaise: grossAmountPaise,
           chargesPaise: chargesPaise,
-          sourceUnitsMicroUnits: unitsMicro,
-          sourceNavMicroPaise: navMicroPaise,
+          sourceUnitsMicroUnits: sourceUnitsMicro,
+          sourceNavMicroPaise: sNav,
           destUnitsMicroUnits: destUnitsMicro,
-          destNavMicroPaise: destNavMicro,
-          notes: notes,
+          destNavMicroPaise: dNav,
+          sourceNotes: sNotes,
+          destNotes: dNotes,
         );
+
+        ref.invalidate(activeProfileAssetsProvider);
       } else {
         // Standard single investment transaction
         await txDao.recordInvestmentTransaction(
@@ -345,12 +652,35 @@ class _AddInvestmentTransactionScreenState
                     ),
                     const SizedBox(height: AppSpacing.md),
 
-                    // Transaction Type Selector
-                    Text(
-                      'Transaction Type',
-                      style: AppTypography.labelMedium.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                    // Transaction Type Selector with Contextual Help
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Transaction Type',
+                          style: AppTypography.labelMedium.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        TextButton.icon(
+                          icon: const Icon(Icons.help_outline_rounded,
+                              size: 16, color: AppColors.brandPrimary),
+                          label: const Text(
+                            'Explain Types',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.brandPrimary,
+                            ),
+                          ),
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            visualDensity: VisualDensity.compact,
+                          ),
+                          onPressed: () =>
+                              _showTransactionHelp(context, isDark),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: AppSpacing.xs),
                     DropdownButtonFormField<String>(
@@ -402,48 +732,111 @@ class _AddInvestmentTransactionScreenState
                       const SizedBox(height: AppSpacing.md),
                     ],
 
-                    // Linked Holding Selector if Switch
+                    // Linked Scheme Selector if Switch
                     if (_selectedType == 'switch_in' ||
                         _selectedType == 'switch_out') ...[
                       Text(
                         _selectedType == 'switch_in'
-                            ? 'Source Holding (Switching Out From)'
-                            : 'Destination Holding (Switching In To)',
+                            ? 'Source Scheme (Switching Out From)'
+                            : 'Destination Scheme (Switching In To)',
                         style: AppTypography.labelMedium.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       const SizedBox(height: AppSpacing.xs),
-                      allHoldingsAsync.when(
-                        data: (holdings) {
-                          final otherHoldings = holdings
-                              .where((h) => h.id != widget.holding.id)
-                              .toList();
-                          return DropdownButtonFormField<int?>(
-                            initialValue: _selectedLinkedHoldingId,
-                            decoration: const InputDecoration(
-                              hintText:
-                                  'Select other holding (or None/External)',
-                              border: OutlineInputBorder(),
-                            ),
-                            items: [
-                              const DropdownMenuItem<int?>(
-                                value: null,
-                                child: Text('External Fund / Not Tracked'),
+                      if (_selectedSwitchScheme == null) ...[
+                        OutlinedButton.icon(
+                          icon: const Icon(Icons.search_rounded),
+                          label: Text(
+                            _selectedType == 'switch_in'
+                                ? 'Search & Select Source Scheme'
+                                : 'Search & Select Destination Scheme',
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                                vertical: 14, horizontal: 16),
+                            alignment: Alignment.centerLeft,
+                          ),
+                          onPressed: _openSchemePicker,
+                        ),
+                      ] else ...[
+                        allHoldingsAsync.when(
+                          data: (holdings) {
+                            final isExisting = holdings.any((h) =>
+                                h.externalCode ==
+                                _selectedSwitchScheme!.schemeCode.toString());
+
+                            return FinCard(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          _selectedSwitchScheme!.schemeName,
+                                          style: AppTypography.titleMedium
+                                              .copyWith(
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                      TextButton.icon(
+                                        icon: const Icon(Icons.edit_outlined,
+                                            size: 14),
+                                        label: const Text('Change'),
+                                        onPressed: _openSchemePicker,
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    _switchSchemeFundHouse ??
+                                        _selectedSwitchScheme!.fundHouse ??
+                                        'Direct Mutual Fund',
+                                    style: AppTypography.labelSmall.copyWith(
+                                      color: isDark
+                                          ? AppColors.darkTextMuted
+                                          : AppColors.lightTextMuted,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Wrap(
+                                    spacing: 8,
+                                    runSpacing: 4,
+                                    crossAxisAlignment:
+                                        WrapCrossAlignment.center,
+                                    children: [
+                                      if (_switchSchemeNav != null &&
+                                          _switchSchemeNav! > 0)
+                                        Text(
+                                          'Latest NAV: ₹${_switchSchemeNav!.toStringAsFixed(4)}${_switchSchemeNavDate != null ? " (${DateFormatter.formatDate(_switchSchemeNavDate!)})" : ""}',
+                                          style:
+                                              AppTypography.labelSmall.copyWith(
+                                            fontWeight: FontWeight.w600,
+                                            color: AppColors.brandPrimary,
+                                          ),
+                                        ),
+                                      StatusBadge(
+                                        label: isExisting
+                                            ? 'PORTFOLIO HOLDING'
+                                            : 'NEW HOLDING TO BE CREATED',
+                                        type: isExisting
+                                            ? BadgeType.asset
+                                            : BadgeType.neutral,
+                                      ),
+                                    ],
+                                  ),
+                                ],
                               ),
-                              ...otherHoldings
-                                  .map((h) => DropdownMenuItem<int?>(
-                                        value: h.id,
-                                        child: Text(h.name),
-                                      )),
-                            ],
-                            onChanged: (val) =>
-                                setState(() => _selectedLinkedHoldingId = val),
-                          );
-                        },
-                        loading: () => const LinearProgressIndicator(),
-                        error: (_, __) => const SizedBox.shrink(),
-                      ),
+                            );
+                          },
+                          loading: () => const LinearProgressIndicator(),
+                          error: (_, __) => const SizedBox.shrink(),
+                        ),
+                      ],
                       const SizedBox(height: AppSpacing.md),
                     ],
 
@@ -647,6 +1040,146 @@ class _AddInvestmentTransactionScreenState
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SchemePickerSearchDialog extends ConsumerStatefulWidget {
+  const _SchemePickerSearchDialog();
+
+  @override
+  ConsumerState<_SchemePickerSearchDialog> createState() =>
+      _SchemePickerSearchDialogState();
+}
+
+class _SchemePickerSearchDialogState
+    extends ConsumerState<_SchemePickerSearchDialog> {
+  final _searchController = TextEditingController();
+  String _query = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final resultsAsync = _query.length >= 3
+        ? ref.watch(schemeSearchResultsProvider(_query))
+        : null;
+
+    return Dialog(
+      insetPadding: const EdgeInsets.all(16),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+      ),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 550, maxHeight: 600),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _searchController,
+                      autofocus: true,
+                      decoration: InputDecoration(
+                        hintText: 'Search mutual fund scheme...',
+                        prefixIcon: const Icon(Icons.search_rounded),
+                        suffixIcon: _query.isNotEmpty
+                            ? IconButton(
+                                icon: const Icon(Icons.clear_rounded),
+                                onPressed: () {
+                                  _searchController.clear();
+                                  setState(() => _query = '');
+                                },
+                              )
+                            : null,
+                        border: const OutlineInputBorder(),
+                      ),
+                      onChanged: (val) => setState(() => _query = val.trim()),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+            Expanded(
+              child: _query.length < 3
+                  ? Center(
+                      child: Text(
+                        'Type at least 3 characters to search...',
+                        style: AppTypography.bodySmall.copyWith(
+                          color: isDark
+                              ? AppColors.darkTextMuted
+                              : AppColors.lightTextMuted,
+                        ),
+                      ),
+                    )
+                  : resultsAsync?.when(
+                        data: (results) {
+                          if (results.isEmpty) {
+                            return Center(
+                              child: Text(
+                                'No schemes found matching "$_query"',
+                                style: AppTypography.bodySmall,
+                              ),
+                            );
+                          }
+                          return ListView.separated(
+                            itemCount: results.length,
+                            separatorBuilder: (_, __) =>
+                                const Divider(height: 1),
+                            itemBuilder: (ctx, idx) {
+                              final item = results[idx];
+                              return ListTile(
+                                title: Text(
+                                  item.schemeName,
+                                  style: AppTypography.bodyMedium.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                subtitle: Text(
+                                  item.fundHouse ?? 'Direct Mutual Fund',
+                                  style: AppTypography.labelSmall.copyWith(
+                                    color: isDark
+                                        ? AppColors.darkTextMuted
+                                        : AppColors.lightTextMuted,
+                                  ),
+                                ),
+                                trailing: const Icon(
+                                    Icons.arrow_forward_ios_rounded,
+                                    size: 14),
+                                onTap: () => Navigator.pop(context, item),
+                              );
+                            },
+                          );
+                        },
+                        loading: () =>
+                            const Center(child: CircularProgressIndicator()),
+                        error: (e, _) => Center(
+                          child: Text(
+                            'Error searching schemes: $e',
+                            style: AppTypography.bodySmall
+                                .copyWith(color: AppColors.liability),
+                          ),
+                        ),
+                      ) ??
+                      const SizedBox.shrink(),
+            ),
+          ],
         ),
       ),
     );

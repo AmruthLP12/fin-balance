@@ -2748,6 +2748,14 @@ class $TransactionsTable extends Transactions
       type: DriftSqlType.int,
       requiredDuringInsert: false,
       $customConstraints: 'REFERENCES sip_plans(id) ON DELETE SET NULL');
+  static const VerificationMeta _swpPlanIdMeta =
+      const VerificationMeta('swpPlanId');
+  @override
+  late final GeneratedColumn<int> swpPlanId = GeneratedColumn<int>(
+      'swp_plan_id', aliasedName, true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      $customConstraints: 'REFERENCES swp_plans(id) ON DELETE SET NULL');
   static const VerificationMeta _linkedTransactionIdMeta =
       const VerificationMeta('linkedTransactionId');
   @override
@@ -2810,6 +2818,7 @@ class $TransactionsTable extends Transactions
         chargesPaise,
         netAmountPaise,
         sipPlanId,
+        swpPlanId,
         linkedTransactionId,
         unitsMicroUnits,
         unitPriceMicroPaise,
@@ -2905,6 +2914,12 @@ class $TransactionsTable extends Transactions
           sipPlanId.isAcceptableOrUnknown(
               data['sip_plan_id']!, _sipPlanIdMeta));
     }
+    if (data.containsKey('swp_plan_id')) {
+      context.handle(
+          _swpPlanIdMeta,
+          swpPlanId.isAcceptableOrUnknown(
+              data['swp_plan_id']!, _swpPlanIdMeta));
+    }
     if (data.containsKey('linked_transaction_id')) {
       context.handle(
           _linkedTransactionIdMeta,
@@ -2972,6 +2987,8 @@ class $TransactionsTable extends Transactions
           .read(DriftSqlType.int, data['${effectivePrefix}net_amount_paise']),
       sipPlanId: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}sip_plan_id']),
+      swpPlanId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}swp_plan_id']),
       linkedTransactionId: attachedDatabase.typeMapping.read(
           DriftSqlType.int, data['${effectivePrefix}linked_transaction_id']),
       unitsMicroUnits: attachedDatabase.typeMapping
@@ -3026,6 +3043,9 @@ class Transaction extends DataClass implements Insertable<Transaction> {
   /// Optional link to parent SIP plan
   final int? sipPlanId;
 
+  /// Optional link to parent SWP plan
+  final int? swpPlanId;
+
   /// Optional link to paired transaction (e.g. Switch In <-> Switch Out)
   final int? linkedTransactionId;
 
@@ -3053,6 +3073,7 @@ class Transaction extends DataClass implements Insertable<Transaction> {
       required this.chargesPaise,
       this.netAmountPaise,
       this.sipPlanId,
+      this.swpPlanId,
       this.linkedTransactionId,
       this.unitsMicroUnits,
       this.unitPriceMicroPaise,
@@ -3084,6 +3105,9 @@ class Transaction extends DataClass implements Insertable<Transaction> {
     }
     if (!nullToAbsent || sipPlanId != null) {
       map['sip_plan_id'] = Variable<int>(sipPlanId);
+    }
+    if (!nullToAbsent || swpPlanId != null) {
+      map['swp_plan_id'] = Variable<int>(swpPlanId);
     }
     if (!nullToAbsent || linkedTransactionId != null) {
       map['linked_transaction_id'] = Variable<int>(linkedTransactionId);
@@ -3127,6 +3151,9 @@ class Transaction extends DataClass implements Insertable<Transaction> {
       sipPlanId: sipPlanId == null && nullToAbsent
           ? const Value.absent()
           : Value(sipPlanId),
+      swpPlanId: swpPlanId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(swpPlanId),
       linkedTransactionId: linkedTransactionId == null && nullToAbsent
           ? const Value.absent()
           : Value(linkedTransactionId),
@@ -3160,6 +3187,7 @@ class Transaction extends DataClass implements Insertable<Transaction> {
       chargesPaise: serializer.fromJson<int>(json['chargesPaise']),
       netAmountPaise: serializer.fromJson<int?>(json['netAmountPaise']),
       sipPlanId: serializer.fromJson<int?>(json['sipPlanId']),
+      swpPlanId: serializer.fromJson<int?>(json['swpPlanId']),
       linkedTransactionId:
           serializer.fromJson<int?>(json['linkedTransactionId']),
       unitsMicroUnits: serializer.fromJson<int?>(json['unitsMicroUnits']),
@@ -3187,6 +3215,7 @@ class Transaction extends DataClass implements Insertable<Transaction> {
       'chargesPaise': serializer.toJson<int>(chargesPaise),
       'netAmountPaise': serializer.toJson<int?>(netAmountPaise),
       'sipPlanId': serializer.toJson<int?>(sipPlanId),
+      'swpPlanId': serializer.toJson<int?>(swpPlanId),
       'linkedTransactionId': serializer.toJson<int?>(linkedTransactionId),
       'unitsMicroUnits': serializer.toJson<int?>(unitsMicroUnits),
       'unitPriceMicroPaise': serializer.toJson<int?>(unitPriceMicroPaise),
@@ -3210,6 +3239,7 @@ class Transaction extends DataClass implements Insertable<Transaction> {
           int? chargesPaise,
           Value<int?> netAmountPaise = const Value.absent(),
           Value<int?> sipPlanId = const Value.absent(),
+          Value<int?> swpPlanId = const Value.absent(),
           Value<int?> linkedTransactionId = const Value.absent(),
           Value<int?> unitsMicroUnits = const Value.absent(),
           Value<int?> unitPriceMicroPaise = const Value.absent(),
@@ -3234,6 +3264,7 @@ class Transaction extends DataClass implements Insertable<Transaction> {
         netAmountPaise:
             netAmountPaise.present ? netAmountPaise.value : this.netAmountPaise,
         sipPlanId: sipPlanId.present ? sipPlanId.value : this.sipPlanId,
+        swpPlanId: swpPlanId.present ? swpPlanId.value : this.swpPlanId,
         linkedTransactionId: linkedTransactionId.present
             ? linkedTransactionId.value
             : this.linkedTransactionId,
@@ -3277,6 +3308,7 @@ class Transaction extends DataClass implements Insertable<Transaction> {
           ? data.netAmountPaise.value
           : this.netAmountPaise,
       sipPlanId: data.sipPlanId.present ? data.sipPlanId.value : this.sipPlanId,
+      swpPlanId: data.swpPlanId.present ? data.swpPlanId.value : this.swpPlanId,
       linkedTransactionId: data.linkedTransactionId.present
           ? data.linkedTransactionId.value
           : this.linkedTransactionId,
@@ -3308,6 +3340,7 @@ class Transaction extends DataClass implements Insertable<Transaction> {
           ..write('chargesPaise: $chargesPaise, ')
           ..write('netAmountPaise: $netAmountPaise, ')
           ..write('sipPlanId: $sipPlanId, ')
+          ..write('swpPlanId: $swpPlanId, ')
           ..write('linkedTransactionId: $linkedTransactionId, ')
           ..write('unitsMicroUnits: $unitsMicroUnits, ')
           ..write('unitPriceMicroPaise: $unitPriceMicroPaise, ')
@@ -3333,6 +3366,7 @@ class Transaction extends DataClass implements Insertable<Transaction> {
       chargesPaise,
       netAmountPaise,
       sipPlanId,
+      swpPlanId,
       linkedTransactionId,
       unitsMicroUnits,
       unitPriceMicroPaise,
@@ -3356,6 +3390,7 @@ class Transaction extends DataClass implements Insertable<Transaction> {
           other.chargesPaise == this.chargesPaise &&
           other.netAmountPaise == this.netAmountPaise &&
           other.sipPlanId == this.sipPlanId &&
+          other.swpPlanId == this.swpPlanId &&
           other.linkedTransactionId == this.linkedTransactionId &&
           other.unitsMicroUnits == this.unitsMicroUnits &&
           other.unitPriceMicroPaise == this.unitPriceMicroPaise &&
@@ -3378,6 +3413,7 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
   final Value<int> chargesPaise;
   final Value<int?> netAmountPaise;
   final Value<int?> sipPlanId;
+  final Value<int?> swpPlanId;
   final Value<int?> linkedTransactionId;
   final Value<int?> unitsMicroUnits;
   final Value<int?> unitPriceMicroPaise;
@@ -3398,6 +3434,7 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
     this.chargesPaise = const Value.absent(),
     this.netAmountPaise = const Value.absent(),
     this.sipPlanId = const Value.absent(),
+    this.swpPlanId = const Value.absent(),
     this.linkedTransactionId = const Value.absent(),
     this.unitsMicroUnits = const Value.absent(),
     this.unitPriceMicroPaise = const Value.absent(),
@@ -3419,6 +3456,7 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
     this.chargesPaise = const Value.absent(),
     this.netAmountPaise = const Value.absent(),
     this.sipPlanId = const Value.absent(),
+    this.swpPlanId = const Value.absent(),
     this.linkedTransactionId = const Value.absent(),
     this.unitsMicroUnits = const Value.absent(),
     this.unitPriceMicroPaise = const Value.absent(),
@@ -3444,6 +3482,7 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
     Expression<int>? chargesPaise,
     Expression<int>? netAmountPaise,
     Expression<int>? sipPlanId,
+    Expression<int>? swpPlanId,
     Expression<int>? linkedTransactionId,
     Expression<int>? unitsMicroUnits,
     Expression<int>? unitPriceMicroPaise,
@@ -3465,6 +3504,7 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
       if (chargesPaise != null) 'charges_paise': chargesPaise,
       if (netAmountPaise != null) 'net_amount_paise': netAmountPaise,
       if (sipPlanId != null) 'sip_plan_id': sipPlanId,
+      if (swpPlanId != null) 'swp_plan_id': swpPlanId,
       if (linkedTransactionId != null)
         'linked_transaction_id': linkedTransactionId,
       if (unitsMicroUnits != null) 'units_micro_units': unitsMicroUnits,
@@ -3490,6 +3530,7 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
       Value<int>? chargesPaise,
       Value<int?>? netAmountPaise,
       Value<int?>? sipPlanId,
+      Value<int?>? swpPlanId,
       Value<int?>? linkedTransactionId,
       Value<int?>? unitsMicroUnits,
       Value<int?>? unitPriceMicroPaise,
@@ -3510,6 +3551,7 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
       chargesPaise: chargesPaise ?? this.chargesPaise,
       netAmountPaise: netAmountPaise ?? this.netAmountPaise,
       sipPlanId: sipPlanId ?? this.sipPlanId,
+      swpPlanId: swpPlanId ?? this.swpPlanId,
       linkedTransactionId: linkedTransactionId ?? this.linkedTransactionId,
       unitsMicroUnits: unitsMicroUnits ?? this.unitsMicroUnits,
       unitPriceMicroPaise: unitPriceMicroPaise ?? this.unitPriceMicroPaise,
@@ -3559,6 +3601,9 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
     if (sipPlanId.present) {
       map['sip_plan_id'] = Variable<int>(sipPlanId.value);
     }
+    if (swpPlanId.present) {
+      map['swp_plan_id'] = Variable<int>(swpPlanId.value);
+    }
     if (linkedTransactionId.present) {
       map['linked_transaction_id'] = Variable<int>(linkedTransactionId.value);
     }
@@ -3598,6 +3643,7 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
           ..write('chargesPaise: $chargesPaise, ')
           ..write('netAmountPaise: $netAmountPaise, ')
           ..write('sipPlanId: $sipPlanId, ')
+          ..write('swpPlanId: $swpPlanId, ')
           ..write('linkedTransactionId: $linkedTransactionId, ')
           ..write('unitsMicroUnits: $unitsMicroUnits, ')
           ..write('unitPriceMicroPaise: $unitPriceMicroPaise, ')
@@ -8524,6 +8570,2187 @@ class SipInstallmentsCompanion extends UpdateCompanion<SipInstallment> {
   }
 }
 
+class $SwpPlansTable extends SwpPlans with TableInfo<$SwpPlansTable, SwpPlan> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SwpPlansTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _profileIdMeta =
+      const VerificationMeta('profileId');
+  @override
+  late final GeneratedColumn<int> profileId = GeneratedColumn<int>(
+      'profile_id', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: true,
+      $customConstraints:
+          'NOT NULL REFERENCES financial_profiles(id) ON DELETE CASCADE');
+  static const VerificationMeta _financialItemIdMeta =
+      const VerificationMeta('financialItemId');
+  @override
+  late final GeneratedColumn<int> financialItemId = GeneratedColumn<int>(
+      'financial_item_id', aliasedName, true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      $customConstraints: 'REFERENCES financial_items(id) ON DELETE SET NULL');
+  static const VerificationMeta _schemeCodeMeta =
+      const VerificationMeta('schemeCode');
+  @override
+  late final GeneratedColumn<int> schemeCode = GeneratedColumn<int>(
+      'scheme_code', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: true,
+      $customConstraints:
+          'NOT NULL REFERENCES mutual_fund_schemes(scheme_code) ON DELETE RESTRICT');
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+      'name', aliasedName, false,
+      additionalChecks:
+          GeneratedColumn.checkTextLength(minTextLength: 1, maxTextLength: 200),
+      type: DriftSqlType.string,
+      requiredDuringInsert: true);
+  static const VerificationMeta _withdrawalModeMeta =
+      const VerificationMeta('withdrawalMode');
+  @override
+  late final GeneratedColumn<String> withdrawalMode = GeneratedColumn<String>(
+      'withdrawal_mode', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('amount'));
+  static const VerificationMeta _startDateMeta =
+      const VerificationMeta('startDate');
+  @override
+  late final GeneratedColumn<DateTime> startDate = GeneratedColumn<DateTime>(
+      'start_date', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _endDateMeta =
+      const VerificationMeta('endDate');
+  @override
+  late final GeneratedColumn<DateTime> endDate = GeneratedColumn<DateTime>(
+      'end_date', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+      'status', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('active'));
+  static const VerificationMeta _notesMeta = const VerificationMeta('notes');
+  @override
+  late final GeneratedColumn<String> notes = GeneratedColumn<String>(
+      'notes', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        profileId,
+        financialItemId,
+        schemeCode,
+        name,
+        withdrawalMode,
+        startDate,
+        endDate,
+        status,
+        notes,
+        createdAt,
+        updatedAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'swp_plans';
+  @override
+  VerificationContext validateIntegrity(Insertable<SwpPlan> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('profile_id')) {
+      context.handle(_profileIdMeta,
+          profileId.isAcceptableOrUnknown(data['profile_id']!, _profileIdMeta));
+    } else if (isInserting) {
+      context.missing(_profileIdMeta);
+    }
+    if (data.containsKey('financial_item_id')) {
+      context.handle(
+          _financialItemIdMeta,
+          financialItemId.isAcceptableOrUnknown(
+              data['financial_item_id']!, _financialItemIdMeta));
+    }
+    if (data.containsKey('scheme_code')) {
+      context.handle(
+          _schemeCodeMeta,
+          schemeCode.isAcceptableOrUnknown(
+              data['scheme_code']!, _schemeCodeMeta));
+    } else if (isInserting) {
+      context.missing(_schemeCodeMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+          _nameMeta, name.isAcceptableOrUnknown(data['name']!, _nameMeta));
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('withdrawal_mode')) {
+      context.handle(
+          _withdrawalModeMeta,
+          withdrawalMode.isAcceptableOrUnknown(
+              data['withdrawal_mode']!, _withdrawalModeMeta));
+    }
+    if (data.containsKey('start_date')) {
+      context.handle(_startDateMeta,
+          startDate.isAcceptableOrUnknown(data['start_date']!, _startDateMeta));
+    } else if (isInserting) {
+      context.missing(_startDateMeta);
+    }
+    if (data.containsKey('end_date')) {
+      context.handle(_endDateMeta,
+          endDate.isAcceptableOrUnknown(data['end_date']!, _endDateMeta));
+    }
+    if (data.containsKey('status')) {
+      context.handle(_statusMeta,
+          status.isAcceptableOrUnknown(data['status']!, _statusMeta));
+    }
+    if (data.containsKey('notes')) {
+      context.handle(
+          _notesMeta, notes.isAcceptableOrUnknown(data['notes']!, _notesMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  SwpPlan map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SwpPlan(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      profileId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}profile_id'])!,
+      financialItemId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}financial_item_id']),
+      schemeCode: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}scheme_code'])!,
+      name: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}name'])!,
+      withdrawalMode: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}withdrawal_mode'])!,
+      startDate: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}start_date'])!,
+      endDate: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}end_date']),
+      status: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}status'])!,
+      notes: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}notes']),
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at'])!,
+    );
+  }
+
+  @override
+  $SwpPlansTable createAlias(String alias) {
+    return $SwpPlansTable(attachedDatabase, alias);
+  }
+}
+
+class SwpPlan extends DataClass implements Insertable<SwpPlan> {
+  final int id;
+
+  /// Profile scoping: Every SWP belongs to a specific financial profile
+  final int profileId;
+
+  /// Optional link to existing FinancialItems asset holding
+  final int? financialItemId;
+
+  /// Mutual fund scheme code
+  final int schemeCode;
+
+  /// User-defined display name for this SWP (e.g., 'HDFC Top 100 Monthly SWP')
+  final String name;
+
+  /// Withdrawal mode: 'amount' (fixed cash) or 'units' (fixed units)
+  final String withdrawalMode;
+
+  /// Master start date when SWP was first initiated
+  final DateTime startDate;
+
+  /// Optional planned conclusion date (null if ongoing indefinitely)
+  final DateTime? endDate;
+
+  /// Status: 'active', 'paused', 'stopped', 'completed'
+  final String status;
+
+  /// General description or notes
+  final String? notes;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  const SwpPlan(
+      {required this.id,
+      required this.profileId,
+      this.financialItemId,
+      required this.schemeCode,
+      required this.name,
+      required this.withdrawalMode,
+      required this.startDate,
+      this.endDate,
+      required this.status,
+      this.notes,
+      required this.createdAt,
+      required this.updatedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['profile_id'] = Variable<int>(profileId);
+    if (!nullToAbsent || financialItemId != null) {
+      map['financial_item_id'] = Variable<int>(financialItemId);
+    }
+    map['scheme_code'] = Variable<int>(schemeCode);
+    map['name'] = Variable<String>(name);
+    map['withdrawal_mode'] = Variable<String>(withdrawalMode);
+    map['start_date'] = Variable<DateTime>(startDate);
+    if (!nullToAbsent || endDate != null) {
+      map['end_date'] = Variable<DateTime>(endDate);
+    }
+    map['status'] = Variable<String>(status);
+    if (!nullToAbsent || notes != null) {
+      map['notes'] = Variable<String>(notes);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  SwpPlansCompanion toCompanion(bool nullToAbsent) {
+    return SwpPlansCompanion(
+      id: Value(id),
+      profileId: Value(profileId),
+      financialItemId: financialItemId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(financialItemId),
+      schemeCode: Value(schemeCode),
+      name: Value(name),
+      withdrawalMode: Value(withdrawalMode),
+      startDate: Value(startDate),
+      endDate: endDate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(endDate),
+      status: Value(status),
+      notes:
+          notes == null && nullToAbsent ? const Value.absent() : Value(notes),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory SwpPlan.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SwpPlan(
+      id: serializer.fromJson<int>(json['id']),
+      profileId: serializer.fromJson<int>(json['profileId']),
+      financialItemId: serializer.fromJson<int?>(json['financialItemId']),
+      schemeCode: serializer.fromJson<int>(json['schemeCode']),
+      name: serializer.fromJson<String>(json['name']),
+      withdrawalMode: serializer.fromJson<String>(json['withdrawalMode']),
+      startDate: serializer.fromJson<DateTime>(json['startDate']),
+      endDate: serializer.fromJson<DateTime?>(json['endDate']),
+      status: serializer.fromJson<String>(json['status']),
+      notes: serializer.fromJson<String?>(json['notes']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'profileId': serializer.toJson<int>(profileId),
+      'financialItemId': serializer.toJson<int?>(financialItemId),
+      'schemeCode': serializer.toJson<int>(schemeCode),
+      'name': serializer.toJson<String>(name),
+      'withdrawalMode': serializer.toJson<String>(withdrawalMode),
+      'startDate': serializer.toJson<DateTime>(startDate),
+      'endDate': serializer.toJson<DateTime?>(endDate),
+      'status': serializer.toJson<String>(status),
+      'notes': serializer.toJson<String?>(notes),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  SwpPlan copyWith(
+          {int? id,
+          int? profileId,
+          Value<int?> financialItemId = const Value.absent(),
+          int? schemeCode,
+          String? name,
+          String? withdrawalMode,
+          DateTime? startDate,
+          Value<DateTime?> endDate = const Value.absent(),
+          String? status,
+          Value<String?> notes = const Value.absent(),
+          DateTime? createdAt,
+          DateTime? updatedAt}) =>
+      SwpPlan(
+        id: id ?? this.id,
+        profileId: profileId ?? this.profileId,
+        financialItemId: financialItemId.present
+            ? financialItemId.value
+            : this.financialItemId,
+        schemeCode: schemeCode ?? this.schemeCode,
+        name: name ?? this.name,
+        withdrawalMode: withdrawalMode ?? this.withdrawalMode,
+        startDate: startDate ?? this.startDate,
+        endDate: endDate.present ? endDate.value : this.endDate,
+        status: status ?? this.status,
+        notes: notes.present ? notes.value : this.notes,
+        createdAt: createdAt ?? this.createdAt,
+        updatedAt: updatedAt ?? this.updatedAt,
+      );
+  SwpPlan copyWithCompanion(SwpPlansCompanion data) {
+    return SwpPlan(
+      id: data.id.present ? data.id.value : this.id,
+      profileId: data.profileId.present ? data.profileId.value : this.profileId,
+      financialItemId: data.financialItemId.present
+          ? data.financialItemId.value
+          : this.financialItemId,
+      schemeCode:
+          data.schemeCode.present ? data.schemeCode.value : this.schemeCode,
+      name: data.name.present ? data.name.value : this.name,
+      withdrawalMode: data.withdrawalMode.present
+          ? data.withdrawalMode.value
+          : this.withdrawalMode,
+      startDate: data.startDate.present ? data.startDate.value : this.startDate,
+      endDate: data.endDate.present ? data.endDate.value : this.endDate,
+      status: data.status.present ? data.status.value : this.status,
+      notes: data.notes.present ? data.notes.value : this.notes,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SwpPlan(')
+          ..write('id: $id, ')
+          ..write('profileId: $profileId, ')
+          ..write('financialItemId: $financialItemId, ')
+          ..write('schemeCode: $schemeCode, ')
+          ..write('name: $name, ')
+          ..write('withdrawalMode: $withdrawalMode, ')
+          ..write('startDate: $startDate, ')
+          ..write('endDate: $endDate, ')
+          ..write('status: $status, ')
+          ..write('notes: $notes, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      id,
+      profileId,
+      financialItemId,
+      schemeCode,
+      name,
+      withdrawalMode,
+      startDate,
+      endDate,
+      status,
+      notes,
+      createdAt,
+      updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SwpPlan &&
+          other.id == this.id &&
+          other.profileId == this.profileId &&
+          other.financialItemId == this.financialItemId &&
+          other.schemeCode == this.schemeCode &&
+          other.name == this.name &&
+          other.withdrawalMode == this.withdrawalMode &&
+          other.startDate == this.startDate &&
+          other.endDate == this.endDate &&
+          other.status == this.status &&
+          other.notes == this.notes &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class SwpPlansCompanion extends UpdateCompanion<SwpPlan> {
+  final Value<int> id;
+  final Value<int> profileId;
+  final Value<int?> financialItemId;
+  final Value<int> schemeCode;
+  final Value<String> name;
+  final Value<String> withdrawalMode;
+  final Value<DateTime> startDate;
+  final Value<DateTime?> endDate;
+  final Value<String> status;
+  final Value<String?> notes;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  const SwpPlansCompanion({
+    this.id = const Value.absent(),
+    this.profileId = const Value.absent(),
+    this.financialItemId = const Value.absent(),
+    this.schemeCode = const Value.absent(),
+    this.name = const Value.absent(),
+    this.withdrawalMode = const Value.absent(),
+    this.startDate = const Value.absent(),
+    this.endDate = const Value.absent(),
+    this.status = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  });
+  SwpPlansCompanion.insert({
+    this.id = const Value.absent(),
+    required int profileId,
+    this.financialItemId = const Value.absent(),
+    required int schemeCode,
+    required String name,
+    this.withdrawalMode = const Value.absent(),
+    required DateTime startDate,
+    this.endDate = const Value.absent(),
+    this.status = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  })  : profileId = Value(profileId),
+        schemeCode = Value(schemeCode),
+        name = Value(name),
+        startDate = Value(startDate);
+  static Insertable<SwpPlan> custom({
+    Expression<int>? id,
+    Expression<int>? profileId,
+    Expression<int>? financialItemId,
+    Expression<int>? schemeCode,
+    Expression<String>? name,
+    Expression<String>? withdrawalMode,
+    Expression<DateTime>? startDate,
+    Expression<DateTime>? endDate,
+    Expression<String>? status,
+    Expression<String>? notes,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (profileId != null) 'profile_id': profileId,
+      if (financialItemId != null) 'financial_item_id': financialItemId,
+      if (schemeCode != null) 'scheme_code': schemeCode,
+      if (name != null) 'name': name,
+      if (withdrawalMode != null) 'withdrawal_mode': withdrawalMode,
+      if (startDate != null) 'start_date': startDate,
+      if (endDate != null) 'end_date': endDate,
+      if (status != null) 'status': status,
+      if (notes != null) 'notes': notes,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+    });
+  }
+
+  SwpPlansCompanion copyWith(
+      {Value<int>? id,
+      Value<int>? profileId,
+      Value<int?>? financialItemId,
+      Value<int>? schemeCode,
+      Value<String>? name,
+      Value<String>? withdrawalMode,
+      Value<DateTime>? startDate,
+      Value<DateTime?>? endDate,
+      Value<String>? status,
+      Value<String?>? notes,
+      Value<DateTime>? createdAt,
+      Value<DateTime>? updatedAt}) {
+    return SwpPlansCompanion(
+      id: id ?? this.id,
+      profileId: profileId ?? this.profileId,
+      financialItemId: financialItemId ?? this.financialItemId,
+      schemeCode: schemeCode ?? this.schemeCode,
+      name: name ?? this.name,
+      withdrawalMode: withdrawalMode ?? this.withdrawalMode,
+      startDate: startDate ?? this.startDate,
+      endDate: endDate ?? this.endDate,
+      status: status ?? this.status,
+      notes: notes ?? this.notes,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (profileId.present) {
+      map['profile_id'] = Variable<int>(profileId.value);
+    }
+    if (financialItemId.present) {
+      map['financial_item_id'] = Variable<int>(financialItemId.value);
+    }
+    if (schemeCode.present) {
+      map['scheme_code'] = Variable<int>(schemeCode.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (withdrawalMode.present) {
+      map['withdrawal_mode'] = Variable<String>(withdrawalMode.value);
+    }
+    if (startDate.present) {
+      map['start_date'] = Variable<DateTime>(startDate.value);
+    }
+    if (endDate.present) {
+      map['end_date'] = Variable<DateTime>(endDate.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (notes.present) {
+      map['notes'] = Variable<String>(notes.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SwpPlansCompanion(')
+          ..write('id: $id, ')
+          ..write('profileId: $profileId, ')
+          ..write('financialItemId: $financialItemId, ')
+          ..write('schemeCode: $schemeCode, ')
+          ..write('name: $name, ')
+          ..write('withdrawalMode: $withdrawalMode, ')
+          ..write('startDate: $startDate, ')
+          ..write('endDate: $endDate, ')
+          ..write('status: $status, ')
+          ..write('notes: $notes, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $SwpSchedulePeriodsTable extends SwpSchedulePeriods
+    with TableInfo<$SwpSchedulePeriodsTable, SwpSchedulePeriod> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SwpSchedulePeriodsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _swpPlanIdMeta =
+      const VerificationMeta('swpPlanId');
+  @override
+  late final GeneratedColumn<int> swpPlanId = GeneratedColumn<int>(
+      'swp_plan_id', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: true,
+      $customConstraints:
+          'NOT NULL REFERENCES swp_plans(id) ON DELETE CASCADE');
+  static const VerificationMeta _effectiveFromMeta =
+      const VerificationMeta('effectiveFrom');
+  @override
+  late final GeneratedColumn<DateTime> effectiveFrom =
+      GeneratedColumn<DateTime>('effective_from', aliasedName, false,
+          type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _effectiveToMeta =
+      const VerificationMeta('effectiveTo');
+  @override
+  late final GeneratedColumn<DateTime> effectiveTo = GeneratedColumn<DateTime>(
+      'effective_to', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _withdrawalModeMeta =
+      const VerificationMeta('withdrawalMode');
+  @override
+  late final GeneratedColumn<String> withdrawalMode = GeneratedColumn<String>(
+      'withdrawal_mode', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('amount'));
+  static const VerificationMeta _amountPaiseMeta =
+      const VerificationMeta('amountPaise');
+  @override
+  late final GeneratedColumn<int> amountPaise = GeneratedColumn<int>(
+      'amount_paise', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _unitsMicroUnitsMeta =
+      const VerificationMeta('unitsMicroUnits');
+  @override
+  late final GeneratedColumn<int> unitsMicroUnits = GeneratedColumn<int>(
+      'units_micro_units', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _deductionDayMeta =
+      const VerificationMeta('deductionDay');
+  @override
+  late final GeneratedColumn<int> deductionDay = GeneratedColumn<int>(
+      'deduction_day', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _frequencyMeta =
+      const VerificationMeta('frequency');
+  @override
+  late final GeneratedColumn<String> frequency = GeneratedColumn<String>(
+      'frequency', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('monthly'));
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+      'status', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('active'));
+  static const VerificationMeta _notesMeta = const VerificationMeta('notes');
+  @override
+  late final GeneratedColumn<String> notes = GeneratedColumn<String>(
+      'notes', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        swpPlanId,
+        effectiveFrom,
+        effectiveTo,
+        withdrawalMode,
+        amountPaise,
+        unitsMicroUnits,
+        deductionDay,
+        frequency,
+        status,
+        notes,
+        createdAt,
+        updatedAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'swp_schedule_periods';
+  @override
+  VerificationContext validateIntegrity(Insertable<SwpSchedulePeriod> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('swp_plan_id')) {
+      context.handle(
+          _swpPlanIdMeta,
+          swpPlanId.isAcceptableOrUnknown(
+              data['swp_plan_id']!, _swpPlanIdMeta));
+    } else if (isInserting) {
+      context.missing(_swpPlanIdMeta);
+    }
+    if (data.containsKey('effective_from')) {
+      context.handle(
+          _effectiveFromMeta,
+          effectiveFrom.isAcceptableOrUnknown(
+              data['effective_from']!, _effectiveFromMeta));
+    } else if (isInserting) {
+      context.missing(_effectiveFromMeta);
+    }
+    if (data.containsKey('effective_to')) {
+      context.handle(
+          _effectiveToMeta,
+          effectiveTo.isAcceptableOrUnknown(
+              data['effective_to']!, _effectiveToMeta));
+    }
+    if (data.containsKey('withdrawal_mode')) {
+      context.handle(
+          _withdrawalModeMeta,
+          withdrawalMode.isAcceptableOrUnknown(
+              data['withdrawal_mode']!, _withdrawalModeMeta));
+    }
+    if (data.containsKey('amount_paise')) {
+      context.handle(
+          _amountPaiseMeta,
+          amountPaise.isAcceptableOrUnknown(
+              data['amount_paise']!, _amountPaiseMeta));
+    }
+    if (data.containsKey('units_micro_units')) {
+      context.handle(
+          _unitsMicroUnitsMeta,
+          unitsMicroUnits.isAcceptableOrUnknown(
+              data['units_micro_units']!, _unitsMicroUnitsMeta));
+    }
+    if (data.containsKey('deduction_day')) {
+      context.handle(
+          _deductionDayMeta,
+          deductionDay.isAcceptableOrUnknown(
+              data['deduction_day']!, _deductionDayMeta));
+    } else if (isInserting) {
+      context.missing(_deductionDayMeta);
+    }
+    if (data.containsKey('frequency')) {
+      context.handle(_frequencyMeta,
+          frequency.isAcceptableOrUnknown(data['frequency']!, _frequencyMeta));
+    }
+    if (data.containsKey('status')) {
+      context.handle(_statusMeta,
+          status.isAcceptableOrUnknown(data['status']!, _statusMeta));
+    }
+    if (data.containsKey('notes')) {
+      context.handle(
+          _notesMeta, notes.isAcceptableOrUnknown(data['notes']!, _notesMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  SwpSchedulePeriod map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SwpSchedulePeriod(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      swpPlanId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}swp_plan_id'])!,
+      effectiveFrom: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime, data['${effectivePrefix}effective_from'])!,
+      effectiveTo: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}effective_to']),
+      withdrawalMode: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}withdrawal_mode'])!,
+      amountPaise: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}amount_paise']),
+      unitsMicroUnits: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}units_micro_units']),
+      deductionDay: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}deduction_day'])!,
+      frequency: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}frequency'])!,
+      status: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}status'])!,
+      notes: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}notes']),
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at'])!,
+    );
+  }
+
+  @override
+  $SwpSchedulePeriodsTable createAlias(String alias) {
+    return $SwpSchedulePeriodsTable(attachedDatabase, alias);
+  }
+}
+
+class SwpSchedulePeriod extends DataClass
+    implements Insertable<SwpSchedulePeriod> {
+  final int id;
+
+  /// Parent SWP plan reference
+  final int swpPlanId;
+
+  /// Effective starting date for this period's configuration
+  final DateTime effectiveFrom;
+
+  /// Optional ending date when this period was superseded or completed (null if currently active)
+  final DateTime? effectiveTo;
+
+  /// Withdrawal mode: 'amount' or 'units'
+  final String withdrawalMode;
+
+  /// Scheduled withdrawal amount in Paise (e.g. ₹5,000.00 = 500,000 paise), null if units mode
+  final int? amountPaise;
+
+  /// Scheduled withdrawal units in micro-units (e.g. 10.5 units = 10,500,000 micro-units), null if amount mode
+  final int? unitsMicroUnits;
+
+  /// Deduction day of the month (1-31)
+  final int deductionDay;
+
+  /// Frequency: 'one_time', 'daily', 'weekly', 'fortnightly', 'monthly', 'quarterly', 'half_yearly', 'yearly'
+  final String frequency;
+
+  /// Status: 'active', 'superseded', 'closed', 'completed'
+  final String status;
+  final String? notes;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  const SwpSchedulePeriod(
+      {required this.id,
+      required this.swpPlanId,
+      required this.effectiveFrom,
+      this.effectiveTo,
+      required this.withdrawalMode,
+      this.amountPaise,
+      this.unitsMicroUnits,
+      required this.deductionDay,
+      required this.frequency,
+      required this.status,
+      this.notes,
+      required this.createdAt,
+      required this.updatedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['swp_plan_id'] = Variable<int>(swpPlanId);
+    map['effective_from'] = Variable<DateTime>(effectiveFrom);
+    if (!nullToAbsent || effectiveTo != null) {
+      map['effective_to'] = Variable<DateTime>(effectiveTo);
+    }
+    map['withdrawal_mode'] = Variable<String>(withdrawalMode);
+    if (!nullToAbsent || amountPaise != null) {
+      map['amount_paise'] = Variable<int>(amountPaise);
+    }
+    if (!nullToAbsent || unitsMicroUnits != null) {
+      map['units_micro_units'] = Variable<int>(unitsMicroUnits);
+    }
+    map['deduction_day'] = Variable<int>(deductionDay);
+    map['frequency'] = Variable<String>(frequency);
+    map['status'] = Variable<String>(status);
+    if (!nullToAbsent || notes != null) {
+      map['notes'] = Variable<String>(notes);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  SwpSchedulePeriodsCompanion toCompanion(bool nullToAbsent) {
+    return SwpSchedulePeriodsCompanion(
+      id: Value(id),
+      swpPlanId: Value(swpPlanId),
+      effectiveFrom: Value(effectiveFrom),
+      effectiveTo: effectiveTo == null && nullToAbsent
+          ? const Value.absent()
+          : Value(effectiveTo),
+      withdrawalMode: Value(withdrawalMode),
+      amountPaise: amountPaise == null && nullToAbsent
+          ? const Value.absent()
+          : Value(amountPaise),
+      unitsMicroUnits: unitsMicroUnits == null && nullToAbsent
+          ? const Value.absent()
+          : Value(unitsMicroUnits),
+      deductionDay: Value(deductionDay),
+      frequency: Value(frequency),
+      status: Value(status),
+      notes:
+          notes == null && nullToAbsent ? const Value.absent() : Value(notes),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory SwpSchedulePeriod.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SwpSchedulePeriod(
+      id: serializer.fromJson<int>(json['id']),
+      swpPlanId: serializer.fromJson<int>(json['swpPlanId']),
+      effectiveFrom: serializer.fromJson<DateTime>(json['effectiveFrom']),
+      effectiveTo: serializer.fromJson<DateTime?>(json['effectiveTo']),
+      withdrawalMode: serializer.fromJson<String>(json['withdrawalMode']),
+      amountPaise: serializer.fromJson<int?>(json['amountPaise']),
+      unitsMicroUnits: serializer.fromJson<int?>(json['unitsMicroUnits']),
+      deductionDay: serializer.fromJson<int>(json['deductionDay']),
+      frequency: serializer.fromJson<String>(json['frequency']),
+      status: serializer.fromJson<String>(json['status']),
+      notes: serializer.fromJson<String?>(json['notes']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'swpPlanId': serializer.toJson<int>(swpPlanId),
+      'effectiveFrom': serializer.toJson<DateTime>(effectiveFrom),
+      'effectiveTo': serializer.toJson<DateTime?>(effectiveTo),
+      'withdrawalMode': serializer.toJson<String>(withdrawalMode),
+      'amountPaise': serializer.toJson<int?>(amountPaise),
+      'unitsMicroUnits': serializer.toJson<int?>(unitsMicroUnits),
+      'deductionDay': serializer.toJson<int>(deductionDay),
+      'frequency': serializer.toJson<String>(frequency),
+      'status': serializer.toJson<String>(status),
+      'notes': serializer.toJson<String?>(notes),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  SwpSchedulePeriod copyWith(
+          {int? id,
+          int? swpPlanId,
+          DateTime? effectiveFrom,
+          Value<DateTime?> effectiveTo = const Value.absent(),
+          String? withdrawalMode,
+          Value<int?> amountPaise = const Value.absent(),
+          Value<int?> unitsMicroUnits = const Value.absent(),
+          int? deductionDay,
+          String? frequency,
+          String? status,
+          Value<String?> notes = const Value.absent(),
+          DateTime? createdAt,
+          DateTime? updatedAt}) =>
+      SwpSchedulePeriod(
+        id: id ?? this.id,
+        swpPlanId: swpPlanId ?? this.swpPlanId,
+        effectiveFrom: effectiveFrom ?? this.effectiveFrom,
+        effectiveTo: effectiveTo.present ? effectiveTo.value : this.effectiveTo,
+        withdrawalMode: withdrawalMode ?? this.withdrawalMode,
+        amountPaise: amountPaise.present ? amountPaise.value : this.amountPaise,
+        unitsMicroUnits: unitsMicroUnits.present
+            ? unitsMicroUnits.value
+            : this.unitsMicroUnits,
+        deductionDay: deductionDay ?? this.deductionDay,
+        frequency: frequency ?? this.frequency,
+        status: status ?? this.status,
+        notes: notes.present ? notes.value : this.notes,
+        createdAt: createdAt ?? this.createdAt,
+        updatedAt: updatedAt ?? this.updatedAt,
+      );
+  SwpSchedulePeriod copyWithCompanion(SwpSchedulePeriodsCompanion data) {
+    return SwpSchedulePeriod(
+      id: data.id.present ? data.id.value : this.id,
+      swpPlanId: data.swpPlanId.present ? data.swpPlanId.value : this.swpPlanId,
+      effectiveFrom: data.effectiveFrom.present
+          ? data.effectiveFrom.value
+          : this.effectiveFrom,
+      effectiveTo:
+          data.effectiveTo.present ? data.effectiveTo.value : this.effectiveTo,
+      withdrawalMode: data.withdrawalMode.present
+          ? data.withdrawalMode.value
+          : this.withdrawalMode,
+      amountPaise:
+          data.amountPaise.present ? data.amountPaise.value : this.amountPaise,
+      unitsMicroUnits: data.unitsMicroUnits.present
+          ? data.unitsMicroUnits.value
+          : this.unitsMicroUnits,
+      deductionDay: data.deductionDay.present
+          ? data.deductionDay.value
+          : this.deductionDay,
+      frequency: data.frequency.present ? data.frequency.value : this.frequency,
+      status: data.status.present ? data.status.value : this.status,
+      notes: data.notes.present ? data.notes.value : this.notes,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SwpSchedulePeriod(')
+          ..write('id: $id, ')
+          ..write('swpPlanId: $swpPlanId, ')
+          ..write('effectiveFrom: $effectiveFrom, ')
+          ..write('effectiveTo: $effectiveTo, ')
+          ..write('withdrawalMode: $withdrawalMode, ')
+          ..write('amountPaise: $amountPaise, ')
+          ..write('unitsMicroUnits: $unitsMicroUnits, ')
+          ..write('deductionDay: $deductionDay, ')
+          ..write('frequency: $frequency, ')
+          ..write('status: $status, ')
+          ..write('notes: $notes, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      id,
+      swpPlanId,
+      effectiveFrom,
+      effectiveTo,
+      withdrawalMode,
+      amountPaise,
+      unitsMicroUnits,
+      deductionDay,
+      frequency,
+      status,
+      notes,
+      createdAt,
+      updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SwpSchedulePeriod &&
+          other.id == this.id &&
+          other.swpPlanId == this.swpPlanId &&
+          other.effectiveFrom == this.effectiveFrom &&
+          other.effectiveTo == this.effectiveTo &&
+          other.withdrawalMode == this.withdrawalMode &&
+          other.amountPaise == this.amountPaise &&
+          other.unitsMicroUnits == this.unitsMicroUnits &&
+          other.deductionDay == this.deductionDay &&
+          other.frequency == this.frequency &&
+          other.status == this.status &&
+          other.notes == this.notes &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class SwpSchedulePeriodsCompanion extends UpdateCompanion<SwpSchedulePeriod> {
+  final Value<int> id;
+  final Value<int> swpPlanId;
+  final Value<DateTime> effectiveFrom;
+  final Value<DateTime?> effectiveTo;
+  final Value<String> withdrawalMode;
+  final Value<int?> amountPaise;
+  final Value<int?> unitsMicroUnits;
+  final Value<int> deductionDay;
+  final Value<String> frequency;
+  final Value<String> status;
+  final Value<String?> notes;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  const SwpSchedulePeriodsCompanion({
+    this.id = const Value.absent(),
+    this.swpPlanId = const Value.absent(),
+    this.effectiveFrom = const Value.absent(),
+    this.effectiveTo = const Value.absent(),
+    this.withdrawalMode = const Value.absent(),
+    this.amountPaise = const Value.absent(),
+    this.unitsMicroUnits = const Value.absent(),
+    this.deductionDay = const Value.absent(),
+    this.frequency = const Value.absent(),
+    this.status = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  });
+  SwpSchedulePeriodsCompanion.insert({
+    this.id = const Value.absent(),
+    required int swpPlanId,
+    required DateTime effectiveFrom,
+    this.effectiveTo = const Value.absent(),
+    this.withdrawalMode = const Value.absent(),
+    this.amountPaise = const Value.absent(),
+    this.unitsMicroUnits = const Value.absent(),
+    required int deductionDay,
+    this.frequency = const Value.absent(),
+    this.status = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  })  : swpPlanId = Value(swpPlanId),
+        effectiveFrom = Value(effectiveFrom),
+        deductionDay = Value(deductionDay);
+  static Insertable<SwpSchedulePeriod> custom({
+    Expression<int>? id,
+    Expression<int>? swpPlanId,
+    Expression<DateTime>? effectiveFrom,
+    Expression<DateTime>? effectiveTo,
+    Expression<String>? withdrawalMode,
+    Expression<int>? amountPaise,
+    Expression<int>? unitsMicroUnits,
+    Expression<int>? deductionDay,
+    Expression<String>? frequency,
+    Expression<String>? status,
+    Expression<String>? notes,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (swpPlanId != null) 'swp_plan_id': swpPlanId,
+      if (effectiveFrom != null) 'effective_from': effectiveFrom,
+      if (effectiveTo != null) 'effective_to': effectiveTo,
+      if (withdrawalMode != null) 'withdrawal_mode': withdrawalMode,
+      if (amountPaise != null) 'amount_paise': amountPaise,
+      if (unitsMicroUnits != null) 'units_micro_units': unitsMicroUnits,
+      if (deductionDay != null) 'deduction_day': deductionDay,
+      if (frequency != null) 'frequency': frequency,
+      if (status != null) 'status': status,
+      if (notes != null) 'notes': notes,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+    });
+  }
+
+  SwpSchedulePeriodsCompanion copyWith(
+      {Value<int>? id,
+      Value<int>? swpPlanId,
+      Value<DateTime>? effectiveFrom,
+      Value<DateTime?>? effectiveTo,
+      Value<String>? withdrawalMode,
+      Value<int?>? amountPaise,
+      Value<int?>? unitsMicroUnits,
+      Value<int>? deductionDay,
+      Value<String>? frequency,
+      Value<String>? status,
+      Value<String?>? notes,
+      Value<DateTime>? createdAt,
+      Value<DateTime>? updatedAt}) {
+    return SwpSchedulePeriodsCompanion(
+      id: id ?? this.id,
+      swpPlanId: swpPlanId ?? this.swpPlanId,
+      effectiveFrom: effectiveFrom ?? this.effectiveFrom,
+      effectiveTo: effectiveTo ?? this.effectiveTo,
+      withdrawalMode: withdrawalMode ?? this.withdrawalMode,
+      amountPaise: amountPaise ?? this.amountPaise,
+      unitsMicroUnits: unitsMicroUnits ?? this.unitsMicroUnits,
+      deductionDay: deductionDay ?? this.deductionDay,
+      frequency: frequency ?? this.frequency,
+      status: status ?? this.status,
+      notes: notes ?? this.notes,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (swpPlanId.present) {
+      map['swp_plan_id'] = Variable<int>(swpPlanId.value);
+    }
+    if (effectiveFrom.present) {
+      map['effective_from'] = Variable<DateTime>(effectiveFrom.value);
+    }
+    if (effectiveTo.present) {
+      map['effective_to'] = Variable<DateTime>(effectiveTo.value);
+    }
+    if (withdrawalMode.present) {
+      map['withdrawal_mode'] = Variable<String>(withdrawalMode.value);
+    }
+    if (amountPaise.present) {
+      map['amount_paise'] = Variable<int>(amountPaise.value);
+    }
+    if (unitsMicroUnits.present) {
+      map['units_micro_units'] = Variable<int>(unitsMicroUnits.value);
+    }
+    if (deductionDay.present) {
+      map['deduction_day'] = Variable<int>(deductionDay.value);
+    }
+    if (frequency.present) {
+      map['frequency'] = Variable<String>(frequency.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (notes.present) {
+      map['notes'] = Variable<String>(notes.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SwpSchedulePeriodsCompanion(')
+          ..write('id: $id, ')
+          ..write('swpPlanId: $swpPlanId, ')
+          ..write('effectiveFrom: $effectiveFrom, ')
+          ..write('effectiveTo: $effectiveTo, ')
+          ..write('withdrawalMode: $withdrawalMode, ')
+          ..write('amountPaise: $amountPaise, ')
+          ..write('unitsMicroUnits: $unitsMicroUnits, ')
+          ..write('deductionDay: $deductionDay, ')
+          ..write('frequency: $frequency, ')
+          ..write('status: $status, ')
+          ..write('notes: $notes, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $SwpInstallmentsTable extends SwpInstallments
+    with TableInfo<$SwpInstallmentsTable, SwpInstallment> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SwpInstallmentsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _swpPlanIdMeta =
+      const VerificationMeta('swpPlanId');
+  @override
+  late final GeneratedColumn<int> swpPlanId = GeneratedColumn<int>(
+      'swp_plan_id', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: true,
+      $customConstraints:
+          'NOT NULL REFERENCES swp_plans(id) ON DELETE CASCADE');
+  static const VerificationMeta _schedulePeriodIdMeta =
+      const VerificationMeta('schedulePeriodId');
+  @override
+  late final GeneratedColumn<int> schedulePeriodId = GeneratedColumn<int>(
+      'schedule_period_id', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: true,
+      $customConstraints:
+          'NOT NULL REFERENCES swp_schedule_periods(id) ON DELETE CASCADE');
+  static const VerificationMeta _profileIdMeta =
+      const VerificationMeta('profileId');
+  @override
+  late final GeneratedColumn<int> profileId = GeneratedColumn<int>(
+      'profile_id', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: true,
+      $customConstraints:
+          'NOT NULL REFERENCES financial_profiles(id) ON DELETE CASCADE');
+  static const VerificationMeta _scheduledDateMeta =
+      const VerificationMeta('scheduledDate');
+  @override
+  late final GeneratedColumn<DateTime> scheduledDate =
+      GeneratedColumn<DateTime>('scheduled_date', aliasedName, false,
+          type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _expectedAmountPaiseMeta =
+      const VerificationMeta('expectedAmountPaise');
+  @override
+  late final GeneratedColumn<int> expectedAmountPaise = GeneratedColumn<int>(
+      'expected_amount_paise', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _expectedUnitsMicroUnitsMeta =
+      const VerificationMeta('expectedUnitsMicroUnits');
+  @override
+  late final GeneratedColumn<int> expectedUnitsMicroUnits =
+      GeneratedColumn<int>('expected_units_micro_units', aliasedName, true,
+          type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+      'status', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('upcoming'));
+  static const VerificationMeta _isSimulatedMeta =
+      const VerificationMeta('isSimulated');
+  @override
+  late final GeneratedColumn<bool> isSimulated = GeneratedColumn<bool>(
+      'is_simulated', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("is_simulated" IN (0, 1))'),
+      defaultValue: const Constant(true));
+  static const VerificationMeta _actualWithdrawalDateMeta =
+      const VerificationMeta('actualWithdrawalDate');
+  @override
+  late final GeneratedColumn<DateTime> actualWithdrawalDate =
+      GeneratedColumn<DateTime>('actual_withdrawal_date', aliasedName, true,
+          type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _actualAmountPaiseMeta =
+      const VerificationMeta('actualAmountPaise');
+  @override
+  late final GeneratedColumn<int> actualAmountPaise = GeneratedColumn<int>(
+      'actual_amount_paise', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _withdrawalNavMicroPaiseMeta =
+      const VerificationMeta('withdrawalNavMicroPaise');
+  @override
+  late final GeneratedColumn<int> withdrawalNavMicroPaise =
+      GeneratedColumn<int>('withdrawal_nav_micro_paise', aliasedName, true,
+          type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _unitsMicroUnitsMeta =
+      const VerificationMeta('unitsMicroUnits');
+  @override
+  late final GeneratedColumn<int> unitsMicroUnits = GeneratedColumn<int>(
+      'units_micro_units', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _transactionIdMeta =
+      const VerificationMeta('transactionId');
+  @override
+  late final GeneratedColumn<int> transactionId = GeneratedColumn<int>(
+      'transaction_id', aliasedName, true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      $customConstraints: 'REFERENCES transactions(id) ON DELETE SET NULL');
+  static const VerificationMeta _notesMeta = const VerificationMeta('notes');
+  @override
+  late final GeneratedColumn<String> notes = GeneratedColumn<String>(
+      'notes', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        swpPlanId,
+        schedulePeriodId,
+        profileId,
+        scheduledDate,
+        expectedAmountPaise,
+        expectedUnitsMicroUnits,
+        status,
+        isSimulated,
+        actualWithdrawalDate,
+        actualAmountPaise,
+        withdrawalNavMicroPaise,
+        unitsMicroUnits,
+        transactionId,
+        notes,
+        createdAt,
+        updatedAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'swp_installments';
+  @override
+  VerificationContext validateIntegrity(Insertable<SwpInstallment> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('swp_plan_id')) {
+      context.handle(
+          _swpPlanIdMeta,
+          swpPlanId.isAcceptableOrUnknown(
+              data['swp_plan_id']!, _swpPlanIdMeta));
+    } else if (isInserting) {
+      context.missing(_swpPlanIdMeta);
+    }
+    if (data.containsKey('schedule_period_id')) {
+      context.handle(
+          _schedulePeriodIdMeta,
+          schedulePeriodId.isAcceptableOrUnknown(
+              data['schedule_period_id']!, _schedulePeriodIdMeta));
+    } else if (isInserting) {
+      context.missing(_schedulePeriodIdMeta);
+    }
+    if (data.containsKey('profile_id')) {
+      context.handle(_profileIdMeta,
+          profileId.isAcceptableOrUnknown(data['profile_id']!, _profileIdMeta));
+    } else if (isInserting) {
+      context.missing(_profileIdMeta);
+    }
+    if (data.containsKey('scheduled_date')) {
+      context.handle(
+          _scheduledDateMeta,
+          scheduledDate.isAcceptableOrUnknown(
+              data['scheduled_date']!, _scheduledDateMeta));
+    } else if (isInserting) {
+      context.missing(_scheduledDateMeta);
+    }
+    if (data.containsKey('expected_amount_paise')) {
+      context.handle(
+          _expectedAmountPaiseMeta,
+          expectedAmountPaise.isAcceptableOrUnknown(
+              data['expected_amount_paise']!, _expectedAmountPaiseMeta));
+    }
+    if (data.containsKey('expected_units_micro_units')) {
+      context.handle(
+          _expectedUnitsMicroUnitsMeta,
+          expectedUnitsMicroUnits.isAcceptableOrUnknown(
+              data['expected_units_micro_units']!,
+              _expectedUnitsMicroUnitsMeta));
+    }
+    if (data.containsKey('status')) {
+      context.handle(_statusMeta,
+          status.isAcceptableOrUnknown(data['status']!, _statusMeta));
+    }
+    if (data.containsKey('is_simulated')) {
+      context.handle(
+          _isSimulatedMeta,
+          isSimulated.isAcceptableOrUnknown(
+              data['is_simulated']!, _isSimulatedMeta));
+    }
+    if (data.containsKey('actual_withdrawal_date')) {
+      context.handle(
+          _actualWithdrawalDateMeta,
+          actualWithdrawalDate.isAcceptableOrUnknown(
+              data['actual_withdrawal_date']!, _actualWithdrawalDateMeta));
+    }
+    if (data.containsKey('actual_amount_paise')) {
+      context.handle(
+          _actualAmountPaiseMeta,
+          actualAmountPaise.isAcceptableOrUnknown(
+              data['actual_amount_paise']!, _actualAmountPaiseMeta));
+    }
+    if (data.containsKey('withdrawal_nav_micro_paise')) {
+      context.handle(
+          _withdrawalNavMicroPaiseMeta,
+          withdrawalNavMicroPaise.isAcceptableOrUnknown(
+              data['withdrawal_nav_micro_paise']!,
+              _withdrawalNavMicroPaiseMeta));
+    }
+    if (data.containsKey('units_micro_units')) {
+      context.handle(
+          _unitsMicroUnitsMeta,
+          unitsMicroUnits.isAcceptableOrUnknown(
+              data['units_micro_units']!, _unitsMicroUnitsMeta));
+    }
+    if (data.containsKey('transaction_id')) {
+      context.handle(
+          _transactionIdMeta,
+          transactionId.isAcceptableOrUnknown(
+              data['transaction_id']!, _transactionIdMeta));
+    }
+    if (data.containsKey('notes')) {
+      context.handle(
+          _notesMeta, notes.isAcceptableOrUnknown(data['notes']!, _notesMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+        {swpPlanId, scheduledDate},
+      ];
+  @override
+  SwpInstallment map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SwpInstallment(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      swpPlanId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}swp_plan_id'])!,
+      schedulePeriodId: attachedDatabase.typeMapping.read(
+          DriftSqlType.int, data['${effectivePrefix}schedule_period_id'])!,
+      profileId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}profile_id'])!,
+      scheduledDate: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime, data['${effectivePrefix}scheduled_date'])!,
+      expectedAmountPaise: attachedDatabase.typeMapping.read(
+          DriftSqlType.int, data['${effectivePrefix}expected_amount_paise']),
+      expectedUnitsMicroUnits: attachedDatabase.typeMapping.read(
+          DriftSqlType.int,
+          data['${effectivePrefix}expected_units_micro_units']),
+      status: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}status'])!,
+      isSimulated: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}is_simulated'])!,
+      actualWithdrawalDate: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime,
+          data['${effectivePrefix}actual_withdrawal_date']),
+      actualAmountPaise: attachedDatabase.typeMapping.read(
+          DriftSqlType.int, data['${effectivePrefix}actual_amount_paise']),
+      withdrawalNavMicroPaise: attachedDatabase.typeMapping.read(
+          DriftSqlType.int,
+          data['${effectivePrefix}withdrawal_nav_micro_paise']),
+      unitsMicroUnits: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}units_micro_units']),
+      transactionId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}transaction_id']),
+      notes: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}notes']),
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at'])!,
+    );
+  }
+
+  @override
+  $SwpInstallmentsTable createAlias(String alias) {
+    return $SwpInstallmentsTable(attachedDatabase, alias);
+  }
+}
+
+class SwpInstallment extends DataClass implements Insertable<SwpInstallment> {
+  final int id;
+
+  /// Parent SWP plan reference
+  final int swpPlanId;
+
+  /// The specific schedule period under which this installment was generated
+  final int schedulePeriodId;
+
+  /// Profile scoping
+  final int profileId;
+
+  /// Scheduled withdrawal date
+  final DateTime scheduledDate;
+
+  /// Expected withdrawal amount in Paise (null if units mode)
+  final int? expectedAmountPaise;
+
+  /// Expected withdrawal units in micro-units (null if amount mode)
+  final int? expectedUnitsMicroUnits;
+
+  /// Status: 'upcoming', 'recorded', 'skipped', 'cancelled'
+  final String status;
+
+  /// Distinguishes forward projections from confirmed actual withdrawals
+  final bool isSimulated;
+
+  /// Actual withdrawal date confirmed by user
+  final DateTime? actualWithdrawalDate;
+
+  /// Actual amount paid out in Paise
+  final int? actualAmountPaise;
+
+  /// Withdrawal NAV in micro-paise
+  final int? withdrawalNavMicroPaise;
+
+  /// Units redeemed in micro-units
+  final int? unitsMicroUnits;
+
+  /// Link to financial transaction record once confirmed
+  final int? transactionId;
+  final String? notes;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  const SwpInstallment(
+      {required this.id,
+      required this.swpPlanId,
+      required this.schedulePeriodId,
+      required this.profileId,
+      required this.scheduledDate,
+      this.expectedAmountPaise,
+      this.expectedUnitsMicroUnits,
+      required this.status,
+      required this.isSimulated,
+      this.actualWithdrawalDate,
+      this.actualAmountPaise,
+      this.withdrawalNavMicroPaise,
+      this.unitsMicroUnits,
+      this.transactionId,
+      this.notes,
+      required this.createdAt,
+      required this.updatedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['swp_plan_id'] = Variable<int>(swpPlanId);
+    map['schedule_period_id'] = Variable<int>(schedulePeriodId);
+    map['profile_id'] = Variable<int>(profileId);
+    map['scheduled_date'] = Variable<DateTime>(scheduledDate);
+    if (!nullToAbsent || expectedAmountPaise != null) {
+      map['expected_amount_paise'] = Variable<int>(expectedAmountPaise);
+    }
+    if (!nullToAbsent || expectedUnitsMicroUnits != null) {
+      map['expected_units_micro_units'] =
+          Variable<int>(expectedUnitsMicroUnits);
+    }
+    map['status'] = Variable<String>(status);
+    map['is_simulated'] = Variable<bool>(isSimulated);
+    if (!nullToAbsent || actualWithdrawalDate != null) {
+      map['actual_withdrawal_date'] = Variable<DateTime>(actualWithdrawalDate);
+    }
+    if (!nullToAbsent || actualAmountPaise != null) {
+      map['actual_amount_paise'] = Variable<int>(actualAmountPaise);
+    }
+    if (!nullToAbsent || withdrawalNavMicroPaise != null) {
+      map['withdrawal_nav_micro_paise'] =
+          Variable<int>(withdrawalNavMicroPaise);
+    }
+    if (!nullToAbsent || unitsMicroUnits != null) {
+      map['units_micro_units'] = Variable<int>(unitsMicroUnits);
+    }
+    if (!nullToAbsent || transactionId != null) {
+      map['transaction_id'] = Variable<int>(transactionId);
+    }
+    if (!nullToAbsent || notes != null) {
+      map['notes'] = Variable<String>(notes);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  SwpInstallmentsCompanion toCompanion(bool nullToAbsent) {
+    return SwpInstallmentsCompanion(
+      id: Value(id),
+      swpPlanId: Value(swpPlanId),
+      schedulePeriodId: Value(schedulePeriodId),
+      profileId: Value(profileId),
+      scheduledDate: Value(scheduledDate),
+      expectedAmountPaise: expectedAmountPaise == null && nullToAbsent
+          ? const Value.absent()
+          : Value(expectedAmountPaise),
+      expectedUnitsMicroUnits: expectedUnitsMicroUnits == null && nullToAbsent
+          ? const Value.absent()
+          : Value(expectedUnitsMicroUnits),
+      status: Value(status),
+      isSimulated: Value(isSimulated),
+      actualWithdrawalDate: actualWithdrawalDate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(actualWithdrawalDate),
+      actualAmountPaise: actualAmountPaise == null && nullToAbsent
+          ? const Value.absent()
+          : Value(actualAmountPaise),
+      withdrawalNavMicroPaise: withdrawalNavMicroPaise == null && nullToAbsent
+          ? const Value.absent()
+          : Value(withdrawalNavMicroPaise),
+      unitsMicroUnits: unitsMicroUnits == null && nullToAbsent
+          ? const Value.absent()
+          : Value(unitsMicroUnits),
+      transactionId: transactionId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(transactionId),
+      notes:
+          notes == null && nullToAbsent ? const Value.absent() : Value(notes),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory SwpInstallment.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SwpInstallment(
+      id: serializer.fromJson<int>(json['id']),
+      swpPlanId: serializer.fromJson<int>(json['swpPlanId']),
+      schedulePeriodId: serializer.fromJson<int>(json['schedulePeriodId']),
+      profileId: serializer.fromJson<int>(json['profileId']),
+      scheduledDate: serializer.fromJson<DateTime>(json['scheduledDate']),
+      expectedAmountPaise:
+          serializer.fromJson<int?>(json['expectedAmountPaise']),
+      expectedUnitsMicroUnits:
+          serializer.fromJson<int?>(json['expectedUnitsMicroUnits']),
+      status: serializer.fromJson<String>(json['status']),
+      isSimulated: serializer.fromJson<bool>(json['isSimulated']),
+      actualWithdrawalDate:
+          serializer.fromJson<DateTime?>(json['actualWithdrawalDate']),
+      actualAmountPaise: serializer.fromJson<int?>(json['actualAmountPaise']),
+      withdrawalNavMicroPaise:
+          serializer.fromJson<int?>(json['withdrawalNavMicroPaise']),
+      unitsMicroUnits: serializer.fromJson<int?>(json['unitsMicroUnits']),
+      transactionId: serializer.fromJson<int?>(json['transactionId']),
+      notes: serializer.fromJson<String?>(json['notes']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'swpPlanId': serializer.toJson<int>(swpPlanId),
+      'schedulePeriodId': serializer.toJson<int>(schedulePeriodId),
+      'profileId': serializer.toJson<int>(profileId),
+      'scheduledDate': serializer.toJson<DateTime>(scheduledDate),
+      'expectedAmountPaise': serializer.toJson<int?>(expectedAmountPaise),
+      'expectedUnitsMicroUnits':
+          serializer.toJson<int?>(expectedUnitsMicroUnits),
+      'status': serializer.toJson<String>(status),
+      'isSimulated': serializer.toJson<bool>(isSimulated),
+      'actualWithdrawalDate':
+          serializer.toJson<DateTime?>(actualWithdrawalDate),
+      'actualAmountPaise': serializer.toJson<int?>(actualAmountPaise),
+      'withdrawalNavMicroPaise':
+          serializer.toJson<int?>(withdrawalNavMicroPaise),
+      'unitsMicroUnits': serializer.toJson<int?>(unitsMicroUnits),
+      'transactionId': serializer.toJson<int?>(transactionId),
+      'notes': serializer.toJson<String?>(notes),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  SwpInstallment copyWith(
+          {int? id,
+          int? swpPlanId,
+          int? schedulePeriodId,
+          int? profileId,
+          DateTime? scheduledDate,
+          Value<int?> expectedAmountPaise = const Value.absent(),
+          Value<int?> expectedUnitsMicroUnits = const Value.absent(),
+          String? status,
+          bool? isSimulated,
+          Value<DateTime?> actualWithdrawalDate = const Value.absent(),
+          Value<int?> actualAmountPaise = const Value.absent(),
+          Value<int?> withdrawalNavMicroPaise = const Value.absent(),
+          Value<int?> unitsMicroUnits = const Value.absent(),
+          Value<int?> transactionId = const Value.absent(),
+          Value<String?> notes = const Value.absent(),
+          DateTime? createdAt,
+          DateTime? updatedAt}) =>
+      SwpInstallment(
+        id: id ?? this.id,
+        swpPlanId: swpPlanId ?? this.swpPlanId,
+        schedulePeriodId: schedulePeriodId ?? this.schedulePeriodId,
+        profileId: profileId ?? this.profileId,
+        scheduledDate: scheduledDate ?? this.scheduledDate,
+        expectedAmountPaise: expectedAmountPaise.present
+            ? expectedAmountPaise.value
+            : this.expectedAmountPaise,
+        expectedUnitsMicroUnits: expectedUnitsMicroUnits.present
+            ? expectedUnitsMicroUnits.value
+            : this.expectedUnitsMicroUnits,
+        status: status ?? this.status,
+        isSimulated: isSimulated ?? this.isSimulated,
+        actualWithdrawalDate: actualWithdrawalDate.present
+            ? actualWithdrawalDate.value
+            : this.actualWithdrawalDate,
+        actualAmountPaise: actualAmountPaise.present
+            ? actualAmountPaise.value
+            : this.actualAmountPaise,
+        withdrawalNavMicroPaise: withdrawalNavMicroPaise.present
+            ? withdrawalNavMicroPaise.value
+            : this.withdrawalNavMicroPaise,
+        unitsMicroUnits: unitsMicroUnits.present
+            ? unitsMicroUnits.value
+            : this.unitsMicroUnits,
+        transactionId:
+            transactionId.present ? transactionId.value : this.transactionId,
+        notes: notes.present ? notes.value : this.notes,
+        createdAt: createdAt ?? this.createdAt,
+        updatedAt: updatedAt ?? this.updatedAt,
+      );
+  SwpInstallment copyWithCompanion(SwpInstallmentsCompanion data) {
+    return SwpInstallment(
+      id: data.id.present ? data.id.value : this.id,
+      swpPlanId: data.swpPlanId.present ? data.swpPlanId.value : this.swpPlanId,
+      schedulePeriodId: data.schedulePeriodId.present
+          ? data.schedulePeriodId.value
+          : this.schedulePeriodId,
+      profileId: data.profileId.present ? data.profileId.value : this.profileId,
+      scheduledDate: data.scheduledDate.present
+          ? data.scheduledDate.value
+          : this.scheduledDate,
+      expectedAmountPaise: data.expectedAmountPaise.present
+          ? data.expectedAmountPaise.value
+          : this.expectedAmountPaise,
+      expectedUnitsMicroUnits: data.expectedUnitsMicroUnits.present
+          ? data.expectedUnitsMicroUnits.value
+          : this.expectedUnitsMicroUnits,
+      status: data.status.present ? data.status.value : this.status,
+      isSimulated:
+          data.isSimulated.present ? data.isSimulated.value : this.isSimulated,
+      actualWithdrawalDate: data.actualWithdrawalDate.present
+          ? data.actualWithdrawalDate.value
+          : this.actualWithdrawalDate,
+      actualAmountPaise: data.actualAmountPaise.present
+          ? data.actualAmountPaise.value
+          : this.actualAmountPaise,
+      withdrawalNavMicroPaise: data.withdrawalNavMicroPaise.present
+          ? data.withdrawalNavMicroPaise.value
+          : this.withdrawalNavMicroPaise,
+      unitsMicroUnits: data.unitsMicroUnits.present
+          ? data.unitsMicroUnits.value
+          : this.unitsMicroUnits,
+      transactionId: data.transactionId.present
+          ? data.transactionId.value
+          : this.transactionId,
+      notes: data.notes.present ? data.notes.value : this.notes,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SwpInstallment(')
+          ..write('id: $id, ')
+          ..write('swpPlanId: $swpPlanId, ')
+          ..write('schedulePeriodId: $schedulePeriodId, ')
+          ..write('profileId: $profileId, ')
+          ..write('scheduledDate: $scheduledDate, ')
+          ..write('expectedAmountPaise: $expectedAmountPaise, ')
+          ..write('expectedUnitsMicroUnits: $expectedUnitsMicroUnits, ')
+          ..write('status: $status, ')
+          ..write('isSimulated: $isSimulated, ')
+          ..write('actualWithdrawalDate: $actualWithdrawalDate, ')
+          ..write('actualAmountPaise: $actualAmountPaise, ')
+          ..write('withdrawalNavMicroPaise: $withdrawalNavMicroPaise, ')
+          ..write('unitsMicroUnits: $unitsMicroUnits, ')
+          ..write('transactionId: $transactionId, ')
+          ..write('notes: $notes, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      id,
+      swpPlanId,
+      schedulePeriodId,
+      profileId,
+      scheduledDate,
+      expectedAmountPaise,
+      expectedUnitsMicroUnits,
+      status,
+      isSimulated,
+      actualWithdrawalDate,
+      actualAmountPaise,
+      withdrawalNavMicroPaise,
+      unitsMicroUnits,
+      transactionId,
+      notes,
+      createdAt,
+      updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SwpInstallment &&
+          other.id == this.id &&
+          other.swpPlanId == this.swpPlanId &&
+          other.schedulePeriodId == this.schedulePeriodId &&
+          other.profileId == this.profileId &&
+          other.scheduledDate == this.scheduledDate &&
+          other.expectedAmountPaise == this.expectedAmountPaise &&
+          other.expectedUnitsMicroUnits == this.expectedUnitsMicroUnits &&
+          other.status == this.status &&
+          other.isSimulated == this.isSimulated &&
+          other.actualWithdrawalDate == this.actualWithdrawalDate &&
+          other.actualAmountPaise == this.actualAmountPaise &&
+          other.withdrawalNavMicroPaise == this.withdrawalNavMicroPaise &&
+          other.unitsMicroUnits == this.unitsMicroUnits &&
+          other.transactionId == this.transactionId &&
+          other.notes == this.notes &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class SwpInstallmentsCompanion extends UpdateCompanion<SwpInstallment> {
+  final Value<int> id;
+  final Value<int> swpPlanId;
+  final Value<int> schedulePeriodId;
+  final Value<int> profileId;
+  final Value<DateTime> scheduledDate;
+  final Value<int?> expectedAmountPaise;
+  final Value<int?> expectedUnitsMicroUnits;
+  final Value<String> status;
+  final Value<bool> isSimulated;
+  final Value<DateTime?> actualWithdrawalDate;
+  final Value<int?> actualAmountPaise;
+  final Value<int?> withdrawalNavMicroPaise;
+  final Value<int?> unitsMicroUnits;
+  final Value<int?> transactionId;
+  final Value<String?> notes;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  const SwpInstallmentsCompanion({
+    this.id = const Value.absent(),
+    this.swpPlanId = const Value.absent(),
+    this.schedulePeriodId = const Value.absent(),
+    this.profileId = const Value.absent(),
+    this.scheduledDate = const Value.absent(),
+    this.expectedAmountPaise = const Value.absent(),
+    this.expectedUnitsMicroUnits = const Value.absent(),
+    this.status = const Value.absent(),
+    this.isSimulated = const Value.absent(),
+    this.actualWithdrawalDate = const Value.absent(),
+    this.actualAmountPaise = const Value.absent(),
+    this.withdrawalNavMicroPaise = const Value.absent(),
+    this.unitsMicroUnits = const Value.absent(),
+    this.transactionId = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  });
+  SwpInstallmentsCompanion.insert({
+    this.id = const Value.absent(),
+    required int swpPlanId,
+    required int schedulePeriodId,
+    required int profileId,
+    required DateTime scheduledDate,
+    this.expectedAmountPaise = const Value.absent(),
+    this.expectedUnitsMicroUnits = const Value.absent(),
+    this.status = const Value.absent(),
+    this.isSimulated = const Value.absent(),
+    this.actualWithdrawalDate = const Value.absent(),
+    this.actualAmountPaise = const Value.absent(),
+    this.withdrawalNavMicroPaise = const Value.absent(),
+    this.unitsMicroUnits = const Value.absent(),
+    this.transactionId = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  })  : swpPlanId = Value(swpPlanId),
+        schedulePeriodId = Value(schedulePeriodId),
+        profileId = Value(profileId),
+        scheduledDate = Value(scheduledDate);
+  static Insertable<SwpInstallment> custom({
+    Expression<int>? id,
+    Expression<int>? swpPlanId,
+    Expression<int>? schedulePeriodId,
+    Expression<int>? profileId,
+    Expression<DateTime>? scheduledDate,
+    Expression<int>? expectedAmountPaise,
+    Expression<int>? expectedUnitsMicroUnits,
+    Expression<String>? status,
+    Expression<bool>? isSimulated,
+    Expression<DateTime>? actualWithdrawalDate,
+    Expression<int>? actualAmountPaise,
+    Expression<int>? withdrawalNavMicroPaise,
+    Expression<int>? unitsMicroUnits,
+    Expression<int>? transactionId,
+    Expression<String>? notes,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (swpPlanId != null) 'swp_plan_id': swpPlanId,
+      if (schedulePeriodId != null) 'schedule_period_id': schedulePeriodId,
+      if (profileId != null) 'profile_id': profileId,
+      if (scheduledDate != null) 'scheduled_date': scheduledDate,
+      if (expectedAmountPaise != null)
+        'expected_amount_paise': expectedAmountPaise,
+      if (expectedUnitsMicroUnits != null)
+        'expected_units_micro_units': expectedUnitsMicroUnits,
+      if (status != null) 'status': status,
+      if (isSimulated != null) 'is_simulated': isSimulated,
+      if (actualWithdrawalDate != null)
+        'actual_withdrawal_date': actualWithdrawalDate,
+      if (actualAmountPaise != null) 'actual_amount_paise': actualAmountPaise,
+      if (withdrawalNavMicroPaise != null)
+        'withdrawal_nav_micro_paise': withdrawalNavMicroPaise,
+      if (unitsMicroUnits != null) 'units_micro_units': unitsMicroUnits,
+      if (transactionId != null) 'transaction_id': transactionId,
+      if (notes != null) 'notes': notes,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+    });
+  }
+
+  SwpInstallmentsCompanion copyWith(
+      {Value<int>? id,
+      Value<int>? swpPlanId,
+      Value<int>? schedulePeriodId,
+      Value<int>? profileId,
+      Value<DateTime>? scheduledDate,
+      Value<int?>? expectedAmountPaise,
+      Value<int?>? expectedUnitsMicroUnits,
+      Value<String>? status,
+      Value<bool>? isSimulated,
+      Value<DateTime?>? actualWithdrawalDate,
+      Value<int?>? actualAmountPaise,
+      Value<int?>? withdrawalNavMicroPaise,
+      Value<int?>? unitsMicroUnits,
+      Value<int?>? transactionId,
+      Value<String?>? notes,
+      Value<DateTime>? createdAt,
+      Value<DateTime>? updatedAt}) {
+    return SwpInstallmentsCompanion(
+      id: id ?? this.id,
+      swpPlanId: swpPlanId ?? this.swpPlanId,
+      schedulePeriodId: schedulePeriodId ?? this.schedulePeriodId,
+      profileId: profileId ?? this.profileId,
+      scheduledDate: scheduledDate ?? this.scheduledDate,
+      expectedAmountPaise: expectedAmountPaise ?? this.expectedAmountPaise,
+      expectedUnitsMicroUnits:
+          expectedUnitsMicroUnits ?? this.expectedUnitsMicroUnits,
+      status: status ?? this.status,
+      isSimulated: isSimulated ?? this.isSimulated,
+      actualWithdrawalDate: actualWithdrawalDate ?? this.actualWithdrawalDate,
+      actualAmountPaise: actualAmountPaise ?? this.actualAmountPaise,
+      withdrawalNavMicroPaise:
+          withdrawalNavMicroPaise ?? this.withdrawalNavMicroPaise,
+      unitsMicroUnits: unitsMicroUnits ?? this.unitsMicroUnits,
+      transactionId: transactionId ?? this.transactionId,
+      notes: notes ?? this.notes,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (swpPlanId.present) {
+      map['swp_plan_id'] = Variable<int>(swpPlanId.value);
+    }
+    if (schedulePeriodId.present) {
+      map['schedule_period_id'] = Variable<int>(schedulePeriodId.value);
+    }
+    if (profileId.present) {
+      map['profile_id'] = Variable<int>(profileId.value);
+    }
+    if (scheduledDate.present) {
+      map['scheduled_date'] = Variable<DateTime>(scheduledDate.value);
+    }
+    if (expectedAmountPaise.present) {
+      map['expected_amount_paise'] = Variable<int>(expectedAmountPaise.value);
+    }
+    if (expectedUnitsMicroUnits.present) {
+      map['expected_units_micro_units'] =
+          Variable<int>(expectedUnitsMicroUnits.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (isSimulated.present) {
+      map['is_simulated'] = Variable<bool>(isSimulated.value);
+    }
+    if (actualWithdrawalDate.present) {
+      map['actual_withdrawal_date'] =
+          Variable<DateTime>(actualWithdrawalDate.value);
+    }
+    if (actualAmountPaise.present) {
+      map['actual_amount_paise'] = Variable<int>(actualAmountPaise.value);
+    }
+    if (withdrawalNavMicroPaise.present) {
+      map['withdrawal_nav_micro_paise'] =
+          Variable<int>(withdrawalNavMicroPaise.value);
+    }
+    if (unitsMicroUnits.present) {
+      map['units_micro_units'] = Variable<int>(unitsMicroUnits.value);
+    }
+    if (transactionId.present) {
+      map['transaction_id'] = Variable<int>(transactionId.value);
+    }
+    if (notes.present) {
+      map['notes'] = Variable<String>(notes.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SwpInstallmentsCompanion(')
+          ..write('id: $id, ')
+          ..write('swpPlanId: $swpPlanId, ')
+          ..write('schedulePeriodId: $schedulePeriodId, ')
+          ..write('profileId: $profileId, ')
+          ..write('scheduledDate: $scheduledDate, ')
+          ..write('expectedAmountPaise: $expectedAmountPaise, ')
+          ..write('expectedUnitsMicroUnits: $expectedUnitsMicroUnits, ')
+          ..write('status: $status, ')
+          ..write('isSimulated: $isSimulated, ')
+          ..write('actualWithdrawalDate: $actualWithdrawalDate, ')
+          ..write('actualAmountPaise: $actualAmountPaise, ')
+          ..write('withdrawalNavMicroPaise: $withdrawalNavMicroPaise, ')
+          ..write('unitsMicroUnits: $unitsMicroUnits, ')
+          ..write('transactionId: $transactionId, ')
+          ..write('notes: $notes, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -8550,6 +10777,11 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $SipSchedulePeriodsTable(this);
   late final $SipInstallmentsTable sipInstallments =
       $SipInstallmentsTable(this);
+  late final $SwpPlansTable swpPlans = $SwpPlansTable(this);
+  late final $SwpSchedulePeriodsTable swpSchedulePeriods =
+      $SwpSchedulePeriodsTable(this);
+  late final $SwpInstallmentsTable swpInstallments =
+      $SwpInstallmentsTable(this);
   late final Index idxCategoryClassification = Index(
       'idx_category_classification',
       'CREATE INDEX idx_category_classification ON financial_categories (classification)');
@@ -8580,6 +10812,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       'CREATE INDEX idx_transaction_type ON transactions (transaction_type)');
   late final Index idxTransactionSip = Index('idx_transaction_sip',
       'CREATE INDEX idx_transaction_sip ON transactions (sip_plan_id)');
+  late final Index idxTransactionSwp = Index('idx_transaction_swp',
+      'CREATE INDEX idx_transaction_swp ON transactions (swp_plan_id)');
   late final Index idxTransactionLinked = Index('idx_transaction_linked',
       'CREATE INDEX idx_transaction_linked ON transactions (linked_transaction_id)');
   late final Index idxValuationDate = Index('idx_valuation_date',
@@ -8620,6 +10854,24 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       'CREATE INDEX idx_installment_status ON sip_installments (status)');
   late final Index idxInstallmentDate = Index('idx_installment_date',
       'CREATE INDEX idx_installment_date ON sip_installments (scheduled_date)');
+  late final Index idxSwpProfile = Index('idx_swp_profile',
+      'CREATE INDEX idx_swp_profile ON swp_plans (profile_id)');
+  late final Index idxSwpStatus = Index(
+      'idx_swp_status', 'CREATE INDEX idx_swp_status ON swp_plans (status)');
+  late final Index idxSwpScheme = Index('idx_swp_scheme',
+      'CREATE INDEX idx_swp_scheme ON swp_plans (scheme_code)');
+  late final Index idxSwpPeriodPlan = Index('idx_swp_period_plan',
+      'CREATE INDEX idx_swp_period_plan ON swp_schedule_periods (swp_plan_id)');
+  late final Index idxSwpPeriodDates = Index('idx_swp_period_dates',
+      'CREATE INDEX idx_swp_period_dates ON swp_schedule_periods (effective_from, effective_to)');
+  late final Index idxSwpInstPlan = Index('idx_swp_inst_plan',
+      'CREATE INDEX idx_swp_inst_plan ON swp_installments (swp_plan_id)');
+  late final Index idxSwpInstProfile = Index('idx_swp_inst_profile',
+      'CREATE INDEX idx_swp_inst_profile ON swp_installments (profile_id)');
+  late final Index idxSwpInstStatus = Index('idx_swp_inst_status',
+      'CREATE INDEX idx_swp_inst_status ON swp_installments (status)');
+  late final Index idxSwpInstDate = Index('idx_swp_inst_date',
+      'CREATE INDEX idx_swp_inst_date ON swp_installments (scheduled_date)');
   late final ProfilesDao profilesDao = ProfilesDao(this as AppDatabase);
   late final CategoriesDao categoriesDao = CategoriesDao(this as AppDatabase);
   late final AccountsDao accountsDao = AccountsDao(this as AppDatabase);
@@ -8634,6 +10886,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       AppSettingsDao(this as AppDatabase);
   late final MutualFundDao mutualFundDao = MutualFundDao(this as AppDatabase);
   late final SipsDao sipsDao = SipsDao(this as AppDatabase);
+  late final SwpsDao swpsDao = SwpsDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -8653,6 +10906,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         sipPlans,
         sipSchedulePeriods,
         sipInstallments,
+        swpPlans,
+        swpSchedulePeriods,
+        swpInstallments,
         idxCategoryClassification,
         idxCategoryProfile,
         idxAccountType,
@@ -8667,6 +10923,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         idxTransactionItem,
         idxTransactionType,
         idxTransactionSip,
+        idxTransactionSwp,
         idxTransactionLinked,
         idxValuationDate,
         idxRecurringProfile,
@@ -8686,7 +10943,16 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         idxInstallmentSip,
         idxInstallmentProfile,
         idxInstallmentStatus,
-        idxInstallmentDate
+        idxInstallmentDate,
+        idxSwpProfile,
+        idxSwpStatus,
+        idxSwpScheme,
+        idxSwpPeriodPlan,
+        idxSwpPeriodDates,
+        idxSwpInstPlan,
+        idxSwpInstProfile,
+        idxSwpInstStatus,
+        idxSwpInstDate
       ];
 }
 
@@ -9884,6 +12150,7 @@ typedef $$TransactionsTableCreateCompanionBuilder = TransactionsCompanion
   Value<int> chargesPaise,
   Value<int?> netAmountPaise,
   Value<int?> sipPlanId,
+  Value<int?> swpPlanId,
   Value<int?> linkedTransactionId,
   Value<int?> unitsMicroUnits,
   Value<int?> unitPriceMicroPaise,
@@ -9906,6 +12173,7 @@ typedef $$TransactionsTableUpdateCompanionBuilder = TransactionsCompanion
   Value<int> chargesPaise,
   Value<int?> netAmountPaise,
   Value<int?> sipPlanId,
+  Value<int?> swpPlanId,
   Value<int?> linkedTransactionId,
   Value<int?> unitsMicroUnits,
   Value<int?> unitPriceMicroPaise,
@@ -9963,6 +12231,9 @@ class $$TransactionsTableFilterComposer
 
   ColumnFilters<int> get sipPlanId => $composableBuilder(
       column: $table.sipPlanId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get swpPlanId => $composableBuilder(
+      column: $table.swpPlanId, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<int> get linkedTransactionId => $composableBuilder(
       column: $table.linkedTransactionId,
@@ -10040,6 +12311,9 @@ class $$TransactionsTableOrderingComposer
   ColumnOrderings<int> get sipPlanId => $composableBuilder(
       column: $table.sipPlanId, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<int> get swpPlanId => $composableBuilder(
+      column: $table.swpPlanId, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<int> get linkedTransactionId => $composableBuilder(
       column: $table.linkedTransactionId,
       builder: (column) => ColumnOrderings(column));
@@ -10110,6 +12384,9 @@ class $$TransactionsTableAnnotationComposer
   GeneratedColumn<int> get sipPlanId =>
       $composableBuilder(column: $table.sipPlanId, builder: (column) => column);
 
+  GeneratedColumn<int> get swpPlanId =>
+      $composableBuilder(column: $table.swpPlanId, builder: (column) => column);
+
   GeneratedColumn<int> get linkedTransactionId => $composableBuilder(
       column: $table.linkedTransactionId, builder: (column) => column);
 
@@ -10170,6 +12447,7 @@ class $$TransactionsTableTableManager extends RootTableManager<
             Value<int> chargesPaise = const Value.absent(),
             Value<int?> netAmountPaise = const Value.absent(),
             Value<int?> sipPlanId = const Value.absent(),
+            Value<int?> swpPlanId = const Value.absent(),
             Value<int?> linkedTransactionId = const Value.absent(),
             Value<int?> unitsMicroUnits = const Value.absent(),
             Value<int?> unitPriceMicroPaise = const Value.absent(),
@@ -10191,6 +12469,7 @@ class $$TransactionsTableTableManager extends RootTableManager<
             chargesPaise: chargesPaise,
             netAmountPaise: netAmountPaise,
             sipPlanId: sipPlanId,
+            swpPlanId: swpPlanId,
             linkedTransactionId: linkedTransactionId,
             unitsMicroUnits: unitsMicroUnits,
             unitPriceMicroPaise: unitPriceMicroPaise,
@@ -10212,6 +12491,7 @@ class $$TransactionsTableTableManager extends RootTableManager<
             Value<int> chargesPaise = const Value.absent(),
             Value<int?> netAmountPaise = const Value.absent(),
             Value<int?> sipPlanId = const Value.absent(),
+            Value<int?> swpPlanId = const Value.absent(),
             Value<int?> linkedTransactionId = const Value.absent(),
             Value<int?> unitsMicroUnits = const Value.absent(),
             Value<int?> unitPriceMicroPaise = const Value.absent(),
@@ -10233,6 +12513,7 @@ class $$TransactionsTableTableManager extends RootTableManager<
             chargesPaise: chargesPaise,
             netAmountPaise: netAmountPaise,
             sipPlanId: sipPlanId,
+            swpPlanId: swpPlanId,
             linkedTransactionId: linkedTransactionId,
             unitsMicroUnits: unitsMicroUnits,
             unitPriceMicroPaise: unitPriceMicroPaise,
@@ -12511,6 +14792,933 @@ typedef $$SipInstallmentsTableProcessedTableManager = ProcessedTableManager<
     ),
     SipInstallment,
     PrefetchHooks Function()>;
+typedef $$SwpPlansTableCreateCompanionBuilder = SwpPlansCompanion Function({
+  Value<int> id,
+  required int profileId,
+  Value<int?> financialItemId,
+  required int schemeCode,
+  required String name,
+  Value<String> withdrawalMode,
+  required DateTime startDate,
+  Value<DateTime?> endDate,
+  Value<String> status,
+  Value<String?> notes,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+});
+typedef $$SwpPlansTableUpdateCompanionBuilder = SwpPlansCompanion Function({
+  Value<int> id,
+  Value<int> profileId,
+  Value<int?> financialItemId,
+  Value<int> schemeCode,
+  Value<String> name,
+  Value<String> withdrawalMode,
+  Value<DateTime> startDate,
+  Value<DateTime?> endDate,
+  Value<String> status,
+  Value<String?> notes,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+});
+
+class $$SwpPlansTableFilterComposer
+    extends Composer<_$AppDatabase, $SwpPlansTable> {
+  $$SwpPlansTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get profileId => $composableBuilder(
+      column: $table.profileId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get financialItemId => $composableBuilder(
+      column: $table.financialItemId,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get schemeCode => $composableBuilder(
+      column: $table.schemeCode, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get name => $composableBuilder(
+      column: $table.name, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get withdrawalMode => $composableBuilder(
+      column: $table.withdrawalMode,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get startDate => $composableBuilder(
+      column: $table.startDate, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get endDate => $composableBuilder(
+      column: $table.endDate, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get status => $composableBuilder(
+      column: $table.status, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get notes => $composableBuilder(
+      column: $table.notes, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$SwpPlansTableOrderingComposer
+    extends Composer<_$AppDatabase, $SwpPlansTable> {
+  $$SwpPlansTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get profileId => $composableBuilder(
+      column: $table.profileId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get financialItemId => $composableBuilder(
+      column: $table.financialItemId,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get schemeCode => $composableBuilder(
+      column: $table.schemeCode, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get name => $composableBuilder(
+      column: $table.name, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get withdrawalMode => $composableBuilder(
+      column: $table.withdrawalMode,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get startDate => $composableBuilder(
+      column: $table.startDate, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get endDate => $composableBuilder(
+      column: $table.endDate, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get status => $composableBuilder(
+      column: $table.status, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get notes => $composableBuilder(
+      column: $table.notes, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$SwpPlansTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SwpPlansTable> {
+  $$SwpPlansTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get profileId =>
+      $composableBuilder(column: $table.profileId, builder: (column) => column);
+
+  GeneratedColumn<int> get financialItemId => $composableBuilder(
+      column: $table.financialItemId, builder: (column) => column);
+
+  GeneratedColumn<int> get schemeCode => $composableBuilder(
+      column: $table.schemeCode, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get withdrawalMode => $composableBuilder(
+      column: $table.withdrawalMode, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get startDate =>
+      $composableBuilder(column: $table.startDate, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get endDate =>
+      $composableBuilder(column: $table.endDate, builder: (column) => column);
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<String> get notes =>
+      $composableBuilder(column: $table.notes, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$SwpPlansTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $SwpPlansTable,
+    SwpPlan,
+    $$SwpPlansTableFilterComposer,
+    $$SwpPlansTableOrderingComposer,
+    $$SwpPlansTableAnnotationComposer,
+    $$SwpPlansTableCreateCompanionBuilder,
+    $$SwpPlansTableUpdateCompanionBuilder,
+    (SwpPlan, BaseReferences<_$AppDatabase, $SwpPlansTable, SwpPlan>),
+    SwpPlan,
+    PrefetchHooks Function()> {
+  $$SwpPlansTableTableManager(_$AppDatabase db, $SwpPlansTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SwpPlansTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SwpPlansTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SwpPlansTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<int> profileId = const Value.absent(),
+            Value<int?> financialItemId = const Value.absent(),
+            Value<int> schemeCode = const Value.absent(),
+            Value<String> name = const Value.absent(),
+            Value<String> withdrawalMode = const Value.absent(),
+            Value<DateTime> startDate = const Value.absent(),
+            Value<DateTime?> endDate = const Value.absent(),
+            Value<String> status = const Value.absent(),
+            Value<String?> notes = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+          }) =>
+              SwpPlansCompanion(
+            id: id,
+            profileId: profileId,
+            financialItemId: financialItemId,
+            schemeCode: schemeCode,
+            name: name,
+            withdrawalMode: withdrawalMode,
+            startDate: startDate,
+            endDate: endDate,
+            status: status,
+            notes: notes,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required int profileId,
+            Value<int?> financialItemId = const Value.absent(),
+            required int schemeCode,
+            required String name,
+            Value<String> withdrawalMode = const Value.absent(),
+            required DateTime startDate,
+            Value<DateTime?> endDate = const Value.absent(),
+            Value<String> status = const Value.absent(),
+            Value<String?> notes = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+          }) =>
+              SwpPlansCompanion.insert(
+            id: id,
+            profileId: profileId,
+            financialItemId: financialItemId,
+            schemeCode: schemeCode,
+            name: name,
+            withdrawalMode: withdrawalMode,
+            startDate: startDate,
+            endDate: endDate,
+            status: status,
+            notes: notes,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$SwpPlansTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $SwpPlansTable,
+    SwpPlan,
+    $$SwpPlansTableFilterComposer,
+    $$SwpPlansTableOrderingComposer,
+    $$SwpPlansTableAnnotationComposer,
+    $$SwpPlansTableCreateCompanionBuilder,
+    $$SwpPlansTableUpdateCompanionBuilder,
+    (SwpPlan, BaseReferences<_$AppDatabase, $SwpPlansTable, SwpPlan>),
+    SwpPlan,
+    PrefetchHooks Function()>;
+typedef $$SwpSchedulePeriodsTableCreateCompanionBuilder
+    = SwpSchedulePeriodsCompanion Function({
+  Value<int> id,
+  required int swpPlanId,
+  required DateTime effectiveFrom,
+  Value<DateTime?> effectiveTo,
+  Value<String> withdrawalMode,
+  Value<int?> amountPaise,
+  Value<int?> unitsMicroUnits,
+  required int deductionDay,
+  Value<String> frequency,
+  Value<String> status,
+  Value<String?> notes,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+});
+typedef $$SwpSchedulePeriodsTableUpdateCompanionBuilder
+    = SwpSchedulePeriodsCompanion Function({
+  Value<int> id,
+  Value<int> swpPlanId,
+  Value<DateTime> effectiveFrom,
+  Value<DateTime?> effectiveTo,
+  Value<String> withdrawalMode,
+  Value<int?> amountPaise,
+  Value<int?> unitsMicroUnits,
+  Value<int> deductionDay,
+  Value<String> frequency,
+  Value<String> status,
+  Value<String?> notes,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+});
+
+class $$SwpSchedulePeriodsTableFilterComposer
+    extends Composer<_$AppDatabase, $SwpSchedulePeriodsTable> {
+  $$SwpSchedulePeriodsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get swpPlanId => $composableBuilder(
+      column: $table.swpPlanId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get effectiveFrom => $composableBuilder(
+      column: $table.effectiveFrom, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get effectiveTo => $composableBuilder(
+      column: $table.effectiveTo, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get withdrawalMode => $composableBuilder(
+      column: $table.withdrawalMode,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get amountPaise => $composableBuilder(
+      column: $table.amountPaise, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get unitsMicroUnits => $composableBuilder(
+      column: $table.unitsMicroUnits,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get deductionDay => $composableBuilder(
+      column: $table.deductionDay, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get frequency => $composableBuilder(
+      column: $table.frequency, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get status => $composableBuilder(
+      column: $table.status, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get notes => $composableBuilder(
+      column: $table.notes, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$SwpSchedulePeriodsTableOrderingComposer
+    extends Composer<_$AppDatabase, $SwpSchedulePeriodsTable> {
+  $$SwpSchedulePeriodsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get swpPlanId => $composableBuilder(
+      column: $table.swpPlanId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get effectiveFrom => $composableBuilder(
+      column: $table.effectiveFrom,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get effectiveTo => $composableBuilder(
+      column: $table.effectiveTo, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get withdrawalMode => $composableBuilder(
+      column: $table.withdrawalMode,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get amountPaise => $composableBuilder(
+      column: $table.amountPaise, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get unitsMicroUnits => $composableBuilder(
+      column: $table.unitsMicroUnits,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get deductionDay => $composableBuilder(
+      column: $table.deductionDay,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get frequency => $composableBuilder(
+      column: $table.frequency, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get status => $composableBuilder(
+      column: $table.status, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get notes => $composableBuilder(
+      column: $table.notes, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$SwpSchedulePeriodsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SwpSchedulePeriodsTable> {
+  $$SwpSchedulePeriodsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get swpPlanId =>
+      $composableBuilder(column: $table.swpPlanId, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get effectiveFrom => $composableBuilder(
+      column: $table.effectiveFrom, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get effectiveTo => $composableBuilder(
+      column: $table.effectiveTo, builder: (column) => column);
+
+  GeneratedColumn<String> get withdrawalMode => $composableBuilder(
+      column: $table.withdrawalMode, builder: (column) => column);
+
+  GeneratedColumn<int> get amountPaise => $composableBuilder(
+      column: $table.amountPaise, builder: (column) => column);
+
+  GeneratedColumn<int> get unitsMicroUnits => $composableBuilder(
+      column: $table.unitsMicroUnits, builder: (column) => column);
+
+  GeneratedColumn<int> get deductionDay => $composableBuilder(
+      column: $table.deductionDay, builder: (column) => column);
+
+  GeneratedColumn<String> get frequency =>
+      $composableBuilder(column: $table.frequency, builder: (column) => column);
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<String> get notes =>
+      $composableBuilder(column: $table.notes, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$SwpSchedulePeriodsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $SwpSchedulePeriodsTable,
+    SwpSchedulePeriod,
+    $$SwpSchedulePeriodsTableFilterComposer,
+    $$SwpSchedulePeriodsTableOrderingComposer,
+    $$SwpSchedulePeriodsTableAnnotationComposer,
+    $$SwpSchedulePeriodsTableCreateCompanionBuilder,
+    $$SwpSchedulePeriodsTableUpdateCompanionBuilder,
+    (
+      SwpSchedulePeriod,
+      BaseReferences<_$AppDatabase, $SwpSchedulePeriodsTable, SwpSchedulePeriod>
+    ),
+    SwpSchedulePeriod,
+    PrefetchHooks Function()> {
+  $$SwpSchedulePeriodsTableTableManager(
+      _$AppDatabase db, $SwpSchedulePeriodsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SwpSchedulePeriodsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SwpSchedulePeriodsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SwpSchedulePeriodsTableAnnotationComposer(
+                  $db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<int> swpPlanId = const Value.absent(),
+            Value<DateTime> effectiveFrom = const Value.absent(),
+            Value<DateTime?> effectiveTo = const Value.absent(),
+            Value<String> withdrawalMode = const Value.absent(),
+            Value<int?> amountPaise = const Value.absent(),
+            Value<int?> unitsMicroUnits = const Value.absent(),
+            Value<int> deductionDay = const Value.absent(),
+            Value<String> frequency = const Value.absent(),
+            Value<String> status = const Value.absent(),
+            Value<String?> notes = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+          }) =>
+              SwpSchedulePeriodsCompanion(
+            id: id,
+            swpPlanId: swpPlanId,
+            effectiveFrom: effectiveFrom,
+            effectiveTo: effectiveTo,
+            withdrawalMode: withdrawalMode,
+            amountPaise: amountPaise,
+            unitsMicroUnits: unitsMicroUnits,
+            deductionDay: deductionDay,
+            frequency: frequency,
+            status: status,
+            notes: notes,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required int swpPlanId,
+            required DateTime effectiveFrom,
+            Value<DateTime?> effectiveTo = const Value.absent(),
+            Value<String> withdrawalMode = const Value.absent(),
+            Value<int?> amountPaise = const Value.absent(),
+            Value<int?> unitsMicroUnits = const Value.absent(),
+            required int deductionDay,
+            Value<String> frequency = const Value.absent(),
+            Value<String> status = const Value.absent(),
+            Value<String?> notes = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+          }) =>
+              SwpSchedulePeriodsCompanion.insert(
+            id: id,
+            swpPlanId: swpPlanId,
+            effectiveFrom: effectiveFrom,
+            effectiveTo: effectiveTo,
+            withdrawalMode: withdrawalMode,
+            amountPaise: amountPaise,
+            unitsMicroUnits: unitsMicroUnits,
+            deductionDay: deductionDay,
+            frequency: frequency,
+            status: status,
+            notes: notes,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$SwpSchedulePeriodsTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $SwpSchedulePeriodsTable,
+    SwpSchedulePeriod,
+    $$SwpSchedulePeriodsTableFilterComposer,
+    $$SwpSchedulePeriodsTableOrderingComposer,
+    $$SwpSchedulePeriodsTableAnnotationComposer,
+    $$SwpSchedulePeriodsTableCreateCompanionBuilder,
+    $$SwpSchedulePeriodsTableUpdateCompanionBuilder,
+    (
+      SwpSchedulePeriod,
+      BaseReferences<_$AppDatabase, $SwpSchedulePeriodsTable, SwpSchedulePeriod>
+    ),
+    SwpSchedulePeriod,
+    PrefetchHooks Function()>;
+typedef $$SwpInstallmentsTableCreateCompanionBuilder = SwpInstallmentsCompanion
+    Function({
+  Value<int> id,
+  required int swpPlanId,
+  required int schedulePeriodId,
+  required int profileId,
+  required DateTime scheduledDate,
+  Value<int?> expectedAmountPaise,
+  Value<int?> expectedUnitsMicroUnits,
+  Value<String> status,
+  Value<bool> isSimulated,
+  Value<DateTime?> actualWithdrawalDate,
+  Value<int?> actualAmountPaise,
+  Value<int?> withdrawalNavMicroPaise,
+  Value<int?> unitsMicroUnits,
+  Value<int?> transactionId,
+  Value<String?> notes,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+});
+typedef $$SwpInstallmentsTableUpdateCompanionBuilder = SwpInstallmentsCompanion
+    Function({
+  Value<int> id,
+  Value<int> swpPlanId,
+  Value<int> schedulePeriodId,
+  Value<int> profileId,
+  Value<DateTime> scheduledDate,
+  Value<int?> expectedAmountPaise,
+  Value<int?> expectedUnitsMicroUnits,
+  Value<String> status,
+  Value<bool> isSimulated,
+  Value<DateTime?> actualWithdrawalDate,
+  Value<int?> actualAmountPaise,
+  Value<int?> withdrawalNavMicroPaise,
+  Value<int?> unitsMicroUnits,
+  Value<int?> transactionId,
+  Value<String?> notes,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+});
+
+class $$SwpInstallmentsTableFilterComposer
+    extends Composer<_$AppDatabase, $SwpInstallmentsTable> {
+  $$SwpInstallmentsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get swpPlanId => $composableBuilder(
+      column: $table.swpPlanId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get schedulePeriodId => $composableBuilder(
+      column: $table.schedulePeriodId,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get profileId => $composableBuilder(
+      column: $table.profileId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get scheduledDate => $composableBuilder(
+      column: $table.scheduledDate, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get expectedAmountPaise => $composableBuilder(
+      column: $table.expectedAmountPaise,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get expectedUnitsMicroUnits => $composableBuilder(
+      column: $table.expectedUnitsMicroUnits,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get status => $composableBuilder(
+      column: $table.status, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get isSimulated => $composableBuilder(
+      column: $table.isSimulated, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get actualWithdrawalDate => $composableBuilder(
+      column: $table.actualWithdrawalDate,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get actualAmountPaise => $composableBuilder(
+      column: $table.actualAmountPaise,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get withdrawalNavMicroPaise => $composableBuilder(
+      column: $table.withdrawalNavMicroPaise,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get unitsMicroUnits => $composableBuilder(
+      column: $table.unitsMicroUnits,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get transactionId => $composableBuilder(
+      column: $table.transactionId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get notes => $composableBuilder(
+      column: $table.notes, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$SwpInstallmentsTableOrderingComposer
+    extends Composer<_$AppDatabase, $SwpInstallmentsTable> {
+  $$SwpInstallmentsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get swpPlanId => $composableBuilder(
+      column: $table.swpPlanId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get schedulePeriodId => $composableBuilder(
+      column: $table.schedulePeriodId,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get profileId => $composableBuilder(
+      column: $table.profileId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get scheduledDate => $composableBuilder(
+      column: $table.scheduledDate,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get expectedAmountPaise => $composableBuilder(
+      column: $table.expectedAmountPaise,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get expectedUnitsMicroUnits => $composableBuilder(
+      column: $table.expectedUnitsMicroUnits,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get status => $composableBuilder(
+      column: $table.status, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get isSimulated => $composableBuilder(
+      column: $table.isSimulated, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get actualWithdrawalDate => $composableBuilder(
+      column: $table.actualWithdrawalDate,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get actualAmountPaise => $composableBuilder(
+      column: $table.actualAmountPaise,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get withdrawalNavMicroPaise => $composableBuilder(
+      column: $table.withdrawalNavMicroPaise,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get unitsMicroUnits => $composableBuilder(
+      column: $table.unitsMicroUnits,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get transactionId => $composableBuilder(
+      column: $table.transactionId,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get notes => $composableBuilder(
+      column: $table.notes, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$SwpInstallmentsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SwpInstallmentsTable> {
+  $$SwpInstallmentsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get swpPlanId =>
+      $composableBuilder(column: $table.swpPlanId, builder: (column) => column);
+
+  GeneratedColumn<int> get schedulePeriodId => $composableBuilder(
+      column: $table.schedulePeriodId, builder: (column) => column);
+
+  GeneratedColumn<int> get profileId =>
+      $composableBuilder(column: $table.profileId, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get scheduledDate => $composableBuilder(
+      column: $table.scheduledDate, builder: (column) => column);
+
+  GeneratedColumn<int> get expectedAmountPaise => $composableBuilder(
+      column: $table.expectedAmountPaise, builder: (column) => column);
+
+  GeneratedColumn<int> get expectedUnitsMicroUnits => $composableBuilder(
+      column: $table.expectedUnitsMicroUnits, builder: (column) => column);
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<bool> get isSimulated => $composableBuilder(
+      column: $table.isSimulated, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get actualWithdrawalDate => $composableBuilder(
+      column: $table.actualWithdrawalDate, builder: (column) => column);
+
+  GeneratedColumn<int> get actualAmountPaise => $composableBuilder(
+      column: $table.actualAmountPaise, builder: (column) => column);
+
+  GeneratedColumn<int> get withdrawalNavMicroPaise => $composableBuilder(
+      column: $table.withdrawalNavMicroPaise, builder: (column) => column);
+
+  GeneratedColumn<int> get unitsMicroUnits => $composableBuilder(
+      column: $table.unitsMicroUnits, builder: (column) => column);
+
+  GeneratedColumn<int> get transactionId => $composableBuilder(
+      column: $table.transactionId, builder: (column) => column);
+
+  GeneratedColumn<String> get notes =>
+      $composableBuilder(column: $table.notes, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$SwpInstallmentsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $SwpInstallmentsTable,
+    SwpInstallment,
+    $$SwpInstallmentsTableFilterComposer,
+    $$SwpInstallmentsTableOrderingComposer,
+    $$SwpInstallmentsTableAnnotationComposer,
+    $$SwpInstallmentsTableCreateCompanionBuilder,
+    $$SwpInstallmentsTableUpdateCompanionBuilder,
+    (
+      SwpInstallment,
+      BaseReferences<_$AppDatabase, $SwpInstallmentsTable, SwpInstallment>
+    ),
+    SwpInstallment,
+    PrefetchHooks Function()> {
+  $$SwpInstallmentsTableTableManager(
+      _$AppDatabase db, $SwpInstallmentsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SwpInstallmentsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SwpInstallmentsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SwpInstallmentsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<int> swpPlanId = const Value.absent(),
+            Value<int> schedulePeriodId = const Value.absent(),
+            Value<int> profileId = const Value.absent(),
+            Value<DateTime> scheduledDate = const Value.absent(),
+            Value<int?> expectedAmountPaise = const Value.absent(),
+            Value<int?> expectedUnitsMicroUnits = const Value.absent(),
+            Value<String> status = const Value.absent(),
+            Value<bool> isSimulated = const Value.absent(),
+            Value<DateTime?> actualWithdrawalDate = const Value.absent(),
+            Value<int?> actualAmountPaise = const Value.absent(),
+            Value<int?> withdrawalNavMicroPaise = const Value.absent(),
+            Value<int?> unitsMicroUnits = const Value.absent(),
+            Value<int?> transactionId = const Value.absent(),
+            Value<String?> notes = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+          }) =>
+              SwpInstallmentsCompanion(
+            id: id,
+            swpPlanId: swpPlanId,
+            schedulePeriodId: schedulePeriodId,
+            profileId: profileId,
+            scheduledDate: scheduledDate,
+            expectedAmountPaise: expectedAmountPaise,
+            expectedUnitsMicroUnits: expectedUnitsMicroUnits,
+            status: status,
+            isSimulated: isSimulated,
+            actualWithdrawalDate: actualWithdrawalDate,
+            actualAmountPaise: actualAmountPaise,
+            withdrawalNavMicroPaise: withdrawalNavMicroPaise,
+            unitsMicroUnits: unitsMicroUnits,
+            transactionId: transactionId,
+            notes: notes,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required int swpPlanId,
+            required int schedulePeriodId,
+            required int profileId,
+            required DateTime scheduledDate,
+            Value<int?> expectedAmountPaise = const Value.absent(),
+            Value<int?> expectedUnitsMicroUnits = const Value.absent(),
+            Value<String> status = const Value.absent(),
+            Value<bool> isSimulated = const Value.absent(),
+            Value<DateTime?> actualWithdrawalDate = const Value.absent(),
+            Value<int?> actualAmountPaise = const Value.absent(),
+            Value<int?> withdrawalNavMicroPaise = const Value.absent(),
+            Value<int?> unitsMicroUnits = const Value.absent(),
+            Value<int?> transactionId = const Value.absent(),
+            Value<String?> notes = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+          }) =>
+              SwpInstallmentsCompanion.insert(
+            id: id,
+            swpPlanId: swpPlanId,
+            schedulePeriodId: schedulePeriodId,
+            profileId: profileId,
+            scheduledDate: scheduledDate,
+            expectedAmountPaise: expectedAmountPaise,
+            expectedUnitsMicroUnits: expectedUnitsMicroUnits,
+            status: status,
+            isSimulated: isSimulated,
+            actualWithdrawalDate: actualWithdrawalDate,
+            actualAmountPaise: actualAmountPaise,
+            withdrawalNavMicroPaise: withdrawalNavMicroPaise,
+            unitsMicroUnits: unitsMicroUnits,
+            transactionId: transactionId,
+            notes: notes,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$SwpInstallmentsTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $SwpInstallmentsTable,
+    SwpInstallment,
+    $$SwpInstallmentsTableFilterComposer,
+    $$SwpInstallmentsTableOrderingComposer,
+    $$SwpInstallmentsTableAnnotationComposer,
+    $$SwpInstallmentsTableCreateCompanionBuilder,
+    $$SwpInstallmentsTableUpdateCompanionBuilder,
+    (
+      SwpInstallment,
+      BaseReferences<_$AppDatabase, $SwpInstallmentsTable, SwpInstallment>
+    ),
+    SwpInstallment,
+    PrefetchHooks Function()>;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -12544,4 +15752,10 @@ class $AppDatabaseManager {
       $$SipSchedulePeriodsTableTableManager(_db, _db.sipSchedulePeriods);
   $$SipInstallmentsTableTableManager get sipInstallments =>
       $$SipInstallmentsTableTableManager(_db, _db.sipInstallments);
+  $$SwpPlansTableTableManager get swpPlans =>
+      $$SwpPlansTableTableManager(_db, _db.swpPlans);
+  $$SwpSchedulePeriodsTableTableManager get swpSchedulePeriods =>
+      $$SwpSchedulePeriodsTableTableManager(_db, _db.swpSchedulePeriods);
+  $$SwpInstallmentsTableTableManager get swpInstallments =>
+      $$SwpInstallmentsTableTableManager(_db, _db.swpInstallments);
 }

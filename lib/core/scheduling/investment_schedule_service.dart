@@ -1,12 +1,14 @@
 import 'recurring_date_calculator.dart';
 
-/// Supported investment frequencies for recurring and one-time contributions.
+/// Supported investment and withdrawal frequencies for recurring schedules and one-time contributions.
 enum ScheduleFrequency {
+  oneTime('One Time'),
   daily('Daily'),
   weekly('Weekly'),
+  fortnightly('Fortnightly'),
   monthly('Monthly'),
-  oneTime('One-time'),
   quarterly('Quarterly'),
+  halfYearly('Half-Yearly'),
   yearly('Yearly');
 
   final String label;
@@ -18,12 +20,25 @@ enum ScheduleFrequency {
         val.toLowerCase().replaceAll('-', '_').replaceAll(' ', '_');
     for (final freq in ScheduleFrequency.values) {
       if (freq.name.toLowerCase() == normalized ||
-          freq.name.toLowerCase() == val.toLowerCase()) {
+          freq.name.toLowerCase() == val.toLowerCase() ||
+          freq.label.toLowerCase() == val.toLowerCase()) {
         return freq;
       }
     }
     if (normalized == 'onetime' || normalized == 'one_time') {
       return ScheduleFrequency.oneTime;
+    }
+    if (normalized == 'biweekly' ||
+        normalized == 'bi_weekly' ||
+        normalized == 'fortnightly' ||
+        normalized == 'two_weeks') {
+      return ScheduleFrequency.fortnightly;
+    }
+    if (normalized == 'halfyearly' ||
+        normalized == 'half_yearly' ||
+        normalized == 'semiannual' ||
+        normalized == 'semi_annual') {
+      return ScheduleFrequency.halfYearly;
     }
     return ScheduleFrequency.monthly;
   }
@@ -219,6 +234,16 @@ class InvestmentScheduleService {
         }
         break;
 
+      case ScheduleFrequency.fortnightly:
+        for (int i = 0; i < installmentCount; i++) {
+          dates.add(DateTime.utc(
+            normalizedStart.year,
+            normalizedStart.month,
+            normalizedStart.day + (i * 14),
+          ));
+        }
+        break;
+
       case ScheduleFrequency.monthly:
         final originalDay = normalizedStart.day;
         for (int i = 0; i < installmentCount; i++) {
@@ -250,6 +275,22 @@ class InvestmentScheduleService {
         }
         break;
 
+      case ScheduleFrequency.halfYearly:
+        final originalDay = normalizedStart.day;
+        for (int i = 0; i < installmentCount; i++) {
+          final totalMonths =
+              (normalizedStart.year * 12 + (normalizedStart.month - 1)) +
+                  (i * 6);
+          final targetYear = totalMonths ~/ 12;
+          final targetMonth = (totalMonths % 12) + 1;
+          dates.add(RecurringDateCalculator.calculateOccurrenceDate(
+            targetYear,
+            targetMonth,
+            originalDay,
+          ));
+        }
+        break;
+
       case ScheduleFrequency.yearly:
         final originalDay = normalizedStart.day;
         final originalMonth = normalizedStart.month;
@@ -269,5 +310,37 @@ class InvestmentScheduleService {
     }
 
     return dates;
+  }
+
+  /// Generates dates for a schedule given start date, optional end date, and optional installment count.
+  /// If [installmentCount] is specified, generates up to [installmentCount] occurrences.
+  /// If [endDate] is specified, generates occurrences not exceeding [endDate].
+  /// If neither is specified, defaults to 12 occurrences (or 1 for One Time).
+  static List<DateTime> generateScheduleDatesRange({
+    required DateTime startDate,
+    DateTime? endDate,
+    int? installmentCount,
+    required ScheduleFrequency frequency,
+  }) {
+    final normalizedStart = toUtcDate(startDate);
+    if (frequency == ScheduleFrequency.oneTime) {
+      return [normalizedStart];
+    }
+
+    final normalizedEnd = endDate != null ? toUtcDate(endDate) : null;
+    final maxCount = installmentCount != null && installmentCount > 0
+        ? installmentCount
+        : (normalizedEnd != null ? 360 : 12);
+
+    final generated = generateScheduleDates(
+      startDate: normalizedStart,
+      installmentCount: maxCount,
+      frequency: frequency,
+    );
+
+    if (normalizedEnd != null) {
+      return generated.where((d) => !d.isAfter(normalizedEnd)).toList();
+    }
+    return generated;
   }
 }

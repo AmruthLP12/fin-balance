@@ -184,6 +184,7 @@ class TransactionsDao extends DatabaseAccessor<AppDatabase>
     int? unitsMicroUnits,
     int? unitPriceMicroPaise,
     int? sipPlanId,
+    int? swpPlanId,
     int? linkedTransactionId,
     String? notes,
     String source = 'manual',
@@ -246,6 +247,8 @@ class TransactionsDao extends DatabaseAccessor<AppDatabase>
               : const Value.absent(),
           sipPlanId:
               sipPlanId != null ? Value(sipPlanId) : const Value.absent(),
+          swpPlanId:
+              swpPlanId != null ? Value(swpPlanId) : const Value.absent(),
           linkedTransactionId: linkedTransactionId != null
               ? Value(linkedTransactionId)
               : const Value.absent(),
@@ -330,6 +333,8 @@ class TransactionsDao extends DatabaseAccessor<AppDatabase>
     required int destUnitsMicroUnits,
     required int destNavMicroPaise,
     String? notes,
+    String? sourceNotes,
+    String? destNotes,
   }) async {
     return transaction(() async {
       // 1. Record switch-out from source
@@ -343,7 +348,7 @@ class TransactionsDao extends DatabaseAccessor<AppDatabase>
         chargesPaise: chargesPaise,
         unitsMicroUnits: sourceUnitsMicroUnits,
         unitPriceMicroPaise: sourceNavMicroPaise,
-        notes: notes,
+        notes: sourceNotes ?? notes,
       );
 
       // 2. Record switch-in to destination linked to switch-out
@@ -358,7 +363,7 @@ class TransactionsDao extends DatabaseAccessor<AppDatabase>
         unitsMicroUnits: destUnitsMicroUnits,
         unitPriceMicroPaise: destNavMicroPaise,
         linkedTransactionId: switchOutId,
-        notes: notes,
+        notes: destNotes ?? notes,
       );
 
       // 3. Update switch-out to link back to switch-in

@@ -116,6 +116,7 @@ class SipsDao extends DatabaseAccessor<AppDatabase> with _$SipsDaoMixin {
     required int amountPaise,
     required int deductionDay,
     String frequency = 'monthly',
+    int? installmentCount,
     String? notes,
     int? financialItemId,
     bool generateInstallments = true,
@@ -152,14 +153,19 @@ class SipsDao extends DatabaseAccessor<AppDatabase> with _$SipsDaoMixin {
 
       // 3. Generate Installments if requested
       if (generateInstallments) {
-        // If no end date, project 12 months ahead from startDate
-        final targetEnd = endDate ??
-            DateTime.utc(startDate.year + 1, startDate.month, startDate.day);
-
-        final dates = RecurringDateCalculator.generateMonthlyOccurrences(
-          fromDate: startDate,
-          toDate: targetEnd,
-          configuredDay: deductionDay,
+        final freq = ScheduleFrequency.fromString(frequency);
+        final firstDate = (deductionDay != startDate.day &&
+                freq == ScheduleFrequency.monthly)
+            ? ((startDate.day <= deductionDay)
+                ? DateTime.utc(startDate.year, startDate.month, deductionDay)
+                : DateTime.utc(
+                    startDate.year, startDate.month + 1, deductionDay))
+            : startDate;
+        final dates = InvestmentScheduleService.generateScheduleDatesRange(
+          startDate: firstDate,
+          endDate: endDate,
+          installmentCount: installmentCount,
+          frequency: freq,
         );
 
         for (final date in dates) {
@@ -196,6 +202,7 @@ class SipsDao extends DatabaseAccessor<AppDatabase> with _$SipsDaoMixin {
     required int amountPaise,
     required int deductionDay,
     String frequency = 'monthly',
+    int? installmentCount,
     String? notes,
     bool generateFutureInstallments = true,
   }) async {
@@ -249,14 +256,20 @@ class SipsDao extends DatabaseAccessor<AppDatabase> with _$SipsDaoMixin {
 
       // 4. Generate new future installments
       if (generateFutureInstallments) {
-        final targetEnd = effectiveTo ??
-            DateTime.utc(
-                effectiveFrom.year + 1, effectiveFrom.month, effectiveFrom.day);
-
-        final dates = RecurringDateCalculator.generateMonthlyOccurrences(
-          fromDate: effectiveFrom,
-          toDate: targetEnd,
-          configuredDay: deductionDay,
+        final freq = ScheduleFrequency.fromString(frequency);
+        final firstDate = (deductionDay != effectiveFrom.day &&
+                freq == ScheduleFrequency.monthly)
+            ? ((effectiveFrom.day <= deductionDay)
+                ? DateTime.utc(
+                    effectiveFrom.year, effectiveFrom.month, deductionDay)
+                : DateTime.utc(
+                    effectiveFrom.year, effectiveFrom.month + 1, deductionDay))
+            : effectiveFrom;
+        final dates = InvestmentScheduleService.generateScheduleDatesRange(
+          startDate: firstDate,
+          endDate: effectiveTo,
+          installmentCount: installmentCount,
+          frequency: freq,
         );
 
         for (final date in dates) {
@@ -281,6 +294,53 @@ class SipsDao extends DatabaseAccessor<AppDatabase> with _$SipsDaoMixin {
       }
 
       return newPeriodId;
+    });
+  }
+
+  /// Close the active schedule period for a SIP plan, cancelling remaining future simulated installments.
+  Future<void> closeSchedulePeriod({
+    required int sipPlanId,
+    DateTime? closeDate,
+  }) async {
+    return transaction(() async {
+      final now = closeDate ?? DateTime.now().toUtc();
+      final activePeriods = await (select(sipSchedulePeriods)
+            ..where((tbl) =>
+                tbl.sipPlanId.equals(sipPlanId) & tbl.status.equals('active')))
+          .get();
+
+      for (final period in activePeriods) {
+        await (update(sipSchedulePeriods)
+              ..where((tbl) => tbl.id.equals(period.id)))
+            .write(
+          SipSchedulePeriodsCompanion(
+            effectiveTo: Value(now),
+            status: const Value('closed'),
+            updatedAt: Value(DateTime.now().toUtc()),
+          ),
+        );
+      }
+
+      await (update(sipPlans)..where((tbl) => tbl.id.equals(sipPlanId))).write(
+        SipPlansCompanion(
+          status: const Value('stopped'),
+          endDate: Value(now),
+          updatedAt: Value(DateTime.now().toUtc()),
+        ),
+      );
+
+      // Cancel future simulated installments
+      await (update(sipInstallments)
+            ..where((tbl) =>
+                tbl.sipPlanId.equals(sipPlanId) &
+                tbl.scheduledDate.isBiggerOrEqualValue(now) &
+                tbl.status.equals('upcoming') &
+                tbl.isSimulated.equals(true)))
+          .write(
+        const SipInstallmentsCompanion(
+          status: Value('cancelled'),
+        ),
+      );
     });
   }
 

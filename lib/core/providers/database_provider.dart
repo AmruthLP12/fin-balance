@@ -8,6 +8,7 @@ import '../../database/daos/mutual_fund_dao.dart';
 import '../../database/daos/profiles_dao.dart';
 import '../../database/daos/recurring_transactions_dao.dart';
 import '../../database/daos/sips_dao.dart';
+import '../../database/daos/swps_dao.dart';
 import '../../database/daos/transactions_dao.dart';
 import '../../database/daos/valuations_dao.dart';
 
@@ -57,6 +58,10 @@ final mutualFundDaoProvider = Provider<MutualFundDao>((ref) {
 
 final sipsDaoProvider = Provider<SipsDao>((ref) {
   return ref.watch(databaseProvider).sipsDao;
+});
+
+final swpsDaoProvider = Provider<SwpsDao>((ref) {
+  return ref.watch(databaseProvider).swpsDao;
 });
 
 /// Tracks whether the user has picked a profile during this session's startup flow.
@@ -188,6 +193,24 @@ final sipPeriodsProvider =
 final sipInstallmentsProvider =
     StreamProvider.family<List<SipInstallment>, int>((ref, sipPlanId) {
   return ref.watch(sipsDaoProvider).watchInstallments(sipPlanId);
+});
+
+/// Stream provider for SWP plans linked to a specific holding/financial item.
+final swpsByHoldingProvider =
+    StreamProvider.family<List<SwpPlan>, int>((ref, holdingId) {
+  return ref.watch(swpsDaoProvider).watchSwpsByHolding(holdingId);
+});
+
+/// Stream provider for periods of a given SWP plan.
+final swpPeriodsProvider =
+    StreamProvider.family<List<SwpSchedulePeriod>, int>((ref, swpPlanId) {
+  return ref.watch(swpsDaoProvider).watchSchedulePeriods(swpPlanId);
+});
+
+/// Stream provider for installments of a given SWP plan.
+final swpInstallmentsProvider =
+    StreamProvider.family<List<SwpInstallment>, int>((ref, swpPlanId) {
+  return ref.watch(swpsDaoProvider).watchInstallments(swpPlanId);
 });
 
 /// Stream provider for all active financial categories.

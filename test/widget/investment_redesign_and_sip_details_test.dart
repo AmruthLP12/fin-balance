@@ -326,14 +326,13 @@ void main() {
       expect(find.text('+8.64%'), findsOneWidget);
       expect(find.text('XIRR / IRR'), findsOneWidget);
       expect(find.text('Units Held'), findsOneWidget);
-      expect(find.textContaining('1000.000'), findsOneWidget);
+      expect(find.text('1000.0000'), findsOneWidget);
       expect(find.text('Latest NAV'), findsOneWidget);
       expect(find.textContaining('₹54.3200'), findsOneWidget);
 
-      // SIP Schedule section in Overview
+      // SIP Schedule section in Overview (Minimal format)
       expect(find.textContaining('SIP Investment Schedule'), findsOneWidget);
-      expect(find.text('Axis Small Cap Monthly SIP'), findsOneWidget);
-      expect(find.textContaining('₹5,000.00 / monthly'), findsOneWidget);
+      expect(find.textContaining('SIP · ₹5,000.00'), findsOneWidget);
 
       // 3. Tab 2: Transactions
       await tester.tap(find.text('Transactions'));

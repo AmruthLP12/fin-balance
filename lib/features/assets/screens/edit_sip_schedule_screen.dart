@@ -42,7 +42,6 @@ class _EditSipScheduleScreenState extends ConsumerState<EditSipScheduleScreen> {
 
   late DateTime _effectiveFrom;
   ScheduleFrequency _frequency = ScheduleFrequency.monthly;
-  int _deductionDay = 1;
   bool _isSaving = false;
 
   @override
@@ -50,7 +49,6 @@ class _EditSipScheduleScreenState extends ConsumerState<EditSipScheduleScreen> {
     super.initState();
     final now = DateTime.now();
     _effectiveFrom = DateTime(now.year, now.month, now.day);
-    _deductionDay = widget.sip.startDate.day.clamp(1, 28);
 
     _amountController = TextEditingController(text: '1000');
     _installmentsController = TextEditingController(text: '12');
@@ -68,12 +66,7 @@ class _EditSipScheduleScreenState extends ConsumerState<EditSipScheduleScreen> {
         _amountController.text =
             FinancialPrecision.paiseToRupees(activePeriod.amountPaise)
                 .toStringAsFixed(0);
-        _deductionDay = activePeriod.deductionDay;
-        if (activePeriod.frequency.toLowerCase().contains('quarter')) {
-          _frequency = ScheduleFrequency.quarterly;
-        } else {
-          _frequency = ScheduleFrequency.monthly;
-        }
+        _frequency = ScheduleFrequency.fromString(activePeriod.frequency);
       });
     }
   }
@@ -105,36 +98,20 @@ class _EditSipScheduleScreenState extends ConsumerState<EditSipScheduleScreen> {
     try {
       final amountRupees = double.parse(_amountController.text.trim());
       final amountPaise = FinancialPrecision.rupeesToPaise(amountRupees);
-      final installmentsCount =
-          int.tryParse(_installmentsController.text.trim()) ?? 12;
-
-      // Calculate effectiveTo date if finite installments
-      DateTime? effectiveTo;
-      if (installmentsCount > 0) {
-        if (_frequency == ScheduleFrequency.monthly) {
-          effectiveTo = DateTime(
-            _effectiveFrom.year,
-            _effectiveFrom.month + installmentsCount,
-            _effectiveFrom.day,
-          );
-        } else if (_frequency == ScheduleFrequency.quarterly) {
-          effectiveTo = DateTime(
-            _effectiveFrom.year,
-            _effectiveFrom.month + (installmentsCount * 3),
-            _effectiveFrom.day,
-          );
-        }
-      }
+      final installmentsCount = _frequency == ScheduleFrequency.oneTime
+          ? 1
+          : (int.tryParse(_installmentsController.text.trim()) ?? 12);
 
       final sipsDao = ref.read(sipsDaoProvider);
+      final deductionDay = _effectiveFrom.day.clamp(1, 31);
+
       await sipsDao.addSchedulePeriod(
         sipPlanId: widget.sip.id,
         effectiveFrom: _effectiveFrom,
-        effectiveTo: effectiveTo,
         amountPaise: amountPaise,
-        deductionDay: _deductionDay,
-        frequency:
-            _frequency == ScheduleFrequency.quarterly ? 'quarterly' : 'monthly',
+        deductionDay: deductionDay,
+        frequency: _frequency.name,
+        installmentCount: installmentsCount,
         notes: _notesController.text.trim().isNotEmpty
             ? _notesController.text.trim()
             : null,
@@ -395,7 +372,38 @@ class _EditSipScheduleScreenState extends ConsumerState<EditSipScheduleScreen> {
                     ),
                     const SizedBox(height: AppSpacing.md),
 
-                    // Frequency Selector
+                    // First Scheduled Deduction (Derived from Effective Date)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: AppColors.brandPrimary.withValues(alpha: 0.08),
+                        borderRadius:
+                            BorderRadius.circular(AppSpacing.radiusSm),
+                        border: Border.all(
+                          color: AppColors.brandPrimary.withValues(alpha: 0.25),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.event_available_rounded,
+                              size: 20, color: AppColors.brandPrimary),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'First Scheduled Deduction: ${DateFormatter.formatDate(_effectiveFrom)}',
+                              style: AppTypography.labelMedium.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.brandPrimary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+
+                    // Frequency Selector (All 8 options)
                     Text(
                       'Frequency',
                       style: AppTypography.labelMedium.copyWith(
@@ -403,46 +411,26 @@ class _EditSipScheduleScreenState extends ConsumerState<EditSipScheduleScreen> {
                       ),
                     ),
                     const SizedBox(height: AppSpacing.xs),
-                    SegmentedButton<ScheduleFrequency>(
-                      segments: const [
-                        ButtonSegment(
-                          value: ScheduleFrequency.monthly,
-                          label: Text('Monthly'),
-                        ),
-                        ButtonSegment(
-                          value: ScheduleFrequency.quarterly,
-                          label: Text('Quarterly'),
-                        ),
-                      ],
-                      selected: {_frequency},
-                      onSelectionChanged: (set) {
-                        setState(() => _frequency = set.first);
-                      },
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-
-                    // Deduction Day of Month
-                    Text(
-                      'Deduction Day of Month (1 - 28)',
-                      style: AppTypography.labelMedium.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.xs),
-                    DropdownButtonFormField<int>(
-                      initialValue: _deductionDay,
+                    DropdownButtonFormField<ScheduleFrequency>(
+                      initialValue: _frequency,
                       decoration: const InputDecoration(
                         border: OutlineInputBorder(),
                       ),
-                      items: List.generate(
-                        28,
-                        (i) => DropdownMenuItem(
-                          value: i + 1,
-                          child: Text('${i + 1} of every month'),
-                        ),
-                      ),
+                      items: ScheduleFrequency.values
+                          .map((f) => DropdownMenuItem(
+                                value: f,
+                                child: Text(f.label),
+                              ))
+                          .toList(),
                       onChanged: (val) {
-                        if (val != null) setState(() => _deductionDay = val);
+                        if (val != null) {
+                          setState(() {
+                            _frequency = val;
+                            if (val == ScheduleFrequency.oneTime) {
+                              _installmentsController.text = '1';
+                            }
+                          });
+                        }
                       },
                     ),
                     const SizedBox(height: AppSpacing.md),
@@ -458,17 +446,23 @@ class _EditSipScheduleScreenState extends ConsumerState<EditSipScheduleScreen> {
                     TextFormField(
                       controller: _installmentsController,
                       keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        hintText: 'e.g. 12, 24, 60',
-                        border: OutlineInputBorder(),
+                      enabled: _frequency != ScheduleFrequency.oneTime,
+                      decoration: InputDecoration(
+                        hintText: _frequency == ScheduleFrequency.oneTime
+                            ? '1'
+                            : 'e.g. 12, 24, 60',
+                        border: const OutlineInputBorder(),
                       ),
                       validator: (value) {
+                        if (_frequency == ScheduleFrequency.oneTime) {
+                          return null;
+                        }
                         if (value == null || value.trim().isEmpty) {
-                          return 'Enter number of installments';
+                          return 'Enter remaining installments';
                         }
                         final n = int.tryParse(value.trim());
                         if (n == null || n <= 0) {
-                          return 'Must be at least 1';
+                          return 'Must be at least 1 installment';
                         }
                         return null;
                       },

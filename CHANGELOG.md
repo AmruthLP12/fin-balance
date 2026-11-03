@@ -5,6 +5,40 @@ All notable changes to the FinBalance application will be documented in this fil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.12.0] - 2026-11-03
+
+### Added
+- **Standardized 8 Frequency Options Across SIP and SWP (`ScheduleFrequency`):**
+  - Unified enum: One Time (`oneTime`), Daily (`daily`), Weekly (`weekly`), Fortnightly (`fortnightly`), Monthly (`monthly`), Quarterly (`quarterly`), Half-Yearly (`halfYearly`), and Yearly (`yearly`).
+  - High-precision date range calculation in `InvestmentScheduleService.generateScheduleDatesRange` with month-end clamping (Jan 31 $\to$ Feb 28 $\to$ Mar 31) and leap-year preservation (Feb 29 $\to$ Feb 28 $\to$ Feb 29) eliminating progressive date drift.
+- **Derived Deduction Date from Start / Effective Date:**
+  - Removed duplicate deduction day input fields from `AddSipSchedulePeriodScreen`, `EditSipScheduleScreen`, and `AddSwpSchedulePeriodScreen`.
+  - Start Date serves as the authoritative first scheduled deduction date, clearly indicated with dedicated UI banner info.
+- **Explicit Separation of One-Time Investment vs. SIP Investment:**
+  - Added segmented selection to `AddToProfileDialog`.
+  - One-time investments record a single authoritative purchase transaction with zero recurring schedule overhead.
+  - SIP investments enforce mandatory installment count or end date, strictly isolating planned future installments from current capital, units, and cash flow.
+- **Systematic Withdrawal Plan (SWP) Management:**
+  - SQLite schema expansion (Schema Version 5): Added `swp_plans`, `swp_schedule_periods`, and `swp_installments` tables with cascading deletion and migration safety.
+  - Implemented `SwpsDao` with multi-period lifecycle management (`createSwpWithPeriod`, `addSchedulePeriod`, `closeSchedulePeriod`, `deleteSwpCascade`).
+  - Added `AddSwpSchedulePeriodScreen` supporting both Amount per installment and Units per installment modes across all 8 frequencies.
+  - Future planned SWP withdrawals never reduce units or current holding valuation until confirmed as transactions.
+- **Minimal SIP & SWP Schedule Card Display:**
+  - Replaced verbose cards with concise, distraction-free cards: `SIP · ₹1,000 · Next: 05 Dec 2026` or `SWP · 25.0000 Units · Next: 05 Dec 2026`.
+  - Removed frequency text, total installment counts, and card-level delete buttons.
+  - Dedicated header actions: Add New Period, Edit Period, and Close Period.
+- **Contextual Help on Transaction Form:**
+  - Added "Explain Types" (`?`) button on `AddInvestmentTransactionScreen`.
+  - Responsive modal bottom sheet providing concise, financially accurate explanations for all 8 supported transaction types: One-time Investment, SIP Investment, IDCW Reinvestment, IDCW Payout, Redemption, SWP Withdrawal, Switch Out, and Switch In.
+- **Two Distinct Overview Sections (Investment Lifecycle & My Remarks):**
+  - **Investment Lifecycle:** Point-wise, chronological event narrative of initial investment, schedule revisions, SWP start/close, redemptions, switches, and dividends (`InvestmentLifecycleSummary.generateLifecycleEvents`).
+  - **My Remarks:** Dedicated point-wise user notes with subtle empty prompt (`No remarks added. Tap to add notes.`) and independent editing dialog.
+- **Switch Transaction Destination Scheme Search & Catalog Integration:**
+  - Live mutual fund catalog search modal (`_SchemePickerSearchDialog`) in `AddInvestmentTransactionScreen`.
+  - Displays selected scheme name, fund house, latest NAV, and portfolio holding status.
+  - Automatically links to existing holding or creates a new active holding record with ₹0 initial capital contribution (preventing double-counting).
+  - Atomically generates linked Switch Out and Switch In transaction legs with clear "Switched out to [Scheme]" and "Switched in from [Scheme]" notes.
+
 ## [0.11.0] - 2026-11-03
 
 ### Added

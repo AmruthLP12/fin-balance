@@ -468,14 +468,9 @@ void main() {
         transactions: transactions,
       );
 
-      expect(narrative,
-          contains('Started with an initial monthly SIP of ₹500.00'));
-      expect(
-          narrative,
-          contains(
-              'A revised monthly SIP of ₹1,000.00 started on 01 May 2026 (currently active)'));
-      expect(narrative, contains('1 purchase transaction(s)'));
-      expect(narrative, contains('1 dividend payout(s)'));
+      expect(narrative, contains('Start on 01 Jan 2026 · ₹500.00'));
+      expect(narrative, contains('Period revised on 01 May 2026 · ₹1,000.00'));
+      expect(narrative, contains('Dividend payout on 01 Mar 2026 · ₹150.00'));
     });
 
     test(

@@ -146,7 +146,8 @@ void main() {
       expect(find.text('XIRR / IRR'), findsOneWidget);
       expect(find.text('Investment Information'), findsOneWidget);
       expect(find.text('Core retirement fund allocation'), findsOneWidget);
-      expect(find.text('Lifecycle Summary (Auto-Generated)'), findsOneWidget);
+      expect(find.text('Investment Lifecycle'), findsOneWidget);
+      expect(find.text('My Remarks'), findsOneWidget);
 
       // --- Tab 2: Switch to Transactions Tab ---
       await tester.tap(find.text('Transactions'));

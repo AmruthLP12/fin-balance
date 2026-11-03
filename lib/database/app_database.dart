@@ -8,6 +8,7 @@ import 'daos/mutual_fund_dao.dart';
 import 'daos/profiles_dao.dart';
 import 'daos/recurring_transactions_dao.dart';
 import 'daos/sips_dao.dart';
+import 'daos/swps_dao.dart';
 import 'daos/transactions_dao.dart';
 import 'daos/valuations_dao.dart';
 import 'tables/app_settings.dart';
@@ -22,6 +23,9 @@ import 'tables/recurring_transactions.dart';
 import 'tables/sip_installments.dart';
 import 'tables/sip_plans.dart';
 import 'tables/sip_schedule_periods.dart';
+import 'tables/swp_installments.dart';
+import 'tables/swp_plans.dart';
+import 'tables/swp_schedule_periods.dart';
 import 'tables/transactions.dart';
 import 'tables/valuation_history.dart';
 
@@ -44,6 +48,9 @@ part 'app_database.g.dart';
     SipPlans,
     SipSchedulePeriods,
     SipInstallments,
+    SwpPlans,
+    SwpSchedulePeriods,
+    SwpInstallments,
   ],
   daos: [
     ProfilesDao,
@@ -56,6 +63,7 @@ part 'app_database.g.dart';
     AppSettingsDao,
     MutualFundDao,
     SipsDao,
+    SwpsDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -65,7 +73,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration {
@@ -90,6 +98,12 @@ class AppDatabase extends _$AppDatabase {
           await m.addColumn(transactions, transactions.netAmountPaise);
           await m.addColumn(transactions, transactions.sipPlanId);
           await m.addColumn(transactions, transactions.linkedTransactionId);
+        }
+        if (from < 5) {
+          await m.createTable(swpPlans);
+          await m.createTable(swpSchedulePeriods);
+          await m.createTable(swpInstallments);
+          await m.addColumn(transactions, transactions.swpPlanId);
         }
       },
       beforeOpen: (details) async {
