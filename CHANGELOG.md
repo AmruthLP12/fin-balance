@@ -5,6 +5,61 @@ All notable changes to the FinBalance application will be documented in this fil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.0] - 2026-11-03
+
+### Added
+- **Investment List Redesign & Category Navigation (`AssetsScreen`):**
+  - Added clean investment category filter navigation row (`Mutual Funds`, `Stocks & ETFs`, `Fixed Deposits`, `Gold`, `All Assets`) with dynamic item count badges and selected category highlighting.
+  - Added compact portfolio summary card with live aggregate valuation, total invested cost, overall P&L (+/-%), and portfolio-wide IRR.
+  - Replaced bulky cards with compact investment list cards (`HoldingCard`):
+    - Prominent multiline scheme title with zero truncation or text clipping.
+    - Category / fund house subtitle with colored return indicator badge.
+    - Clean 3-metric row: `INVESTED`, `CURRENT VALUE`, and `IRR / P&L`.
+    - Removed embedded transaction tables from cards; tapping any card now opens the dedicated full-screen details view.
+  - Added compact search and filter toolbar with active profile indicator and contextual addition shortcut.
+- **Dedicated Full-Screen SIP & Investment Details Page (`SipDetailsScreen`):**
+  - Created dedicated full-screen page replacing cramped modal bottom sheets.
+  - Custom AppBar featuring multiline scheme title, fund house subtitle, interactive favourite star toggle, and overflow actions (Edit Holding, Delete Investment).
+  - **Section A — Investment Overview:**
+    - Hero valuation display with overall P&L badge and cached NAV disclaimer.
+    - 2x2 metric grid: Total Invested, Current Valuation, Absolute Return (%), and Current IRR / XIRR.
+    - Holding details strip: Units held, latest NAV, NAV date, and owning profile.
+  - **Section B — Historical Performance Chart:**
+    - Interactive FL Chart `LineChart` showing portfolio value trajectory over time ($\text{units at } d \times \text{NAV at } d$) calculated from dated transactions.
+    - Filter pills (`1M`, `3M`, `6M`, `1Y`, `ALL`) with responsive wrap layout.
+    - Touch tooltips displaying formatted date and valuation in INR.
+    - Graceful empty state when fewer than 2 NAV data points are available.
+  - **Section C — Transaction History:**
+    - Chronologically sorted transactions (newest first).
+    - Distinct visual indicators and badges for purchase (`+`) and redemption (`-`).
+    - Exact breakdown of transaction amount, NAV at execution, units allotted, and transaction date.
+  - **Section D — SIP Investment Schedule:**
+    - Master SIP schedule card with installment amount, deduction frequency, start date, next installment date, and owning profile.
+    - Installment breakdown grouped into four distinct categories with dedicated badges:
+      - Confirmed & valued installments (`asset` badge).
+      - Historical installments pending NAV valuation (`warning` badge).
+      - Planned future installments (`scheduled` badge, clearly isolated from net worth/valuation).
+      - Skipped or cancelled installments (`neutral` badge).
+    - Quick actions: Edit Schedule, Retry Pending Valuations, and Cancel Future Installments.
+- **Shared Financial Calculation Engine (`FinancialCalculator`):**
+  - High-precision calculation layer for investment analytics:
+    - `calculateAbsoluteReturn`: Exact percentage gain/loss on invested capital.
+    - `calculateProfitLossPaise`: Absolute profit or loss in integer paise.
+    - `calculateXirr`: Newton-Raphson solver for Internal Rate of Return (IRR / XIRR) based on exact dated cash flows (`DatedCashFlow`).
+    - `calculateHoldingXirr` & `calculatePortfolioXirr`: Real-world transaction cash flows combined with terminal valuation.
+    - Strict mathematical preconditions: Returns `null` (displayed as `—`) for invalid cash flows or holding durations under 1 day.
+- **Layout & Rendering Bug Fixes:**
+  - Resolved Flutter debug layout overflow banner ("RenderFlex overflowed by 15 pixels") by wrapping flex children in `Expanded`, replacing oversized headline typography with `titleLarge`, and utilizing `Wrap` for metadata chips and action bars.
+  - Fixed unbounded width constraint exceptions in `SectionHeader` and time range selectors.
+  - Fixed reactive NAV history fetching by introducing Riverpod's `schemeNavHistoryRangeProvider`, preventing infinite rebuild loops during chart rendering.
+
+### Testing
+- Added `test/unit/financial_calculator_test.dart` verifying lump sum growth, SIP cash flows, zero-invested edge cases, and invalid cash flow handling.
+- Added `test/widget/investment_redesign_and_sip_details_test.dart` testing the category navigation, portfolio summary, compact holding cards, and full-screen `SipDetailsScreen` with all 4 sections.
+- Verified all 150 automated tests passing with 0 errors.
+
+---
+
 ## [0.9.1] - 2026-11-03
 
 ### Added

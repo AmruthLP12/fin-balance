@@ -251,8 +251,8 @@ class PrivacyPolicyScreen extends StatelessWidget {
                 const ListTile(
                   contentPadding: EdgeInsets.zero,
                   leading: Icon(Icons.contact_mail_outlined, size: 20),
-                  title: Text('Contact Details',
-                      style: AppTypography.bodyMedium),
+                  title:
+                      Text('Contact Details', style: AppTypography.bodyMedium),
                   subtitle: Text('Contact details will be provided here.',
                       style: AppTypography.labelSmall),
                 ),

@@ -11,8 +11,8 @@ import '../../../core/widgets/fin_card.dart';
 import '../../../core/widgets/status_badge.dart';
 import '../../../database/app_database.dart';
 import '../../../database/precision/financial_precision.dart';
+import '../screens/sip_details_screen.dart';
 import 'edit_sip_schedule_dialog.dart';
-import 'sip_installments_sheet.dart';
 
 /// Card displaying a master SIP Plan, investment frequency, installment breakdown,
 /// units accumulated, valuation, valuation status, and schedule management actions.
@@ -46,6 +46,7 @@ class SipCard extends ConsumerWidget {
             .firstOrNull;
 
     return FinCard(
+      onTap: () => _openDetails(context),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -217,26 +218,35 @@ class SipCard extends ConsumerWidget {
                 children: [
                   // Installment counts row
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      _metricColumn(
-                        label: 'TOTAL INSTALLMENTS',
-                        value: '$totalCount',
-                        isDark: isDark,
+                      Expanded(
+                        child: _metricColumn(
+                          label: 'TOTAL',
+                          value: '$totalCount',
+                          isDark: isDark,
+                        ),
                       ),
-                      _metricColumn(
-                        label: 'PAST (ACTUAL)',
-                        value:
-                            '${pastInstallments.length} (${CurrencyFormatter.formatPaise(confirmedInvestedPaise)})',
-                        valueColor: AppColors.asset,
-                        isDark: isDark,
+                      const SizedBox(width: 4),
+                      Expanded(
+                        flex: 2,
+                        child: _metricColumn(
+                          label: 'PAST (ACTUAL)',
+                          value:
+                              '${pastInstallments.length} (${CurrencyFormatter.formatPaise(confirmedInvestedPaise)})',
+                          valueColor: AppColors.asset,
+                          isDark: isDark,
+                        ),
                       ),
-                      _metricColumn(
-                        label: 'FUTURE (PLANNED)',
-                        value:
-                            '${futureInstallments.length} (${CurrencyFormatter.formatPaise(plannedFuturePaise)})',
-                        valueColor: AppColors.scheduled,
-                        isDark: isDark,
+                      const SizedBox(width: 4),
+                      Expanded(
+                        flex: 2,
+                        child: _metricColumn(
+                          label: 'FUTURE (PLANNED)',
+                          value:
+                              '${futureInstallments.length} (${CurrencyFormatter.formatPaise(plannedFuturePaise)})',
+                          valueColor: AppColors.scheduled,
+                          isDark: isDark,
+                        ),
                       ),
                     ],
                   ),
@@ -244,19 +254,24 @@ class SipCard extends ConsumerWidget {
 
                   // Units & Current Valuation row
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      _metricColumn(
-                        label: 'UNITS ACCUMULATED',
-                        value: unitsAccumulated.toStringAsFixed(3),
-                        isDark: isDark,
+                      Expanded(
+                        child: _metricColumn(
+                          label: 'UNITS ACCUMULATED',
+                          value: unitsAccumulated.toStringAsFixed(3),
+                          isDark: isDark,
+                        ),
                       ),
-                      _metricColumn(
-                        label: 'CURRENT VALUATION',
-                        value: CurrencyFormatter.formatPaise(
-                            currentValuationPaise),
-                        valueColor: AppColors.asset,
-                        isDark: isDark,
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _metricColumn(
+                          label: 'CURRENT VALUATION',
+                          value: CurrencyFormatter.formatPaise(
+                              currentValuationPaise),
+                          valueColor: AppColors.asset,
+                          isDark: isDark,
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                        ),
                       ),
                     ],
                   ),
@@ -355,8 +370,8 @@ class SipCard extends ConsumerWidget {
               const Spacer(),
               TextButton.icon(
                 icon: const Icon(Icons.history_rounded, size: 18),
-                label: const Text('Installments'),
-                onPressed: () => _openInstallments(context),
+                label: const Text('Details'),
+                onPressed: () => _openDetails(context),
               ),
               const SizedBox(width: AppSpacing.xs),
               FilledButton.tonalIcon(
@@ -376,9 +391,10 @@ class SipCard extends ConsumerWidget {
     required String value,
     Color? valueColor,
     required bool isDark,
+    CrossAxisAlignment crossAxisAlignment = CrossAxisAlignment.start,
   }) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: crossAxisAlignment,
       children: [
         Text(
           label,
@@ -416,12 +432,11 @@ class SipCard extends ConsumerWidget {
     }
   }
 
-  void _openInstallments(BuildContext context) {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => SipInstallmentsSheet(sip: sip),
+  void _openDetails(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => SipDetailsScreen(sip: sip),
+      ),
     );
   }
 

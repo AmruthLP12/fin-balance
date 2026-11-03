@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/calculations/financial_calculator.dart';
 import '../../../core/formatting/currency_formatter.dart';
 import '../../../core/providers/database_provider.dart';
 import '../../../core/theme/app_colors.dart';
@@ -14,9 +15,9 @@ import '../../../database/app_database.dart';
 import '../../profile/widgets/profile_menu_button.dart';
 import '../widgets/add_sip_dialog.dart';
 import '../widgets/holding_card.dart';
-import '../widgets/holding_details_sheet.dart';
 import '../widgets/sip_card.dart';
 import 'mutual_fund_search_screen.dart';
+import 'sip_details_screen.dart';
 
 /// Assets screen for managing Mutual Funds, Stocks, FDs, Gold, and wealth holdings scoped to the active profile.
 class AssetsScreen extends ConsumerStatefulWidget {
@@ -27,7 +28,8 @@ class AssetsScreen extends ConsumerStatefulWidget {
 }
 
 class _AssetsScreenState extends ConsumerState<AssetsScreen> {
-  String _selectedCategoryFilter = 'all';
+  // Category navigation filter: defaults to 'mutual_fund' as in reference
+  String _selectedCategoryFilter = 'mutual_fund';
 
   @override
   Widget build(BuildContext context) {
@@ -36,9 +38,11 @@ class _AssetsScreenState extends ConsumerState<AssetsScreen> {
     final activeProfileAsync = ref.watch(activeProfileProvider);
     final assetsAsync = ref.watch(activeProfileAssetsProvider);
     final sipsAsync = ref.watch(activeProfileSipPlansProvider);
+    final transactionsAsync = ref.watch(activeProfileTransactionsProvider);
 
     final profileName = activeProfileAsync.value?.name ?? 'Profile';
     final sips = sipsAsync.value ?? [];
+    final allTransactions = transactionsAsync.value ?? [];
 
     return Scaffold(
       appBar: AppBar(
@@ -70,23 +74,92 @@ class _AssetsScreenState extends ConsumerState<AssetsScreen> {
       ),
       body: assetsAsync.when(
         data: (items) {
-          // Calculate summary metrics
-          final totalCurrentPaise =
-              items.fold<int>(0, (sum, i) => sum + i.currentValuationPaise);
-          final totalInvestedPaise =
-              items.fold<int>(0, (sum, i) => sum + i.initialValuePaise);
-          final totalReturnPaise = totalCurrentPaise - totalInvestedPaise;
-          final isProfit = totalReturnPaise >= 0;
-          final returnPercentage = totalInvestedPaise > 0
-              ? (totalReturnPaise / totalInvestedPaise) * 100
-              : 0.0;
+          // Counts per supported category
+          final mfCount = items.where((i) => i.subType == 'mutual_fund').length;
+          final stockCount = items.where((i) => i.subType == 'stock').length;
+          final fdCount =
+              items.where((i) => i.subType == 'fixed_deposit').length;
+          final goldCount = items.where((i) => i.subType == 'gold').length;
+          final totalCount = items.length;
 
           final filteredItems = _filterItems(items, _selectedCategoryFilter);
+
+          // Calculate summary metrics for current category view
+          final totalCurrentPaise = filteredItems.fold<int>(
+              0, (sum, i) => sum + i.currentValuationPaise);
+          final totalInvestedPaise =
+              filteredItems.fold<int>(0, (sum, i) => sum + i.initialValuePaise);
+          final totalPnlPaise = FinancialCalculator.calculateProfitLossPaise(
+            investedPaise: totalInvestedPaise,
+            currentValuationPaise: totalCurrentPaise,
+          );
+          final isProfit = totalPnlPaise >= 0;
+          final totalPnlPercent = FinancialCalculator.calculateAbsoluteReturn(
+            investedPaise: totalInvestedPaise,
+            currentValuationPaise: totalCurrentPaise,
+          );
+
+          // Calculate Overall XIRR for filtered holdings
+          final filteredItemIds = filteredItems.map((i) => i.id).toSet();
+          final matchingTransactions = allTransactions
+              .where((tx) =>
+                  tx.financialItemId != null &&
+                  filteredItemIds.contains(tx.financialItemId))
+              .toList();
+
+          final overallXirr = FinancialCalculator.calculatePortfolioXirr(
+            transactions: matchingTransactions,
+            totalValuationPaise: totalCurrentPaise,
+          );
 
           return ListView(
             padding: AppSpacing.screenPadding,
             children: [
-              // Portfolio Value Header Card
+              // 1. Category Navigation Row (Responsive scrollable pills)
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    _buildCategoryPill(
+                      label: 'Mutual Funds',
+                      categoryValue: 'mutual_fund',
+                      count: mfCount,
+                      isDark: isDark,
+                    ),
+                    const SizedBox(width: AppSpacing.xs),
+                    _buildCategoryPill(
+                      label: 'Stocks & ETFs',
+                      categoryValue: 'stock',
+                      count: stockCount,
+                      isDark: isDark,
+                    ),
+                    const SizedBox(width: AppSpacing.xs),
+                    _buildCategoryPill(
+                      label: 'Fixed Deposits',
+                      categoryValue: 'fixed_deposit',
+                      count: fdCount,
+                      isDark: isDark,
+                    ),
+                    const SizedBox(width: AppSpacing.xs),
+                    _buildCategoryPill(
+                      label: 'Gold',
+                      categoryValue: 'gold',
+                      count: goldCount,
+                      isDark: isDark,
+                    ),
+                    const SizedBox(width: AppSpacing.xs),
+                    _buildCategoryPill(
+                      label: 'All Assets',
+                      categoryValue: 'all',
+                      count: totalCount,
+                      isDark: isDark,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+
+              // 2. Compact Portfolio Summary Card
               FinCard(
                 backgroundColor: isDark
                     ? AppColors.darkSurfaceElevated
@@ -98,7 +171,7 @@ class _AssetsScreenState extends ConsumerState<AssetsScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          '$profileName’s ASSET VALUE'.toUpperCase(),
+                          '${_categoryDisplayName(_selectedCategoryFilter).toUpperCase()} SUMMARY',
                           style: AppTypography.labelSmall.copyWith(
                             color: isDark
                                 ? AppColors.darkTextMuted
@@ -106,52 +179,132 @@ class _AssetsScreenState extends ConsumerState<AssetsScreen> {
                             letterSpacing: 0.8,
                             fontWeight: FontWeight.w700,
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
                         ),
                         StatusBadge(
                           label:
-                              '${items.length} ${items.length == 1 ? 'Holding' : 'Holdings'}',
-                          type: BadgeType.asset,
+                              '${filteredItems.length} ${filteredItems.length == 1 ? 'Holding' : 'Holdings'}',
+                          type: BadgeType.neutral,
                         ),
                       ],
                     ),
                     const SizedBox(height: AppSpacing.sm),
-                    Text(
-                      CurrencyFormatter.formatPaise(totalCurrentPaise),
-                      style: AppTypography.heroAmount.copyWith(
-                        color: isDark
-                            ? AppColors.darkTextPrimary
-                            : AppColors.lightTextPrimary,
-                      ),
+                    Wrap(
+                      alignment: WrapAlignment.spaceBetween,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: AppSpacing.sm,
+                      runSpacing: AppSpacing.xs,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'CURRENT VALUE',
+                              style: AppTypography.labelSmall.copyWith(
+                                color: isDark
+                                    ? AppColors.darkTextMuted
+                                    : AppColors.lightTextMuted,
+                                fontSize: 9,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              CurrencyFormatter.formatPaise(totalCurrentPaise),
+                              style: AppTypography.heroAmount.copyWith(
+                                fontSize: 20,
+                                color: isDark
+                                    ? AppColors.darkTextPrimary
+                                    : AppColors.lightTextPrimary,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'OVERALL P&L',
+                              style: AppTypography.labelSmall.copyWith(
+                                color: isDark
+                                    ? AppColors.darkTextMuted
+                                    : AppColors.lightTextMuted,
+                                fontSize: 9,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              '${isProfit ? '+' : ''}${CurrencyFormatter.formatPaise(totalPnlPaise)} (${totalPnlPercent >= 0 ? '+' : ''}${totalPnlPercent.toStringAsFixed(1)}%)',
+                              style: AppTypography.titleMedium.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: isProfit
+                                    ? AppColors.asset
+                                    : AppColors.liability,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
+                    const SizedBox(height: AppSpacing.sm),
+                    const Divider(height: 1),
                     const SizedBox(height: AppSpacing.xs),
                     Wrap(
+                      alignment: WrapAlignment.spaceBetween,
                       crossAxisAlignment: WrapCrossAlignment.center,
-                      spacing: AppSpacing.xs,
+                      spacing: AppSpacing.md,
+                      runSpacing: 4,
                       children: [
-                        Text(
-                          'Invested: ${CurrencyFormatter.formatPaise(totalInvestedPaise)}',
-                          style: AppTypography.bodyMedium.copyWith(
-                            color: isDark
-                                ? AppColors.darkTextSecondary
-                                : AppColors.lightTextSecondary,
-                          ),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'Invested: ',
+                              style: AppTypography.labelSmall.copyWith(
+                                color: isDark
+                                    ? AppColors.darkTextMuted
+                                    : AppColors.lightTextMuted,
+                              ),
+                            ),
+                            Text(
+                              CurrencyFormatter.formatPaise(totalInvestedPaise),
+                              style: AppTypography.labelSmall.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: isDark
+                                    ? AppColors.darkTextSecondary
+                                    : AppColors.lightTextSecondary,
+                              ),
+                            ),
+                          ],
                         ),
-                        Text('•',
-                            style: TextStyle(
-                              color: isDark
-                                  ? AppColors.darkTextMuted
-                                  : AppColors.lightTextMuted,
-                            )),
-                        Text(
-                          '${isProfit ? '+' : ''}${CurrencyFormatter.formatPaise(totalReturnPaise)} (${returnPercentage >= 0 ? '+' : ''}${returnPercentage.toStringAsFixed(2)}%)',
-                          style: AppTypography.bodyMedium.copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: isProfit
-                                ? AppColors.asset
-                                : AppColors.liability,
-                          ),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'Overall IRR: ',
+                              style: AppTypography.labelSmall.copyWith(
+                                color: isDark
+                                    ? AppColors.darkTextMuted
+                                    : AppColors.lightTextMuted,
+                              ),
+                            ),
+                            Text(
+                              overallXirr != null
+                                  ? '${overallXirr.toStringAsFixed(1)}%'
+                                  : '—',
+                              style: AppTypography.labelSmall.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: (overallXirr != null && overallXirr >= 0)
+                                    ? AppColors.asset
+                                    : ((overallXirr != null && overallXirr < 0)
+                                        ? AppColors.liability
+                                        : (isDark
+                                            ? AppColors.darkTextSecondary
+                                            : AppColors.lightTextSecondary)),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -160,68 +313,22 @@ class _AssetsScreenState extends ConsumerState<AssetsScreen> {
               ),
               const SizedBox(height: AppSpacing.lg),
 
-              // Category Filter Chips
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    _buildFilterChip('All Assets', 'all', isDark: isDark),
-                    const SizedBox(width: AppSpacing.sm),
-                    _buildFilterChip('Mutual Funds', 'mutual_fund',
-                        isDark: isDark),
-                    const SizedBox(width: AppSpacing.sm),
-                    _buildFilterChip('Stocks & ETFs', 'stock', isDark: isDark),
-                    const SizedBox(width: AppSpacing.sm),
-                    _buildFilterChip('Fixed Deposits', 'fixed_deposit',
-                        isDark: isDark),
-                    const SizedBox(width: AppSpacing.sm),
-                    _buildFilterChip('Gold', 'gold', isDark: isDark),
-                    const SizedBox(width: AppSpacing.sm),
-                    _buildFilterChip('PPF', 'ppf', isDark: isDark),
-                    const SizedBox(width: AppSpacing.sm),
-                    _buildFilterChip('EPF', 'epf', isDark: isDark),
-                    const SizedBox(width: AppSpacing.sm),
-                    _buildFilterChip('GPF', 'gpf', isDark: isDark),
-                    const SizedBox(width: AppSpacing.sm),
-                    _buildFilterChip('NPS', 'nps', isDark: isDark),
-                    const SizedBox(width: AppSpacing.sm),
-                    _buildFilterChip('Bonds', 'bond', isDark: isDark),
-                    const SizedBox(width: AppSpacing.sm),
-                    _buildFilterChip('Cash & Bank', 'cash', isDark: isDark),
-                    const SizedBox(width: AppSpacing.sm),
-                    _buildFilterChip('Other Assets', 'other_asset',
-                        isDark: isDark),
-                  ],
-                ),
-              ),
-              const SizedBox(height: AppSpacing.lg),
-
-              // Holdings List
+              // 3. Compact Investment Holdings List
               SectionHeader(
-                title: 'Holdings (${filteredItems.length})',
-                actionLabel: 'Add Scheme',
+                title:
+                    '${_categoryDisplayName(_selectedCategoryFilter)} (${filteredItems.length})',
+                actionLabel: _selectedCategoryFilter == 'mutual_fund' ||
+                        _selectedCategoryFilter == 'all'
+                    ? 'Search Schemes'
+                    : null,
                 onActionTap: () => _openSearchScreen(context),
               ),
               const SizedBox(height: AppSpacing.sm),
 
-              if (items.isEmpty)
-                EmptyStateView(
-                  icon: Icons.pie_chart_outline_rounded,
-                  title: 'No Assets in $profileName’s Portfolio',
-                  description:
-                      'Search 40,000+ Indian mutual funds or add holdings to track $profileName’s isolated wealth safely on-device.',
-                  actionLabel: 'Search & Add Mutual Funds',
-                  onAction: () => _openSearchScreen(context),
-                )
-              else if (filteredItems.isEmpty)
-                EmptyStateView(
-                  icon: Icons.filter_list_off_rounded,
-                  title: 'No Assets in Selected Category',
-                  description:
-                      'No holdings match the current filter in $profileName’s portfolio.',
-                  actionLabel: 'Show All Assets',
-                  onAction: () =>
-                      setState(() => _selectedCategoryFilter = 'all'),
+              if (filteredItems.isEmpty)
+                _buildCategoryEmptyState(
+                  category: _selectedCategoryFilter,
+                  profileName: profileName,
                 )
               else
                 ...filteredItems.map(
@@ -232,50 +339,53 @@ class _AssetsScreenState extends ConsumerState<AssetsScreen> {
                   ),
                 ),
 
-              // Active SIP Schedules Section
-              const SizedBox(height: AppSpacing.xl),
-              SectionHeader(
-                title: 'SIP Schedules (${sips.length})',
-                actionLabel: '+ Add SIP',
-                onActionTap: () => _openAddSipDialog(context),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              if (sips.isEmpty)
-                FinCard(
-                  child: Row(
-                    children: [
-                      const Icon(Icons.calendar_today_rounded,
-                          color: AppColors.scheduled),
-                      const SizedBox(width: AppSpacing.md),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text('No Active SIPs',
-                                style: AppTypography.titleMedium),
-                            Text(
-                              'Set up ongoing or bulk historical SIP investments for $profileName.',
-                              style: AppTypography.labelSmall.copyWith(
-                                color: isDark
-                                    ? AppColors.darkTextSecondary
-                                    : AppColors.lightTextSecondary,
+              // 4. SIP Schedules Section (visible when viewing Mutual Funds or All)
+              if (_selectedCategoryFilter == 'mutual_fund' ||
+                  _selectedCategoryFilter == 'all') ...[
+                const SizedBox(height: AppSpacing.xl),
+                SectionHeader(
+                  title: 'SIP Schedules (${sips.length})',
+                  actionLabel: '+ Add SIP',
+                  onActionTap: () => _openAddSipDialog(context),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                if (sips.isEmpty)
+                  FinCard(
+                    child: Row(
+                      children: [
+                        const Icon(Icons.calendar_today_rounded,
+                            color: AppColors.scheduled),
+                        const SizedBox(width: AppSpacing.md),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('No Active SIPs',
+                                  style: AppTypography.titleMedium),
+                              Text(
+                                'Set up ongoing or bulk historical SIP investments for $profileName.',
+                                style: AppTypography.labelSmall.copyWith(
+                                  color: isDark
+                                      ? AppColors.darkTextSecondary
+                                      : AppColors.lightTextSecondary,
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
-                      TextButton(
-                        onPressed: () => _openAddSipDialog(context),
-                        child: const Text('Add SIP'),
-                      ),
-                    ],
-                  ),
-                )
-              else
-                ...sips.map((sip) => Padding(
-                      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                      child: SipCard(sip: sip),
-                    )),
+                        TextButton(
+                          onPressed: () => _openAddSipDialog(context),
+                          child: const Text('Add SIP'),
+                        ),
+                      ],
+                    ),
+                  )
+                else
+                  ...sips.map((sip) => Padding(
+                        padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                        child: SipCard(sip: sip),
+                      )),
+              ],
 
               const SizedBox(height: 80), // FAB clearance
             ],
@@ -299,37 +409,130 @@ class _AssetsScreenState extends ConsumerState<AssetsScreen> {
     return items.where((i) => i.subType == filter).toList();
   }
 
-  Widget _buildFilterChip(String label, String value, {required bool isDark}) {
-    final isSelected = _selectedCategoryFilter == value;
+  Widget _buildCategoryPill({
+    required String label,
+    required String categoryValue,
+    required int count,
+    required bool isDark,
+  }) {
+    final isSelected = _selectedCategoryFilter == categoryValue;
     return InkWell(
-      onTap: () => setState(() => _selectedCategoryFilter = value),
-      borderRadius: AppSpacing.borderRadiusPill,
+      onTap: () => setState(() => _selectedCategoryFilter = categoryValue),
+      borderRadius: BorderRadius.circular(20),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         decoration: BoxDecoration(
           color: isSelected
               ? AppColors.brandPrimary
               : (isDark ? AppColors.darkSurface : AppColors.lightSurface),
-          borderRadius: AppSpacing.borderRadiusPill,
+          borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isSelected
                 ? AppColors.brandPrimary
                 : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
           ),
         ),
-        child: Text(
-          label,
-          style: AppTypography.labelMedium.copyWith(
-            color: isSelected
-                ? Colors.white
-                : (isDark
-                    ? AppColors.darkTextSecondary
-                    : AppColors.lightTextSecondary),
-            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-          ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: AppTypography.labelMedium.copyWith(
+                color: isSelected
+                    ? Colors.white
+                    : (isDark
+                        ? AppColors.darkTextSecondary
+                        : AppColors.lightTextSecondary),
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                fontSize: 12,
+              ),
+            ),
+            if (count > 0 || isSelected) ...[
+              const SizedBox(width: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? Colors.white.withValues(alpha: 0.25)
+                      : (isDark
+                          ? AppColors.darkSurfaceHighlight
+                          : AppColors.lightSurfaceHighlight),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  '$count',
+                  style: TextStyle(
+                    color: isSelected
+                        ? Colors.white
+                        : (isDark
+                            ? AppColors.darkTextMuted
+                            : AppColors.lightTextMuted),
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ],
         ),
       ),
     );
+  }
+
+  Widget _buildCategoryEmptyState({
+    required String category,
+    required String profileName,
+  }) {
+    switch (category) {
+      case 'stock':
+        return EmptyStateView(
+          icon: Icons.trending_up_rounded,
+          title: 'No Stocks or ETFs Added',
+          description:
+              'Equity holdings for $profileName will be tracked here. Stock portfolio management is planned for upcoming milestones.',
+        );
+      case 'fixed_deposit':
+        return EmptyStateView(
+          icon: Icons.account_balance_rounded,
+          title: 'No Fixed Deposits Added',
+          description:
+              'Term deposits, maturity dates, and accrued interest for $profileName will appear here.',
+        );
+      case 'gold':
+        return const EmptyStateView(
+          icon: Icons.circle_rounded,
+          title: 'No Gold Holdings Added',
+          description:
+              'Digital gold, Sovereign Gold Bonds (SGB), and gold ETFs will be tracked here.',
+        );
+      case 'mutual_fund':
+      default:
+        return EmptyStateView(
+          icon: Icons.pie_chart_outline_rounded,
+          title: 'No Mutual Funds in $profileName’s Portfolio',
+          description:
+              'Search 40,000+ AMFI mutual fund schemes or set up a flexible SIP to track wealth safely on-device.',
+          actionLabel: 'Search Mutual Funds',
+          onAction: () => _openSearchScreen(context),
+        );
+    }
+  }
+
+  String _categoryDisplayName(String category) {
+    switch (category) {
+      case 'mutual_fund':
+        return 'Mutual Funds';
+      case 'stock':
+        return 'Stocks & ETFs';
+      case 'fixed_deposit':
+        return 'Fixed Deposits';
+      case 'gold':
+        return 'Gold';
+      case 'all':
+        return 'All Investments';
+      default:
+        return 'Investments';
+    }
   }
 
   void _openSearchScreen(BuildContext context) {
@@ -341,11 +544,11 @@ class _AssetsScreenState extends ConsumerState<AssetsScreen> {
   }
 
   void _openHoldingDetails(BuildContext context, FinancialItem item) {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => HoldingDetailsSheet(holding: item),
+    // Navigate to dedicated full-screen SIP Details page
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => SipDetailsScreen(holding: item),
+      ),
     );
   }
 
@@ -362,7 +565,7 @@ class _AssetsScreenState extends ConsumerState<AssetsScreen> {
       builder: (ctx) => AlertDialog(
         title: const Text('Remove Holding?'),
         content: Text(
-          'Are you sure you want to remove "${item.name}" from this profile’s portfolio?',
+          'Are you sure you want to remove "${item.name}" from this profile’s portfolio? This will remove all associated transactions.',
         ),
         actions: [
           TextButton(

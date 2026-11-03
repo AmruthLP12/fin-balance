@@ -143,8 +143,7 @@ class _SchemeDetailsSheetState extends ConsumerState<SchemeDetailsSheet> {
         // Title & Badges
         Text(
           details.schemeName,
-          style: AppTypography.headlineMedium
-              .copyWith(fontWeight: FontWeight.w700),
+          style: AppTypography.titleLarge.copyWith(fontWeight: FontWeight.w700),
         ),
         if (details.fundHouse != null) ...[
           const SizedBox(height: AppSpacing.xxs),

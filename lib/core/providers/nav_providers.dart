@@ -109,3 +109,29 @@ final schemeNavHistoryProvider =
     FutureProvider.family<List<NavHistoryData>, int>((ref, schemeCode) {
   return ref.watch(mutualFundDaoProvider).getNavHistory(schemeCode, limit: 100);
 });
+
+/// Future provider for historical NAV datapoints filtered by time range ('1M', '3M', '6M', '1Y', 'ALL').
+final schemeNavHistoryRangeProvider = FutureProvider.family<
+    List<NavHistoryData>, ({int schemeCode, String range})>((ref, arg) async {
+  final dao = ref.watch(mutualFundDaoProvider);
+  DateTime? startDate;
+  final now = DateTime.now();
+  switch (arg.range) {
+    case '1M':
+      startDate = now.subtract(const Duration(days: 30));
+      break;
+    case '3M':
+      startDate = now.subtract(const Duration(days: 90));
+      break;
+    case '6M':
+      startDate = now.subtract(const Duration(days: 180));
+      break;
+    case '1Y':
+      startDate = now.subtract(const Duration(days: 365));
+      break;
+    case 'ALL':
+    default:
+      startDate = null;
+  }
+  return dao.getNavHistory(arg.schemeCode, startDate: startDate);
+});

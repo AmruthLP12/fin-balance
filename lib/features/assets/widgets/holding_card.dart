@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/calculations/financial_calculator.dart';
 import '../../../core/formatting/currency_formatter.dart';
+import '../../../core/providers/database_provider.dart';
+import '../../../core/providers/nav_providers.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/fin_card.dart';
 import '../../../core/widgets/status_badge.dart';
 import '../../../database/app_database.dart';
-import '../../../database/precision/financial_precision.dart';
 
-/// Card widget rendering an individual asset / mutual fund holding.
-class HoldingCard extends StatelessWidget {
+/// Compact, elegant investment holding card designed to display essential performance
+/// figures (Scheme Name, Invested, Current Value, IRR / P&L) without unnecessary clutter.
+class HoldingCard extends ConsumerWidget {
   final FinancialItem item;
   final VoidCallback? onDelete;
   final VoidCallback? onTap;
@@ -22,21 +26,43 @@ class HoldingCard extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
     final investedPaise = item.initialValuePaise;
     final currentValuationPaise = item.currentValuationPaise;
-    final returnPaise = currentValuationPaise - investedPaise;
-    final isProfit = returnPaise >= 0;
+    final profitLossPaise = FinancialCalculator.calculateProfitLossPaise(
+      investedPaise: investedPaise,
+      currentValuationPaise: currentValuationPaise,
+    );
+    final isProfit = profitLossPaise >= 0;
 
-    final returnPercent =
-        investedPaise > 0 ? (returnPaise / investedPaise) * 100 : 0.0;
+    final absoluteReturn = FinancialCalculator.calculateAbsoluteReturn(
+      investedPaise: investedPaise,
+      currentValuationPaise: currentValuationPaise,
+    );
 
-    final units = item.unitCountMicroUnits > 0
-        ? FinancialPrecision.microUnitsToUnits(item.unitCountMicroUnits)
-        : null;
+    // Watch transactions for accurate dated XIRR
+    final transactionsAsync = ref.watch(transactionsByItemProvider(
+      (profileId: item.profileId, itemId: item.id),
+    ));
+    final transactions = transactionsAsync.value ?? [];
+
+    final schemeCode =
+        item.externalCode != null ? int.tryParse(item.externalCode!) : null;
+    final schemeAsync = schemeCode != null
+        ? ref.watch(schemeByCodeProvider(schemeCode))
+        : const AsyncValue<MutualFundScheme?>.data(null);
+    final scheme = schemeAsync.value;
+
+    final xirr = FinancialCalculator.calculateHoldingXirr(
+      transactions: transactions,
+      currentValuationPaise: currentValuationPaise,
+      valuationDate: scheme?.latestNavDate,
+    );
+
+    final subtitle = scheme?.fundHouse ?? _formatSubType(item.subType);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
@@ -47,6 +73,7 @@ class HoldingCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Top Row: Scheme Name & Return Badge
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -65,33 +92,34 @@ class HoldingCard extends StatelessWidget {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          StatusBadge(
-                            label: _formatSubType(item.subType),
-                            type: BadgeType.asset,
+                      if (subtitle.isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          subtitle,
+                          style: AppTypography.labelSmall.copyWith(
+                            color: isDark
+                                ? AppColors.darkTextMuted
+                                : AppColors.lightTextMuted,
                           ),
-                          if (item.externalCode != null) ...[
-                            const SizedBox(width: AppSpacing.xs),
-                            Text(
-                              'Code: ${item.externalCode}',
-                              style: AppTypography.labelSmall.copyWith(
-                                color: isDark
-                                    ? AppColors.darkTextMuted
-                                    : AppColors.lightTextMuted,
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
                     ],
                   ),
                 ),
+                const SizedBox(width: AppSpacing.sm),
+                StatusBadge(
+                  label:
+                      '${isProfit ? '+' : ''}${absoluteReturn.toStringAsFixed(1)}%',
+                  type: isProfit ? BadgeType.asset : BadgeType.liability,
+                ),
                 if (onDelete != null)
                   PopupMenuButton<String>(
-                    icon: const Icon(Icons.more_vert_rounded, size: 20),
+                    icon: const Icon(Icons.more_vert_rounded, size: 18),
                     tooltip: 'Holding options',
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
                     onSelected: (val) {
                       if (val == 'delete' && onDelete != null) {
                         onDelete!();
@@ -103,7 +131,7 @@ class HoldingCard extends StatelessWidget {
                         child: Row(
                           children: [
                             Icon(Icons.delete_outline_rounded,
-                                color: AppColors.liability, size: 20),
+                                color: AppColors.liability, size: 18),
                             SizedBox(width: 8),
                             Text('Remove Holding',
                                 style: TextStyle(color: AppColors.liability)),
@@ -114,76 +142,35 @@ class HoldingCard extends StatelessWidget {
                   ),
               ],
             ),
-            const SizedBox(height: AppSpacing.md),
+            const SizedBox(height: AppSpacing.sm),
             const Divider(height: 1),
             const SizedBox(height: AppSpacing.sm),
 
-            // Values Row
+            // Compact Metrics Row: Invested | Current Value | IRR / P&L
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'CURRENT VALUE',
-                      style: AppTypography.labelSmall.copyWith(
-                        color: isDark
-                            ? AppColors.darkTextMuted
-                            : AppColors.lightTextMuted,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      CurrencyFormatter.formatPaise(currentValuationPaise),
-                      style: AppTypography.cardAmount.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: isDark
-                            ? AppColors.darkTextPrimary
-                            : AppColors.lightTextPrimary,
-                      ),
-                    ),
-                    if (units != null)
-                      Text(
-                        '${units.toStringAsFixed(3)} units',
-                        style: AppTypography.bodySmall.copyWith(
-                          color: isDark
-                              ? AppColors.darkTextMuted
-                              : AppColors.lightTextMuted,
-                        ),
-                      ),
-                  ],
+                _buildCompactMetric(
+                  label: 'INVESTED',
+                  value: CurrencyFormatter.formatPaise(investedPaise),
+                  isDark: isDark,
                 ),
-                Column(
+                _buildCompactMetric(
+                  label: 'CURRENT VALUE',
+                  value: CurrencyFormatter.formatPaise(currentValuationPaise),
+                  valueColor: isDark
+                      ? AppColors.darkTextPrimary
+                      : AppColors.lightTextPrimary,
+                  isDark: isDark,
+                ),
+                _buildCompactMetric(
+                  label: xirr != null ? 'IRR' : 'PROFIT / LOSS',
+                  value: xirr != null
+                      ? '${xirr.toStringAsFixed(1)}%'
+                      : '${isProfit ? '+' : ''}${CurrencyFormatter.formatPaise(profitLossPaise)}',
+                  valueColor: isProfit ? AppColors.asset : AppColors.liability,
+                  isDark: isDark,
                   crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      'INVESTED / GAIN',
-                      style: AppTypography.labelSmall.copyWith(
-                        color: isDark
-                            ? AppColors.darkTextMuted
-                            : AppColors.lightTextMuted,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      CurrencyFormatter.formatPaise(investedPaise),
-                      style: AppTypography.cardAmount.copyWith(
-                        color: isDark
-                            ? AppColors.darkTextSecondary
-                            : AppColors.lightTextSecondary,
-                      ),
-                    ),
-                    Text(
-                      '${isProfit ? '+' : ''}${CurrencyFormatter.formatPaise(returnPaise)} (${returnPercent >= 0 ? '+' : ''}${returnPercent.toStringAsFixed(2)}%)',
-                      style: AppTypography.bodySmall.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: isProfit ? AppColors.asset : AppColors.liability,
-                      ),
-                    ),
-                  ],
                 ),
               ],
             ),
@@ -193,12 +180,46 @@ class HoldingCard extends StatelessWidget {
     );
   }
 
+  Widget _buildCompactMetric({
+    required String label,
+    required String value,
+    Color? valueColor,
+    required bool isDark,
+    CrossAxisAlignment crossAxisAlignment = CrossAxisAlignment.start,
+  }) {
+    return Column(
+      crossAxisAlignment: crossAxisAlignment,
+      children: [
+        Text(
+          label,
+          style: AppTypography.labelSmall.copyWith(
+            color: isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+            fontSize: 9,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.5,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          value,
+          style: AppTypography.labelMedium.copyWith(
+            fontWeight: FontWeight.bold,
+            color: valueColor ??
+                (isDark
+                    ? AppColors.darkTextSecondary
+                    : AppColors.lightTextSecondary),
+          ),
+        ),
+      ],
+    );
+  }
+
   String _formatSubType(String subType) {
     switch (subType) {
       case 'mutual_fund':
         return 'Mutual Fund';
       case 'stock':
-        return 'Stock / ETF';
+        return 'Stock';
       case 'fixed_deposit':
         return 'Fixed Deposit';
       case 'gold':
@@ -207,8 +228,14 @@ class HoldingCard extends StatelessWidget {
         return 'PPF';
       case 'epf':
         return 'EPF';
+      case 'gpf':
+        return 'GPF';
       case 'nps':
         return 'NPS';
+      case 'bond':
+        return 'Bond';
+      case 'cash':
+        return 'Cash & Bank';
       default:
         return 'Asset';
     }

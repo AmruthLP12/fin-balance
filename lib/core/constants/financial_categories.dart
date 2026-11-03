@@ -162,4 +162,3 @@ class FinancialCategoryConstants {
     return clean.isNotEmpty ? clean : otherAssets;
   }
 }
-

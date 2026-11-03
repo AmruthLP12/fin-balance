@@ -99,7 +99,7 @@ class _HoldingDetailsSheetState extends ConsumerState<HoldingDetailsSheet> {
                     // Scheme Name & Subtitle
                     Text(
                       currentItem.name,
-                      style: AppTypography.headlineMedium
+                      style: AppTypography.titleLarge
                           .copyWith(fontWeight: FontWeight.w700),
                     ),
                     const SizedBox(height: AppSpacing.xxs),
@@ -220,33 +220,13 @@ class _HoldingDetailsSheetState extends ConsumerState<HoldingDetailsSheet> {
 
                           // Units & NAV Row
                           Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Units Held',
-                                    style: AppTypography.labelSmall.copyWith(
-                                      color: isDark
-                                          ? AppColors.darkTextMuted
-                                          : AppColors.lightTextMuted,
-                                    ),
-                                  ),
-                                  Text(
-                                    units.toStringAsFixed(3),
-                                    style: AppTypography.titleMedium.copyWith(
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              if (scheme?.latestNavMicroPaise != null)
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.end,
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      'Latest NAV (${scheme?.latestNavDate != null ? DateFormatter.formatDate(scheme!.latestNavDate!) : "Live"})',
+                                      'Units Held',
                                       style: AppTypography.labelSmall.copyWith(
                                         color: isDark
                                             ? AppColors.darkTextMuted
@@ -254,12 +234,39 @@ class _HoldingDetailsSheetState extends ConsumerState<HoldingDetailsSheet> {
                                       ),
                                     ),
                                     Text(
-                                      '₹${FinancialPrecision.microPaiseToNav(scheme!.latestNavMicroPaise!).toStringAsFixed(4)}',
+                                      units.toStringAsFixed(3),
                                       style: AppTypography.titleMedium.copyWith(
                                         fontWeight: FontWeight.w700,
                                       ),
                                     ),
                                   ],
+                                ),
+                              ),
+                              if (scheme?.latestNavMicroPaise != null)
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    children: [
+                                      Text(
+                                        'Latest NAV (${scheme?.latestNavDate != null ? DateFormatter.formatDate(scheme!.latestNavDate!) : "Live"})',
+                                        style:
+                                            AppTypography.labelSmall.copyWith(
+                                          color: isDark
+                                              ? AppColors.darkTextMuted
+                                              : AppColors.lightTextMuted,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      Text(
+                                        '₹${FinancialPrecision.microPaiseToNav(scheme!.latestNavMicroPaise!).toStringAsFixed(4)}',
+                                        style:
+                                            AppTypography.titleMedium.copyWith(
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                             ],
                           ),
