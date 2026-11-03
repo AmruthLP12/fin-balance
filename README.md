@@ -52,7 +52,7 @@ lib/
 ├── main.dart                     # App entry point with ProviderScope
 ├── app.dart                      # Root MaterialApp & theme configuration
 ├── core/
-│   ├── calculations/             # FinancialCalculator (XIRR Newton-Raphson, absolute returns, P&L)
+│   ├── calculations/             # FinancialCalculator (XIRR Newton-Raphson, P&L, returns) & InvestmentLifecycleSummary
 │   ├── constants/                # AppConstants (INR, sync intervals, keys)
 │   ├── formatting/               # CurrencyFormatter & DateFormatter
 │   ├── providers/                # Global state providers (theme, database, DAOs, profiles)
@@ -67,7 +67,7 @@ lib/
 │       ├── amfi_provider.dart    # Tertiary AMFI text parser fallback
 │       └── nav_sync_service.dart # Failover, caching, and valuation propagation orchestrator
 ├── database/
-│   ├── app_database.dart         # Drift AppDatabase with schema version 2 & migrations
+│   ├── app_database.dart         # Drift AppDatabase with schema version 4 & safe migrations
 │   ├── connection/               # Multi-platform Drift connection (Native SQLite & Web WASM)
 │   ├── precision/                # FinancialPrecision (Paise, micro-units, micro-paise)
 │   ├── tables/                   # Drift table definitions (10 normalized tables)
@@ -78,9 +78,9 @@ lib/
 │   │   ├── widgets/              # ProfileAvatar, ProfileSelectorButton, ProfileSwitcherSheet, ProfileFormDialog
 │   │   └── screens/              # ProfileManagementScreen
 │   ├── overview/                 # Net Worth hero dashboard dynamically scoped to active profile
-│   ├── assets/                   # Profile holdings, mutual fund catalogue search, details, and addition
-│   │   ├── widgets/              # HoldingCard, MutualFundCard, SchemeDetailsSheet, HoldingDetailsSheet, AddToProfileDialog, EditHoldingDialog
-│   │   └── screens/              # AssetsScreen, SipDetailsScreen, MutualFundSearchScreen
+│   ├── assets/                   # Profile holdings, mutual fund catalogue search, details, and full-screen forms
+│   │   ├── widgets/              # HoldingCard, MutualFundCard, SchemeDetailsSheet, HoldingDetailsSheet, AddToProfileDialog
+│   │   └── screens/              # AssetsScreen, SipDetailsScreen (3 Tabs), EditHoldingScreen, EditSipScheduleScreen, AddSipSchedulePeriodScreen, AddInvestmentTransactionScreen, MutualFundSearchScreen
 │   ├── liabilities/              # Loans, credit card dues, and EMI tracking
 │   ├── activity/                 # Transaction ledger, simulated SIPs, EMI flows
 │   └── settings/                 # Preferences, profile management shortcut, sync configuration

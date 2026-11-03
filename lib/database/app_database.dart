@@ -65,7 +65,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration {
@@ -84,6 +84,12 @@ class AppDatabase extends _$AppDatabase {
           await m.createTable(sipPlans);
           await m.createTable(sipSchedulePeriods);
           await m.createTable(sipInstallments);
+        }
+        if (from < 4) {
+          await m.addColumn(transactions, transactions.chargesPaise);
+          await m.addColumn(transactions, transactions.netAmountPaise);
+          await m.addColumn(transactions, transactions.sipPlanId);
+          await m.addColumn(transactions, transactions.linkedTransactionId);
         }
       },
       beforeOpen: (details) async {

@@ -12,7 +12,7 @@ import '../../../core/widgets/status_badge.dart';
 import '../../../database/app_database.dart';
 import '../../../database/precision/financial_precision.dart';
 import 'add_to_profile_dialog.dart';
-import 'edit_holding_dialog.dart';
+import '../screens/edit_holding_screen.dart';
 
 /// Modal bottom sheet displaying detailed holding statistics, valuation, transaction history,
 /// and live NAV sync for a specific mutual fund asset holding.
@@ -443,10 +443,7 @@ class _HoldingDetailsSheetState extends ConsumerState<HoldingDetailsSheet> {
   }
 
   void _openEditHoldingDialog(FinancialItem holding) {
-    showDialog<void>(
-      context: context,
-      builder: (_) => EditHoldingDialog(holding: holding),
-    );
+    EditHoldingScreen.push(context, holding);
   }
 
   Future<void> _openAddPurchaseDialog(FinancialItem holding) async {

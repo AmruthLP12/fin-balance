@@ -172,6 +172,12 @@ final activeProfileSipPlansProvider = StreamProvider<List<SipPlan>>((ref) {
   return ref.watch(sipsDaoProvider).watchSipsByProfile(profileId);
 });
 
+/// Stream provider for SIP plans linked to a specific holding/financial item.
+final sipsByHoldingProvider =
+    StreamProvider.family<List<SipPlan>, int>((ref, holdingId) {
+  return ref.watch(sipsDaoProvider).watchSipsByFinancialItem(holdingId);
+});
+
 /// Stream provider for periods of a given SIP plan.
 final sipPeriodsProvider =
     StreamProvider.family<List<SipSchedulePeriod>, int>((ref, sipPlanId) {

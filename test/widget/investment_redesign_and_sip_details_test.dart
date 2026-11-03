@@ -315,49 +315,44 @@ void main() {
       // Verify favorite toggle star is in AppBar actions
       expect(find.byIcon(Icons.star_border_rounded), findsOneWidget);
 
-      // 2. Section A: Overview Metrics
+      // 2. Tab 1: Overview Metrics
       expect(find.text('CURRENT VALUATION'), findsOneWidget);
       expect(find.text('₹54,320.00'), findsOneWidget);
       expect(find.text('TOTAL INVESTED'), findsOneWidget);
       expect(find.text('₹50,000.00'), findsOneWidget);
       expect(find.text('PROFIT / LOSS'), findsOneWidget);
       expect(find.text('+₹4,320.00'), findsOneWidget);
-      expect(find.text('+8.64% Abs'), findsOneWidget);
-      expect(find.text('ANNUALIZED RETURN (XIRR)'), findsOneWidget);
-      expect(find.text('UNITS HELD'), findsOneWidget);
-      expect(find.text('1000.000'), findsOneWidget);
-      expect(find.text('LATEST NAV'), findsOneWidget);
-      expect(find.text('₹54.3200'), findsOneWidget);
-      expect(find.textContaining('Valuation based on cached NAV of'),
-          findsOneWidget);
+      expect(find.text('ABSOLUTE RETURN'), findsOneWidget);
+      expect(find.text('+8.64%'), findsOneWidget);
+      expect(find.text('XIRR / IRR'), findsOneWidget);
+      expect(find.text('Units Held'), findsOneWidget);
+      expect(find.textContaining('1000.000'), findsOneWidget);
+      expect(find.text('Latest NAV'), findsOneWidget);
+      expect(find.textContaining('₹54.3200'), findsOneWidget);
 
-      // 3. Section B: Performance History Graph
-      expect(find.text('Performance History'), findsOneWidget);
+      // SIP Schedule section in Overview
+      expect(find.textContaining('SIP Investment Schedule'), findsOneWidget);
+      expect(find.text('Axis Small Cap Monthly SIP'), findsOneWidget);
+      expect(find.textContaining('₹5,000.00 / monthly'), findsOneWidget);
+
+      // 3. Tab 2: Transactions
+      await tester.tap(find.text('Transactions'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Transactions (1)'), findsOneWidget);
+      expect(find.text('-₹50,000.00'), findsOneWidget);
+      expect(find.textContaining('1000.0000'), findsOneWidget);
+
+      // 4. Tab 3: Performance History Graph
+      await tester.tap(find.text('Performance History'));
+      await tester.pumpAndSettle();
+
       expect(find.text('1M'), findsOneWidget);
       expect(find.text('3M'), findsOneWidget);
       expect(find.text('ALL'), findsOneWidget);
 
-      // 4. Section C: Transaction History
-      expect(find.text('Transaction History (1)'), findsOneWidget);
-      expect(find.text('Purchase / Installment'), findsOneWidget);
-      expect(find.text('+₹50,000.00'), findsOneWidget);
-      expect(find.textContaining('1000.000 units'), findsOneWidget);
-
-      // 5. Section D: SIP Schedule
-      expect(find.text('SIP Investment Schedule'), findsOneWidget);
-      expect(find.text('Axis Small Cap Monthly SIP'), findsOneWidget);
-      expect(find.text('₹5,000.00'), findsOneWidget);
-      expect(find.text('MONTHLY'), findsOneWidget);
-      expect(find.text('1 Confirmed Investments'), findsOneWidget);
-      expect(find.text('1 Planned Future'), findsOneWidget);
-      expect(
-        find.textContaining(
-            'Planned future installments are forward projections and do not contribute to invested capital'),
-        findsOneWidget,
-      );
-
-      // 6. Test Back Navigation returns to AssetsScreen preserving category selection
-      await tester.tap(find.byIcon(Icons.arrow_back_rounded));
+      // 5. Test Back Navigation returns to AssetsScreen preserving category selection
+      await tester.tap(find.byType(BackButton));
       await tester.pumpAndSettle();
 
       // Back on AssetsScreen with Mutual Funds still selected

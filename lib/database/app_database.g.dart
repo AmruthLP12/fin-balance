@@ -2726,6 +2726,36 @@ class $TransactionsTable extends Transactions
   late final GeneratedColumn<int> amountPaise = GeneratedColumn<int>(
       'amount_paise', aliasedName, false,
       type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _chargesPaiseMeta =
+      const VerificationMeta('chargesPaise');
+  @override
+  late final GeneratedColumn<int> chargesPaise = GeneratedColumn<int>(
+      'charges_paise', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _netAmountPaiseMeta =
+      const VerificationMeta('netAmountPaise');
+  @override
+  late final GeneratedColumn<int> netAmountPaise = GeneratedColumn<int>(
+      'net_amount_paise', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _sipPlanIdMeta =
+      const VerificationMeta('sipPlanId');
+  @override
+  late final GeneratedColumn<int> sipPlanId = GeneratedColumn<int>(
+      'sip_plan_id', aliasedName, true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      $customConstraints: 'REFERENCES sip_plans(id) ON DELETE SET NULL');
+  static const VerificationMeta _linkedTransactionIdMeta =
+      const VerificationMeta('linkedTransactionId');
+  @override
+  late final GeneratedColumn<int> linkedTransactionId = GeneratedColumn<int>(
+      'linked_transaction_id', aliasedName, true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      $customConstraints: 'REFERENCES transactions(id) ON DELETE SET NULL');
   static const VerificationMeta _unitsMicroUnitsMeta =
       const VerificationMeta('unitsMicroUnits');
   @override
@@ -2777,6 +2807,10 @@ class $TransactionsTable extends Transactions
         toAccountId,
         transactionDate,
         amountPaise,
+        chargesPaise,
+        netAmountPaise,
+        sipPlanId,
+        linkedTransactionId,
         unitsMicroUnits,
         unitPriceMicroPaise,
         source,
@@ -2853,6 +2887,30 @@ class $TransactionsTable extends Transactions
     } else if (isInserting) {
       context.missing(_amountPaiseMeta);
     }
+    if (data.containsKey('charges_paise')) {
+      context.handle(
+          _chargesPaiseMeta,
+          chargesPaise.isAcceptableOrUnknown(
+              data['charges_paise']!, _chargesPaiseMeta));
+    }
+    if (data.containsKey('net_amount_paise')) {
+      context.handle(
+          _netAmountPaiseMeta,
+          netAmountPaise.isAcceptableOrUnknown(
+              data['net_amount_paise']!, _netAmountPaiseMeta));
+    }
+    if (data.containsKey('sip_plan_id')) {
+      context.handle(
+          _sipPlanIdMeta,
+          sipPlanId.isAcceptableOrUnknown(
+              data['sip_plan_id']!, _sipPlanIdMeta));
+    }
+    if (data.containsKey('linked_transaction_id')) {
+      context.handle(
+          _linkedTransactionIdMeta,
+          linkedTransactionId.isAcceptableOrUnknown(
+              data['linked_transaction_id']!, _linkedTransactionIdMeta));
+    }
     if (data.containsKey('units_micro_units')) {
       context.handle(
           _unitsMicroUnitsMeta,
@@ -2908,6 +2966,14 @@ class $TransactionsTable extends Transactions
           DriftSqlType.dateTime, data['${effectivePrefix}transaction_date'])!,
       amountPaise: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}amount_paise'])!,
+      chargesPaise: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}charges_paise'])!,
+      netAmountPaise: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}net_amount_paise']),
+      sipPlanId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}sip_plan_id']),
+      linkedTransactionId: attachedDatabase.typeMapping.read(
+          DriftSqlType.int, data['${effectivePrefix}linked_transaction_id']),
       unitsMicroUnits: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}units_micro_units']),
       unitPriceMicroPaise: attachedDatabase.typeMapping.read(
@@ -2936,7 +3002,9 @@ class Transaction extends DataClass implements Insertable<Transaction> {
   final int profileId;
 
   /// Transaction type:
-  /// 'income', 'expense', 'transfer', 'investment_purchase', 'investment_redemption', 'debt_repayment', 'adjustment'
+  /// 'income', 'expense', 'transfer', 'investment_purchase', 'investment_redemption',
+  /// 'sip_investment', 'dividend_reinvestment', 'dividend_payout', 'redemption',
+  /// 'swp_withdrawal', 'switch_in', 'switch_out', 'debt_repayment', 'adjustment'
   final String transactionType;
   final int categoryId;
   final int? financialItemId;
@@ -2946,6 +3014,20 @@ class Transaction extends DataClass implements Insertable<Transaction> {
 
   /// Cash transaction value in Paise (e.g., ₹5,000.00 = 500,000 paise)
   final int amountPaise;
+
+  /// Optional transaction charges or fees in Paise (e.g., STT, stamp duty, exit load)
+  final int chargesPaise;
+
+  /// Net cash flow amount in Paise:
+  /// Outflows (investor pays): amountPaise + chargesPaise
+  /// Inflows (investor receives): amountPaise - chargesPaise
+  final int? netAmountPaise;
+
+  /// Optional link to parent SIP plan
+  final int? sipPlanId;
+
+  /// Optional link to paired transaction (e.g. Switch In <-> Switch Out)
+  final int? linkedTransactionId;
 
   /// Units transacted for investments (in micro-units: 1.0 unit = 1,000,000 micro-units)
   final int? unitsMicroUnits;
@@ -2968,6 +3050,10 @@ class Transaction extends DataClass implements Insertable<Transaction> {
       this.toAccountId,
       required this.transactionDate,
       required this.amountPaise,
+      required this.chargesPaise,
+      this.netAmountPaise,
+      this.sipPlanId,
+      this.linkedTransactionId,
       this.unitsMicroUnits,
       this.unitPriceMicroPaise,
       required this.source,
@@ -2992,6 +3078,16 @@ class Transaction extends DataClass implements Insertable<Transaction> {
     }
     map['transaction_date'] = Variable<DateTime>(transactionDate);
     map['amount_paise'] = Variable<int>(amountPaise);
+    map['charges_paise'] = Variable<int>(chargesPaise);
+    if (!nullToAbsent || netAmountPaise != null) {
+      map['net_amount_paise'] = Variable<int>(netAmountPaise);
+    }
+    if (!nullToAbsent || sipPlanId != null) {
+      map['sip_plan_id'] = Variable<int>(sipPlanId);
+    }
+    if (!nullToAbsent || linkedTransactionId != null) {
+      map['linked_transaction_id'] = Variable<int>(linkedTransactionId);
+    }
     if (!nullToAbsent || unitsMicroUnits != null) {
       map['units_micro_units'] = Variable<int>(unitsMicroUnits);
     }
@@ -3024,6 +3120,16 @@ class Transaction extends DataClass implements Insertable<Transaction> {
           : Value(toAccountId),
       transactionDate: Value(transactionDate),
       amountPaise: Value(amountPaise),
+      chargesPaise: Value(chargesPaise),
+      netAmountPaise: netAmountPaise == null && nullToAbsent
+          ? const Value.absent()
+          : Value(netAmountPaise),
+      sipPlanId: sipPlanId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sipPlanId),
+      linkedTransactionId: linkedTransactionId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(linkedTransactionId),
       unitsMicroUnits: unitsMicroUnits == null && nullToAbsent
           ? const Value.absent()
           : Value(unitsMicroUnits),
@@ -3051,6 +3157,11 @@ class Transaction extends DataClass implements Insertable<Transaction> {
       toAccountId: serializer.fromJson<int?>(json['toAccountId']),
       transactionDate: serializer.fromJson<DateTime>(json['transactionDate']),
       amountPaise: serializer.fromJson<int>(json['amountPaise']),
+      chargesPaise: serializer.fromJson<int>(json['chargesPaise']),
+      netAmountPaise: serializer.fromJson<int?>(json['netAmountPaise']),
+      sipPlanId: serializer.fromJson<int?>(json['sipPlanId']),
+      linkedTransactionId:
+          serializer.fromJson<int?>(json['linkedTransactionId']),
       unitsMicroUnits: serializer.fromJson<int?>(json['unitsMicroUnits']),
       unitPriceMicroPaise:
           serializer.fromJson<int?>(json['unitPriceMicroPaise']),
@@ -3073,6 +3184,10 @@ class Transaction extends DataClass implements Insertable<Transaction> {
       'toAccountId': serializer.toJson<int?>(toAccountId),
       'transactionDate': serializer.toJson<DateTime>(transactionDate),
       'amountPaise': serializer.toJson<int>(amountPaise),
+      'chargesPaise': serializer.toJson<int>(chargesPaise),
+      'netAmountPaise': serializer.toJson<int?>(netAmountPaise),
+      'sipPlanId': serializer.toJson<int?>(sipPlanId),
+      'linkedTransactionId': serializer.toJson<int?>(linkedTransactionId),
       'unitsMicroUnits': serializer.toJson<int?>(unitsMicroUnits),
       'unitPriceMicroPaise': serializer.toJson<int?>(unitPriceMicroPaise),
       'source': serializer.toJson<String>(source),
@@ -3092,6 +3207,10 @@ class Transaction extends DataClass implements Insertable<Transaction> {
           Value<int?> toAccountId = const Value.absent(),
           DateTime? transactionDate,
           int? amountPaise,
+          int? chargesPaise,
+          Value<int?> netAmountPaise = const Value.absent(),
+          Value<int?> sipPlanId = const Value.absent(),
+          Value<int?> linkedTransactionId = const Value.absent(),
           Value<int?> unitsMicroUnits = const Value.absent(),
           Value<int?> unitPriceMicroPaise = const Value.absent(),
           String? source,
@@ -3111,6 +3230,13 @@ class Transaction extends DataClass implements Insertable<Transaction> {
         toAccountId: toAccountId.present ? toAccountId.value : this.toAccountId,
         transactionDate: transactionDate ?? this.transactionDate,
         amountPaise: amountPaise ?? this.amountPaise,
+        chargesPaise: chargesPaise ?? this.chargesPaise,
+        netAmountPaise:
+            netAmountPaise.present ? netAmountPaise.value : this.netAmountPaise,
+        sipPlanId: sipPlanId.present ? sipPlanId.value : this.sipPlanId,
+        linkedTransactionId: linkedTransactionId.present
+            ? linkedTransactionId.value
+            : this.linkedTransactionId,
         unitsMicroUnits: unitsMicroUnits.present
             ? unitsMicroUnits.value
             : this.unitsMicroUnits,
@@ -3144,6 +3270,16 @@ class Transaction extends DataClass implements Insertable<Transaction> {
           : this.transactionDate,
       amountPaise:
           data.amountPaise.present ? data.amountPaise.value : this.amountPaise,
+      chargesPaise: data.chargesPaise.present
+          ? data.chargesPaise.value
+          : this.chargesPaise,
+      netAmountPaise: data.netAmountPaise.present
+          ? data.netAmountPaise.value
+          : this.netAmountPaise,
+      sipPlanId: data.sipPlanId.present ? data.sipPlanId.value : this.sipPlanId,
+      linkedTransactionId: data.linkedTransactionId.present
+          ? data.linkedTransactionId.value
+          : this.linkedTransactionId,
       unitsMicroUnits: data.unitsMicroUnits.present
           ? data.unitsMicroUnits.value
           : this.unitsMicroUnits,
@@ -3169,6 +3305,10 @@ class Transaction extends DataClass implements Insertable<Transaction> {
           ..write('toAccountId: $toAccountId, ')
           ..write('transactionDate: $transactionDate, ')
           ..write('amountPaise: $amountPaise, ')
+          ..write('chargesPaise: $chargesPaise, ')
+          ..write('netAmountPaise: $netAmountPaise, ')
+          ..write('sipPlanId: $sipPlanId, ')
+          ..write('linkedTransactionId: $linkedTransactionId, ')
           ..write('unitsMicroUnits: $unitsMicroUnits, ')
           ..write('unitPriceMicroPaise: $unitPriceMicroPaise, ')
           ..write('source: $source, ')
@@ -3190,6 +3330,10 @@ class Transaction extends DataClass implements Insertable<Transaction> {
       toAccountId,
       transactionDate,
       amountPaise,
+      chargesPaise,
+      netAmountPaise,
+      sipPlanId,
+      linkedTransactionId,
       unitsMicroUnits,
       unitPriceMicroPaise,
       source,
@@ -3209,6 +3353,10 @@ class Transaction extends DataClass implements Insertable<Transaction> {
           other.toAccountId == this.toAccountId &&
           other.transactionDate == this.transactionDate &&
           other.amountPaise == this.amountPaise &&
+          other.chargesPaise == this.chargesPaise &&
+          other.netAmountPaise == this.netAmountPaise &&
+          other.sipPlanId == this.sipPlanId &&
+          other.linkedTransactionId == this.linkedTransactionId &&
           other.unitsMicroUnits == this.unitsMicroUnits &&
           other.unitPriceMicroPaise == this.unitPriceMicroPaise &&
           other.source == this.source &&
@@ -3227,6 +3375,10 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
   final Value<int?> toAccountId;
   final Value<DateTime> transactionDate;
   final Value<int> amountPaise;
+  final Value<int> chargesPaise;
+  final Value<int?> netAmountPaise;
+  final Value<int?> sipPlanId;
+  final Value<int?> linkedTransactionId;
   final Value<int?> unitsMicroUnits;
   final Value<int?> unitPriceMicroPaise;
   final Value<String> source;
@@ -3243,6 +3395,10 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
     this.toAccountId = const Value.absent(),
     this.transactionDate = const Value.absent(),
     this.amountPaise = const Value.absent(),
+    this.chargesPaise = const Value.absent(),
+    this.netAmountPaise = const Value.absent(),
+    this.sipPlanId = const Value.absent(),
+    this.linkedTransactionId = const Value.absent(),
     this.unitsMicroUnits = const Value.absent(),
     this.unitPriceMicroPaise = const Value.absent(),
     this.source = const Value.absent(),
@@ -3260,6 +3416,10 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
     this.toAccountId = const Value.absent(),
     required DateTime transactionDate,
     required int amountPaise,
+    this.chargesPaise = const Value.absent(),
+    this.netAmountPaise = const Value.absent(),
+    this.sipPlanId = const Value.absent(),
+    this.linkedTransactionId = const Value.absent(),
     this.unitsMicroUnits = const Value.absent(),
     this.unitPriceMicroPaise = const Value.absent(),
     this.source = const Value.absent(),
@@ -3281,6 +3441,10 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
     Expression<int>? toAccountId,
     Expression<DateTime>? transactionDate,
     Expression<int>? amountPaise,
+    Expression<int>? chargesPaise,
+    Expression<int>? netAmountPaise,
+    Expression<int>? sipPlanId,
+    Expression<int>? linkedTransactionId,
     Expression<int>? unitsMicroUnits,
     Expression<int>? unitPriceMicroPaise,
     Expression<String>? source,
@@ -3298,6 +3462,11 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
       if (toAccountId != null) 'to_account_id': toAccountId,
       if (transactionDate != null) 'transaction_date': transactionDate,
       if (amountPaise != null) 'amount_paise': amountPaise,
+      if (chargesPaise != null) 'charges_paise': chargesPaise,
+      if (netAmountPaise != null) 'net_amount_paise': netAmountPaise,
+      if (sipPlanId != null) 'sip_plan_id': sipPlanId,
+      if (linkedTransactionId != null)
+        'linked_transaction_id': linkedTransactionId,
       if (unitsMicroUnits != null) 'units_micro_units': unitsMicroUnits,
       if (unitPriceMicroPaise != null)
         'unit_price_micro_paise': unitPriceMicroPaise,
@@ -3318,6 +3487,10 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
       Value<int?>? toAccountId,
       Value<DateTime>? transactionDate,
       Value<int>? amountPaise,
+      Value<int>? chargesPaise,
+      Value<int?>? netAmountPaise,
+      Value<int?>? sipPlanId,
+      Value<int?>? linkedTransactionId,
       Value<int?>? unitsMicroUnits,
       Value<int?>? unitPriceMicroPaise,
       Value<String>? source,
@@ -3334,6 +3507,10 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
       toAccountId: toAccountId ?? this.toAccountId,
       transactionDate: transactionDate ?? this.transactionDate,
       amountPaise: amountPaise ?? this.amountPaise,
+      chargesPaise: chargesPaise ?? this.chargesPaise,
+      netAmountPaise: netAmountPaise ?? this.netAmountPaise,
+      sipPlanId: sipPlanId ?? this.sipPlanId,
+      linkedTransactionId: linkedTransactionId ?? this.linkedTransactionId,
       unitsMicroUnits: unitsMicroUnits ?? this.unitsMicroUnits,
       unitPriceMicroPaise: unitPriceMicroPaise ?? this.unitPriceMicroPaise,
       source: source ?? this.source,
@@ -3373,6 +3550,18 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
     if (amountPaise.present) {
       map['amount_paise'] = Variable<int>(amountPaise.value);
     }
+    if (chargesPaise.present) {
+      map['charges_paise'] = Variable<int>(chargesPaise.value);
+    }
+    if (netAmountPaise.present) {
+      map['net_amount_paise'] = Variable<int>(netAmountPaise.value);
+    }
+    if (sipPlanId.present) {
+      map['sip_plan_id'] = Variable<int>(sipPlanId.value);
+    }
+    if (linkedTransactionId.present) {
+      map['linked_transaction_id'] = Variable<int>(linkedTransactionId.value);
+    }
     if (unitsMicroUnits.present) {
       map['units_micro_units'] = Variable<int>(unitsMicroUnits.value);
     }
@@ -3406,6 +3595,10 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
           ..write('toAccountId: $toAccountId, ')
           ..write('transactionDate: $transactionDate, ')
           ..write('amountPaise: $amountPaise, ')
+          ..write('chargesPaise: $chargesPaise, ')
+          ..write('netAmountPaise: $netAmountPaise, ')
+          ..write('sipPlanId: $sipPlanId, ')
+          ..write('linkedTransactionId: $linkedTransactionId, ')
           ..write('unitsMicroUnits: $unitsMicroUnits, ')
           ..write('unitPriceMicroPaise: $unitPriceMicroPaise, ')
           ..write('source: $source, ')
@@ -8385,6 +8578,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       'CREATE INDEX idx_transaction_item ON transactions (financial_item_id)');
   late final Index idxTransactionType = Index('idx_transaction_type',
       'CREATE INDEX idx_transaction_type ON transactions (transaction_type)');
+  late final Index idxTransactionSip = Index('idx_transaction_sip',
+      'CREATE INDEX idx_transaction_sip ON transactions (sip_plan_id)');
+  late final Index idxTransactionLinked = Index('idx_transaction_linked',
+      'CREATE INDEX idx_transaction_linked ON transactions (linked_transaction_id)');
   late final Index idxValuationDate = Index('idx_valuation_date',
       'CREATE INDEX idx_valuation_date ON valuation_history (valuation_date)');
   late final Index idxRecurringProfile = Index('idx_recurring_profile',
@@ -8469,6 +8666,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         idxTransactionDate,
         idxTransactionItem,
         idxTransactionType,
+        idxTransactionSip,
+        idxTransactionLinked,
         idxValuationDate,
         idxRecurringProfile,
         idxRecurringStatus,
@@ -9682,6 +9881,10 @@ typedef $$TransactionsTableCreateCompanionBuilder = TransactionsCompanion
   Value<int?> toAccountId,
   required DateTime transactionDate,
   required int amountPaise,
+  Value<int> chargesPaise,
+  Value<int?> netAmountPaise,
+  Value<int?> sipPlanId,
+  Value<int?> linkedTransactionId,
   Value<int?> unitsMicroUnits,
   Value<int?> unitPriceMicroPaise,
   Value<String> source,
@@ -9700,6 +9903,10 @@ typedef $$TransactionsTableUpdateCompanionBuilder = TransactionsCompanion
   Value<int?> toAccountId,
   Value<DateTime> transactionDate,
   Value<int> amountPaise,
+  Value<int> chargesPaise,
+  Value<int?> netAmountPaise,
+  Value<int?> sipPlanId,
+  Value<int?> linkedTransactionId,
   Value<int?> unitsMicroUnits,
   Value<int?> unitPriceMicroPaise,
   Value<String> source,
@@ -9746,6 +9953,20 @@ class $$TransactionsTableFilterComposer
 
   ColumnFilters<int> get amountPaise => $composableBuilder(
       column: $table.amountPaise, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get chargesPaise => $composableBuilder(
+      column: $table.chargesPaise, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get netAmountPaise => $composableBuilder(
+      column: $table.netAmountPaise,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get sipPlanId => $composableBuilder(
+      column: $table.sipPlanId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get linkedTransactionId => $composableBuilder(
+      column: $table.linkedTransactionId,
+      builder: (column) => ColumnFilters(column));
 
   ColumnFilters<int> get unitsMicroUnits => $composableBuilder(
       column: $table.unitsMicroUnits,
@@ -9808,6 +10029,21 @@ class $$TransactionsTableOrderingComposer
   ColumnOrderings<int> get amountPaise => $composableBuilder(
       column: $table.amountPaise, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<int> get chargesPaise => $composableBuilder(
+      column: $table.chargesPaise,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get netAmountPaise => $composableBuilder(
+      column: $table.netAmountPaise,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get sipPlanId => $composableBuilder(
+      column: $table.sipPlanId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get linkedTransactionId => $composableBuilder(
+      column: $table.linkedTransactionId,
+      builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<int> get unitsMicroUnits => $composableBuilder(
       column: $table.unitsMicroUnits,
       builder: (column) => ColumnOrderings(column));
@@ -9865,6 +10101,18 @@ class $$TransactionsTableAnnotationComposer
   GeneratedColumn<int> get amountPaise => $composableBuilder(
       column: $table.amountPaise, builder: (column) => column);
 
+  GeneratedColumn<int> get chargesPaise => $composableBuilder(
+      column: $table.chargesPaise, builder: (column) => column);
+
+  GeneratedColumn<int> get netAmountPaise => $composableBuilder(
+      column: $table.netAmountPaise, builder: (column) => column);
+
+  GeneratedColumn<int> get sipPlanId =>
+      $composableBuilder(column: $table.sipPlanId, builder: (column) => column);
+
+  GeneratedColumn<int> get linkedTransactionId => $composableBuilder(
+      column: $table.linkedTransactionId, builder: (column) => column);
+
   GeneratedColumn<int> get unitsMicroUnits => $composableBuilder(
       column: $table.unitsMicroUnits, builder: (column) => column);
 
@@ -9919,6 +10167,10 @@ class $$TransactionsTableTableManager extends RootTableManager<
             Value<int?> toAccountId = const Value.absent(),
             Value<DateTime> transactionDate = const Value.absent(),
             Value<int> amountPaise = const Value.absent(),
+            Value<int> chargesPaise = const Value.absent(),
+            Value<int?> netAmountPaise = const Value.absent(),
+            Value<int?> sipPlanId = const Value.absent(),
+            Value<int?> linkedTransactionId = const Value.absent(),
             Value<int?> unitsMicroUnits = const Value.absent(),
             Value<int?> unitPriceMicroPaise = const Value.absent(),
             Value<String> source = const Value.absent(),
@@ -9936,6 +10188,10 @@ class $$TransactionsTableTableManager extends RootTableManager<
             toAccountId: toAccountId,
             transactionDate: transactionDate,
             amountPaise: amountPaise,
+            chargesPaise: chargesPaise,
+            netAmountPaise: netAmountPaise,
+            sipPlanId: sipPlanId,
+            linkedTransactionId: linkedTransactionId,
             unitsMicroUnits: unitsMicroUnits,
             unitPriceMicroPaise: unitPriceMicroPaise,
             source: source,
@@ -9953,6 +10209,10 @@ class $$TransactionsTableTableManager extends RootTableManager<
             Value<int?> toAccountId = const Value.absent(),
             required DateTime transactionDate,
             required int amountPaise,
+            Value<int> chargesPaise = const Value.absent(),
+            Value<int?> netAmountPaise = const Value.absent(),
+            Value<int?> sipPlanId = const Value.absent(),
+            Value<int?> linkedTransactionId = const Value.absent(),
             Value<int?> unitsMicroUnits = const Value.absent(),
             Value<int?> unitPriceMicroPaise = const Value.absent(),
             Value<String> source = const Value.absent(),
@@ -9970,6 +10230,10 @@ class $$TransactionsTableTableManager extends RootTableManager<
             toAccountId: toAccountId,
             transactionDate: transactionDate,
             amountPaise: amountPaise,
+            chargesPaise: chargesPaise,
+            netAmountPaise: netAmountPaise,
+            sipPlanId: sipPlanId,
+            linkedTransactionId: linkedTransactionId,
             unitsMicroUnits: unitsMicroUnits,
             unitPriceMicroPaise: unitPriceMicroPaise,
             source: source,

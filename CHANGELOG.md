@@ -5,6 +5,46 @@ All notable changes to the FinBalance application will be documented in this fil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.11.0] - 2026-11-03
+
+### Added
+- **Dedicated Investment Details Page with 3 Separate Tabs (`SipDetailsScreen`):**
+  - **Tab 1: Overview:**
+    - Live financial summary: Total Invested, Current Valuation, Profit/Loss, Absolute Return (%), and annualized XIRR/IRR.
+    - Investment information card: Scheme Name, AMC/Fund House, Category, Units Held, Latest NAV with date, Start Date, and Owning Profile.
+    - SIP Schedule Periods section displaying multi-period investment history, ongoing frequency, and active/closed period statuses.
+    - Investment Remarks & Lifecycle Narrative: Distinguishable auto-generated lifecycle summary (`InvestmentLifecycleSummary`) and independently editable user notes dialog.
+  - **Tab 2: Transactions:**
+    - Complete authoritative transaction log supporting 9 investment transaction types: One-time Purchase (`investment_purchase`), SIP Investment (`sip_investment`), IDCW Reinvestment (`dividend_reinvestment`), IDCW Payout (`dividend_payout`), Redemption (`redemption`), SWP Withdrawal (`swp_withdrawal`), Switch In (`switch_in`), Switch Out (`switch_out`), and Adjustments.
+    - Inflow and outflow directional badges and indicators, execution NAV, units allotted/redeemed, charges, and net cash flow amount.
+    - Horizontal transaction filter pills (`ALL`, `PURCHASES`, `SIP`, `DIVIDENDS`, `REDEMPTIONS`, `SWP`, `SWITCHES`).
+    - Direct shortcut button to record a new transaction.
+  - **Tab 3: Performance History:**
+    - Dedicated valuation trajectory chart ($\text{units at date} \times \text{NAV at date}$) using FL Chart.
+    - Time-range selector chips (`1M`, `3M`, `6M`, `1Y`, `ALL`).
+    - Touch-responsive tooltips displaying formatted date and valuation in INR.
+    - Clean empty state view when fewer than 2 NAV data points exist.
+- **Full-Screen Edit Holding Page (`EditHoldingScreen`):**
+  - Replaces modal dialog with full-screen route including AppBar, dismiss confirmation, and Save action.
+  - Form validation with two-way sync: Invested Cost $\leftrightarrow$ Units Held based on purchase NAV.
+  - Financial calculations impact notice informing user that edits update portfolio valuation and cash flow metrics.
+- **Full-Screen Edit SIP Schedule Page (`EditSipScheduleScreen`):**
+  - Replaces modal dialog with full-screen route including original Add SIP form fields.
+  - Effective date selector preserving past confirmed installments while adding new schedule periods.
+- **Support for Multiple SIP Schedule Periods Under One Holding:**
+  - Added `AddSipSchedulePeriodScreen` allowing multiple schedule periods (e.g. initial amount closed, new revised amount active).
+  - Automatically closes previous period on the day prior to new effective date without duplicating holdings or modifying past records.
+- **Full-Screen Add Investment Transaction Page (`AddInvestmentTransactionScreen`):**
+  - Supports all 8+ investment transaction types with contextual fields and instructions.
+  - Over-redemption guard blocking redemptions or withdrawals greater than current units held.
+  - Switch pairing supporting atomic link between Switch Out and Switch In (`linkedTransactionId`).
+  - Optional charges field supported across all transaction types with integer paise precision.
+- **Transaction Charges & Cash Flow Engine:**
+  - Upgraded Drift schema to version 4 adding `chargesPaise`, `netAmountPaise`, `sipPlanId`, and `linkedTransactionId`.
+  - Updated `FinancialCalculator.calculateHoldingXirr` and `calculatePortfolioXirr` to account for charges and diverse transaction types.
+- **Cleaned Profile Dashboard (`OverviewScreen`):**
+  - Removed Recent Activity section from the individual profile dashboard, focusing the view on net worth, asset & liability charts, and cash flow projections.
+
 ## [0.10.0] - 2026-11-03
 
 ### Added

@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/financial_categories.dart';
 import '../../../core/formatting/currency_formatter.dart';
-import '../../../core/formatting/date_formatter.dart';
 import '../../../core/providers/database_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
@@ -330,106 +329,6 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
             totalLiabilitiesPaise: totalLiabilitiesPaise,
           ),
           const SizedBox(height: AppSpacing.lg),
-
-          // Recent Activity Section
-          SectionHeader(
-            title: 'Recent Activity',
-            actionLabel: 'Search Schemes',
-            onActionTap: () => _openSearch(context),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-
-          if (transactions.isEmpty)
-            EmptyStateView(
-              icon: Icons.history_rounded,
-              title: 'No Investment Activity Yet',
-              description:
-                  'Transactions recorded from SIP installments or asset investments for $profileName will appear here.',
-              actionLabel: 'Search Mutual Funds',
-              onAction: () => _openSearch(context),
-            )
-          else
-            ...transactions.take(5).map((tx) {
-              final isInvestment = tx.transactionType == 'investment_purchase';
-              final isExpense = tx.transactionType == 'expense';
-              final isIncome = tx.transactionType == 'income';
-
-              final Color amountColor = isIncome
-                  ? AppColors.asset
-                  : (isInvestment
-                      ? AppColors.brandPrimaryLight
-                      : (isExpense
-                          ? AppColors.liability
-                          : (isDark
-                              ? AppColors.darkTextPrimary
-                              : AppColors.lightTextPrimary)));
-
-              final prefix = isIncome ? '+' : '-';
-              final titleText = tx.notes?.isNotEmpty == true
-                  ? tx.notes!
-                  : (categoriesMap[tx.categoryId] ??
-                      tx.transactionType.replaceAll('_', ' ').toUpperCase());
-
-              return Padding(
-                padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                child: FinCard(
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: amountColor.withValues(alpha: 0.12),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          isInvestment
-                              ? Icons.trending_up_rounded
-                              : (isIncome
-                                  ? Icons.arrow_downward_rounded
-                                  : Icons.arrow_upward_rounded),
-                          size: 18,
-                          color: amountColor,
-                        ),
-                      ),
-                      const SizedBox(width: AppSpacing.md),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              titleText,
-                              style: AppTypography.titleMedium.copyWith(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 14,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              DateFormatter.formatDate(tx.transactionDate),
-                              style: AppTypography.bodySmall.copyWith(
-                                color: isDark
-                                    ? AppColors.darkTextMuted
-                                    : AppColors.lightTextMuted,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Text(
-                        '$prefix${CurrencyFormatter.formatPaise(tx.amountPaise)}',
-                        style: AppTypography.bodyMedium.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: amountColor,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }),
         ],
       ),
     );

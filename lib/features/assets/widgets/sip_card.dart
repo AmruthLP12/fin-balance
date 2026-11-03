@@ -11,8 +11,8 @@ import '../../../core/widgets/fin_card.dart';
 import '../../../core/widgets/status_badge.dart';
 import '../../../database/app_database.dart';
 import '../../../database/precision/financial_precision.dart';
+import '../screens/edit_sip_schedule_screen.dart';
 import '../screens/sip_details_screen.dart';
-import 'edit_sip_schedule_dialog.dart';
 
 /// Card displaying a master SIP Plan, investment frequency, installment breakdown,
 /// units accumulated, valuation, valuation status, and schedule management actions.
@@ -441,10 +441,7 @@ class SipCard extends ConsumerWidget {
   }
 
   void _openEditSchedule(BuildContext context, WidgetRef ref) {
-    showDialog<void>(
-      context: context,
-      builder: (_) => EditSipScheduleDialog(sip: sip),
-    );
+    EditSipScheduleScreen.push(context, sip);
   }
 
   Future<void> _retryValuation(BuildContext context, WidgetRef ref) async {

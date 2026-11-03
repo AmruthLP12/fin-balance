@@ -10,6 +10,8 @@ import 'package:drift/drift.dart';
 @TableIndex(name: 'idx_transaction_date', columns: {#transactionDate})
 @TableIndex(name: 'idx_transaction_item', columns: {#financialItemId})
 @TableIndex(name: 'idx_transaction_type', columns: {#transactionType})
+@TableIndex(name: 'idx_transaction_sip', columns: {#sipPlanId})
+@TableIndex(name: 'idx_transaction_linked', columns: {#linkedTransactionId})
 class Transactions extends Table {
   IntColumn get id => integer().autoIncrement()();
 
@@ -18,7 +20,9 @@ class Transactions extends Table {
       'NOT NULL REFERENCES financial_profiles(id) ON DELETE CASCADE')();
 
   /// Transaction type:
-  /// 'income', 'expense', 'transfer', 'investment_purchase', 'investment_redemption', 'debt_repayment', 'adjustment'
+  /// 'income', 'expense', 'transfer', 'investment_purchase', 'investment_redemption',
+  /// 'sip_investment', 'dividend_reinvestment', 'dividend_payout', 'redemption',
+  /// 'swp_withdrawal', 'switch_in', 'switch_out', 'debt_repayment', 'adjustment'
   TextColumn get transactionType => text()();
 
   IntColumn get categoryId => integer().customConstraint(
@@ -39,6 +43,24 @@ class Transactions extends Table {
 
   /// Cash transaction value in Paise (e.g., ₹5,000.00 = 500,000 paise)
   IntColumn get amountPaise => integer()();
+
+  /// Optional transaction charges or fees in Paise (e.g., STT, stamp duty, exit load)
+  IntColumn get chargesPaise => integer().withDefault(const Constant(0))();
+
+  /// Net cash flow amount in Paise:
+  /// Outflows (investor pays): amountPaise + chargesPaise
+  /// Inflows (investor receives): amountPaise - chargesPaise
+  IntColumn get netAmountPaise => integer().nullable()();
+
+  /// Optional link to parent SIP plan
+  IntColumn get sipPlanId => integer()
+      .nullable()
+      .customConstraint('REFERENCES sip_plans(id) ON DELETE SET NULL')();
+
+  /// Optional link to paired transaction (e.g. Switch In <-> Switch Out)
+  IntColumn get linkedTransactionId => integer()
+      .nullable()
+      .customConstraint('REFERENCES transactions(id) ON DELETE SET NULL')();
 
   /// Units transacted for investments (in micro-units: 1.0 unit = 1,000,000 micro-units)
   IntColumn get unitsMicroUnits => integer().nullable()();

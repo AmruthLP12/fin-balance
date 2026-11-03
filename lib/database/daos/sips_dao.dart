@@ -31,6 +31,22 @@ class SipsDao extends DatabaseAccessor<AppDatabase> with _$SipsDaoMixin {
         .watch();
   }
 
+  /// Watch SIP plans linked to a specific holding/financial item.
+  Stream<List<SipPlan>> watchSipsByFinancialItem(int financialItemId) {
+    return (select(sipPlans)
+          ..where((tbl) => tbl.financialItemId.equals(financialItemId))
+          ..orderBy([(t) => OrderingTerm.desc(t.startDate)]))
+        .watch();
+  }
+
+  /// Get SIP plans linked to a specific holding/financial item.
+  Future<List<SipPlan>> getSipsByFinancialItem(int financialItemId) {
+    return (select(sipPlans)
+          ..where((tbl) => tbl.financialItemId.equals(financialItemId))
+          ..orderBy([(t) => OrderingTerm.desc(t.startDate)]))
+        .get();
+  }
+
   /// Get SIP plan by ID.
   Future<SipPlan?> getSipById(int id) {
     return (select(sipPlans)..where((tbl) => tbl.id.equals(id)))
