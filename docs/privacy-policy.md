@@ -1,7 +1,7 @@
 # FinBalance Privacy Policy
 
 **Effective Date:** November 2026  
-**Application Version:** 1.0.0  
+**Application Version:** 1.1.0  
 **Hosted URL:** [https://amruthlp.vercel.app/finbalance_policy](https://amruthlp.vercel.app/finbalance_policy)
 
 FinBalance ("we", "our", or "the application") is committed to protecting your privacy. This Privacy Policy explains our principles and practices regarding the handling of your information when you use the FinBalance application on Android, Web, or desktop platforms.
@@ -25,7 +25,7 @@ Unlike traditional cloud-based financial services that require personal registra
 Specifically:
 - **No Personal Identifiers:** We do not collect your name, phone number, email address, physical address, PAN, Aadhaar, bank account numbers, or government IDs.
 - **No Financial Account Credentials:** FinBalance does not connect to bank accounts via screen scraping, Open Banking APIs, or SMS reading.
-- **No Analytics or Telemetry:** FinBalance does not include third-party analytics SDKs, user behavior tracking, session recording, or advertising trackers.
+- **No Analytics or Telemetry:** FinBalance does not include third-party analytics SDKs, user behavior tracking, session recording, or tracking pixels.
 - **No Unique Device Identifiers:** We do not log or track device IDs (IMEI, advertising ID, MAC address).
 
 Any financial figures, profile details, asset values, and transaction notes you enter into the application exist solely in your device's local application storage.
@@ -53,7 +53,19 @@ To provide up-to-date valuations and scheme details:
 
 ---
 
-## 5. Multi-Profile & Family Privacy
+## 5. Financial Data Accuracy & Market Delays
+
+Financial information displayed by FinBalance is intended strictly for personal tracking and informational purposes.
+
+- **Market Data Delays:** Mutual fund Net Asset Values (NAVs) and other externally retrieved financial information may be delayed and might not reflect the most recent available market value.
+- **Difference from Transaction Prices:** Displayed values may differ from actual execution, settlement, purchase, or redemption prices provided by your fund house, broker, or depository participant.
+- **Subject to Market Schedules:** Market prices, NAVs, unit balances, and calculated portfolio valuations are subject to provider availability, market operating schedules, update frequency, and data feed accuracy.
+- **Verification Recommended:** Users should independently verify all critical financial records and valuations directly with their official financial institutions, asset management companies, or registered intermediaries before making investment or borrowing decisions.
+- **No Financial Execution:** FinBalance is a personal record-keeping application. It does not execute purchases, redemptions, deposits, withdrawals, transfers, or any financial transactions merely by recording or displaying them.
+
+---
+
+## 6. Multi-Profile & Family Privacy
 
 FinBalance supports multiple financial profiles to help users manage family members' finances independently.
 
@@ -62,17 +74,17 @@ FinBalance supports multiple financial profiles to help users manage family memb
 
 ---
 
-## 6. Third-Party Services & APIs
+## 7. Third-Party Services & Advertising
 
-The only network requests initiated by FinBalance are directed to public market data services to retrieve mutual fund scheme lists and NAV figures.
+FinBalance maintains a transparent approach to third-party integrations and advertising:
 
-- **No Advertising SDKs:** FinBalance contains zero advertisements, sponsored trackers, or marketing pixels.
-- **No Crash Reporting Trackers:** The application does not send crash logs or diagnostic telemetry to remote servers without explicit manual action by the developer during local development.
-- **Public AMFI Data Feeds:** All external data requests query public market data endpoints over secure HTTPS connections.
+- **Current Advertising State:** The application currently does not display advertisements. This statement describes the current application behaviour only and is not a promise or guarantee about whether advertising may be introduced or changed in the future.
+- **Future Disclosures:** If advertising or additional third-party services are introduced at a later stage, the applicable privacy disclosures will be updated accordingly. Advertisers do not receive your financial records or balance sheet information.
+- **External Public Feeds:** The only network requests initiated by the application are directed to public market data services over secure HTTPS/TLS connections to retrieve scheme lists and NAV figures.
 
 ---
 
-## 7. Security
+## 8. Security
 
 We take the security of your financial records seriously:
 - **Transport Security:** All network requests for public mutual fund NAV rates use encrypted HTTPS/TLS connections.
@@ -81,7 +93,7 @@ We take the security of your financial records seriously:
 
 ---
 
-## 8. Data Retention & Deletion
+## 9. Data Retention & Deletion
 
 Because FinBalance stores all data locally on your device:
 - **Full User Control:** You maintain complete control over data retention.
@@ -91,7 +103,7 @@ Because FinBalance stores all data locally on your device:
 
 ---
 
-## 9. Backup & Export
+## 10. Backup & Export
 
 FinBalance provides local data export and backup utilities to allow you to safeguard your records:
 - **Local File Control:** When you generate an export file or database backup, the file is saved directly to your local file system or shared storage destination chosen by you.
@@ -99,24 +111,23 @@ FinBalance provides local data export and backup utilities to allow you to safeg
 
 ---
 
-## 10. Children's Privacy
+## 11. Children's Privacy
 
 FinBalance is designed for general audiences and personal finance tracking. We do not knowingly target or collect any personal information from children under the age of 13. Because no personal data is collected or transmitted by the application, FinBalance complies with child privacy protections by default.
 
 ---
 
-## 11. Changes to This Privacy Policy
+## 12. Changes to This Privacy Policy
 
 We may update this Privacy Policy from time to time to reflect application improvements, new features, or regulatory requirements. Any updates will be:
 1. Reflected in this document with a revised "Effective Date".
 2. Included in the application's in-app Privacy Policy screen.
-3. Summarized in the application's release notes (`CHANGELOG.md`).
 
 Continued use of FinBalance following policy updates signifies your acknowledgment and acceptance of the revised terms.
 
 ---
 
-## 12. Governing Law & Compliance
+## 13. Governing Law & Compliance
 
 FinBalance is developed in accordance with the principles of data minimization, local processing, and user consent set forth in:
 - The **Information Technology Act, 2000** (India) and applicable amendments.
@@ -126,25 +137,18 @@ By confining all personal financial information to on-device processing and tran
 
 ---
 
-## 13. Open Source & Transparency
-
-FinBalance is built with transparency and user trust at its core. We are committed to verifiable, local-first operation. The application's architecture, data access patterns, and API interactions are auditable in the project codebase.
-
----
-
-## 14. Contact Information
-
-If you have questions, feedback, or inquiries regarding this Privacy Policy or FinBalance's local-first architecture, please contact:
-
-- **Developer:** Amruth L P
-- **Email:** `privacy@amruthlp.vercel.app`
-- **Developer Portfolio:** [https://amruthlp.vercel.app](https://amruthlp.vercel.app)
-- **Policy URL:** [https://amruthlp.vercel.app/finbalance_policy](https://amruthlp.vercel.app/finbalance_policy)
-
----
-
-## 15. Effective Date & Version
+## 14. Effective Date & Version
 
 - **Effective Date:** November 2026
-- **Version:** 1.0.0
+- **Version:** 1.1.0
+- **Hosted Policy:** [https://amruthlp.vercel.app/finbalance_policy](https://amruthlp.vercel.app/finbalance_policy)
 
+---
+
+## Support
+
+For technical support, feedback, and application inquiries:
+
+- **Developer Portfolio:** [https://amruthlp.vercel.app](https://amruthlp.vercel.app)
+- **Hosted Policy Document:** [https://amruthlp.vercel.app/finbalance_policy](https://amruthlp.vercel.app/finbalance_policy)
+- **Contact Details:** Contact details will be provided here.

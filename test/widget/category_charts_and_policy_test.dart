@@ -26,7 +26,7 @@ void main() {
 
   group('Category Charts & Distribution Tests', () {
     testWidgets(
-        'Asset & Liability distribution graph renders on Overview with INR formatting, segment switch, and liability placeholder',
+        'Overview renders 3 switchable charts with Assets & Liabilities by Category as default',
         (tester) async {
       await tester.binding.setSurfaceSize(const Size(500, 1000));
       addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -77,6 +77,18 @@ void main() {
         ),
       );
 
+      // Add a test transaction for Cash Flow verification
+      await db.transactionsDao.insertTransaction(
+        TransactionsCompanion(
+          profileId: drift.Value(pId),
+          categoryId: drift.Value(cat1.id),
+          transactionType: const drift.Value('income'),
+          amountPaise: const drift.Value(10000000), // ₹1,00,000
+          transactionDate: drift.Value(DateTime.now()),
+          notes: const drift.Value('Monthly salary'),
+        ),
+      );
+
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
@@ -88,33 +100,41 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Verify section header and segment controls
-      expect(find.text('Asset & Liability Distribution'), findsOneWidget);
-      expect(find.text('Assets'), findsWidgets);
-      expect(find.text('Liabilities'), findsWidgets);
+      // Verify section header and the 3 segment options
+      expect(find.text('Distribution & Analytics'), findsOneWidget);
+      expect(find.text('Assets & Liabilities'), findsOneWidget);
+      expect(find.text('Cash Flow'), findsOneWidget);
+      expect(find.text('Portfolio Assets'), findsOneWidget);
 
-      // Verify Asset breakdown card
-      expect(find.text('Asset Category Allocation'), findsOneWidget);
+      // 1. Verify Default Chart is 'Assets & Liabilities by Category'
+      expect(find.text('Assets & Liabilities by Category'), findsOneWidget);
+      // Canonical names
+      expect(find.text('Mutual Funds / SIP'), findsOneWidget);
+      expect(find.text('Gold'), findsOneWidget);
       expect(find.text('₹60,000.00'), findsOneWidget);
       expect(find.text('₹40,000.00'), findsOneWidget);
+      expect(find.text('Total Liabilities: ₹0'), findsOneWidget);
+      expect(find.textContaining('Home Loan • ₹0'), findsOneWidget);
+      expect(find.textContaining('Credit Card Dues • ₹0'), findsOneWidget);
+
+      // 2. Switch to 'Cash Flow' chart
+      await tester.tap(find.text('Cash Flow'));
+      await tester.pumpAndSettle();
+      expect(find.text('Cash Flow Overview'), findsOneWidget);
+      expect(find.text('Inflows'), findsOneWidget);
+      expect(find.text('SIP Investments'), findsOneWidget);
+
+      // 3. Switch to 'Portfolio Assets' chart
+      await tester.tap(find.text('Portfolio Assets'));
+      await tester.pumpAndSettle();
+      expect(find.text('Asset Category Allocation'), findsOneWidget);
       expect(find.text('60.0%'), findsOneWidget);
       expect(find.text('40.0%'), findsOneWidget);
 
-      // Tap Liabilities segment pill
-      await tester.tap(find.text('Liabilities').first);
+      // 4. Switch back to 'Assets & Liabilities'
+      await tester.tap(find.text('Assets & Liabilities'));
       await tester.pumpAndSettle();
-
-      // Verify liability placeholder state
-      expect(find.text('Total Liabilities: ₹0'), findsOneWidget);
-      expect(find.text('Coming in a future milestone'), findsOneWidget);
-      expect(find.text('Planned Categories'), findsOneWidget);
-      expect(find.textContaining('Home Loans • ₹0'), findsOneWidget);
-      expect(find.textContaining('Credit Card Dues • ₹0'), findsOneWidget);
-
-      // Switch back to Assets
-      await tester.tap(find.text('Assets').first);
-      await tester.pumpAndSettle();
-      expect(find.text('Asset Category Allocation'), findsOneWidget);
+      expect(find.text('Assets & Liabilities by Category'), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());
       await tester.pump(const Duration(milliseconds: 100));
@@ -181,7 +201,7 @@ void main() {
 
   group('Privacy Policy & Settings Built-By Tests', () {
     testWidgets(
-        'Settings displays Built by Amruth L P, v1.0.0, portfolio link, and links to Privacy Policy',
+        'Settings displays dedicated Support section, Built by Amruth L P, and links to revised Privacy Policy',
         (tester) async {
       await tester.binding.setSurfaceSize(const Size(500, 1000));
       addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -201,6 +221,17 @@ void main() {
       await tester.tap(find.widgetWithText(NavigationDestination, 'Settings'));
       await tester.pumpAndSettle();
 
+      // Scroll to Support section
+      await tester.scrollUntilVisible(find.text('Support'), 300);
+      await tester.pumpAndSettle();
+
+      // Verify Support section contents
+      expect(find.text('Support'), findsOneWidget);
+      expect(find.text('Developer Portfolio'), findsOneWidget);
+      expect(find.text('https://amruthlp.vercel.app'), findsOneWidget);
+      expect(
+          find.text('Contact details will be provided here.'), findsOneWidget);
+
       // Scroll to About section
       await tester.scrollUntilVisible(find.text('Built by Amruth L P'), 300);
       await tester.pumpAndSettle();
@@ -208,8 +239,6 @@ void main() {
       // Check Built by Amruth L P & Portfolio
       expect(find.text('Built by Amruth L P'), findsOneWidget);
       expect(find.text('v1.0.0'), findsOneWidget);
-      expect(find.text('Developer Portfolio'), findsOneWidget);
-      expect(find.text('https://amruthlp.vercel.app'), findsOneWidget);
 
       // Tap Privacy Policy tile
       await tester.scrollUntilVisible(find.text('Privacy Policy'), 300);
@@ -219,7 +248,6 @@ void main() {
       // Verify on Privacy Policy screen
       expect(find.byType(PrivacyPolicyScreen), findsOneWidget);
       expect(find.text('Privacy by Design'), findsOneWidget);
-      expect(find.text('1. Introduction & Overview'), findsNothing); // Numbered
       expect(find.text('Introduction & Overview'), findsOneWidget);
       expect(find.text('Information We Collect'), findsOneWidget);
 
@@ -229,8 +257,21 @@ void main() {
           find.text('Mutual Fund Market Data & Network Usage'), findsOneWidget);
 
       await tester.scrollUntilVisible(
-          find.text('Governing Law & Compliance'), 300);
-      expect(find.text('Governing Law & Compliance'), findsOneWidget);
+          find.text('Financial Data Accuracy & Market Delays'), 300);
+      expect(
+          find.text('Financial Data Accuracy & Market Delays'), findsOneWidget);
+
+      // Verify Section 13 (Open Source) and CHANGELOG references are removed
+      expect(find.textContaining('Open Source & Transparency'), findsNothing);
+      expect(find.textContaining('CHANGELOG.md'), findsNothing);
+      expect(find.textContaining('GitHub'), findsNothing);
+      expect(find.textContaining('git repository'), findsNothing);
+
+      // Verify Support section in policy
+      await tester.scrollUntilVisible(
+          find.text('https://amruthlp.vercel.app/finbalance_policy'), 300);
+      expect(find.text('https://amruthlp.vercel.app/finbalance_policy'),
+          findsOneWidget);
 
       // Verify NO mention of SQLite or MFapi in user copy
       expect(find.textContaining('SQLite'), findsNothing);

@@ -5,6 +5,45 @@ All notable changes to the FinBalance application will be documented in this fil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.1] - 2026-11-03
+
+### Added
+- **Unified Financial Category Chart & Switcher (`OverviewScreen`):**
+  - Added a third, unified financial category distribution chart (`Assets & Liabilities by Category`) combining assets and liabilities into one comprehensive chart view.
+  - Made `Assets & Liabilities by Category` the default chart shown when opening the dashboard.
+  - Added interactive 3-option chart switcher: `Assets & Liabilities` (0), `Cash Flow` (1), and `Portfolio Assets` (2), persisted to Drift database via `AppSettingsDao` (`dashboard_selected_chart`).
+  - Standardized canonical financial category names via `FinancialCategoryConstants`:
+    - **Asset Categories:** Mutual Funds / SIP, Stocks, ETFs, Fixed Deposits (FD), Recurring Deposits (RD), PPF, EPF, GPF, NPS, Gold, Bonds, Bank Balance, Cash, Other Assets.
+    - **Liability Categories:** Home Loan, Personal Loan, Vehicle Loan, Education Loan, Credit Card Dues, EMI / Other Loan Dues, Other Liabilities.
+  - Clear visual distinction between assets (emerald green) and liabilities (crimson rose).
+  - Clean display of actual amounts and category names with automatic exclusion of zero-value slices from the pie chart.
+  - Liabilities displayed with ₹0 totals and canonical category preview chips when empty, avoiding fake or placeholder balances.
+  - Excluded future planned SIP installments and prevented double-counting.
+- **Dedicated Support Section (`SettingsScreen`):**
+  - Added dedicated "Support" section before "About" in Settings.
+  - Provided direct link to Developer Portfolio (`https://amruthlp.vercel.app`).
+  - Provided direct link to Privacy Policy screen.
+  - Added contact placeholder: `"Contact details will be provided here."` without dead or fabricated links.
+  - Preserved developer attribution ("Built by Amruth L P", `v1.0.0`) in the About card.
+- **Privacy Policy Revisions & Synchronization (`docs/privacy-policy.md` & `PrivacyPolicyScreen`):**
+  - Removed Section 13 (Open Source & Transparency) and standalone Section 14 (Contact Information).
+  - Removed point 3 under Section 11 referencing CHANGELOG.md and release notes.
+  - Removed all references to Git repositories, source code repositories, changelogs, and open-source contribution workflows.
+  - Added "Financial Data Accuracy & Market Delays" section explaining informational purposes, market NAV delays, difference from transaction execution prices, and lack of transaction execution capabilities.
+  - Revised Advertising disclosure to accurately reflect current application behavior without making promises about future advertising or services.
+  - Added structured Support section with developer portfolio and hosted policy document links (`https://amruthlp.vercel.app/finbalance_policy`).
+  - Renumbered remaining sections consistently from 1 to 14.
+  - Maintained 100% word-for-word synchronization between `docs/privacy-policy.md` and `PrivacyPolicyScreen`.
+- **UI Responsiveness:**
+  - Resolved horizontal RenderFlex overflow issues across `OverviewScreen` headers and metric rows on narrow screens with `SingleChildScrollView` and `Wrap` layouts.
+
+### Testing
+- Updated `test/widget/category_charts_and_policy_test.dart` to verify the 3 switchable chart modes, default unified category chart, canonical category labels, revised 14-section Privacy Policy structure, and Settings Support section.
+- Updated `test/widget/profile_overview_and_cashflow_test.dart` to verify default `Assets & Liabilities by Category` chart and mode switching to `Portfolio Assets`.
+- Total automated test suite passing with **143 tests** (0 failures).
+
+---
+
 ## [0.9.0] - 2026-11-03
 
 ### Added

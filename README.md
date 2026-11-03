@@ -177,6 +177,11 @@ make clean
   - **Developer Information:** Added "Built by Amruth L P", version `v1.0.0`, portfolio link (`https://amruthlp.vercel.app`), and Privacy Policy link in the Settings About card.
   - **Provider Neutrality:** Removed all user-facing mentions of `MFapi` in settings, sync statuses, and search views in favor of neutral terminology ("Live Market NAV", "market data service"), while strictly preserving underlying `MFapiProvider` implementation and API adapters.
   - **Search & UI Refinements:** Enforced minimum 3 characters for mutual fund search with helpful hint state and instant timer cancellation on query reset. Removed redundant second favourite star in `SchemeDetailsSheet`. Converted "+ Add Profile" text button on `ProfileSelectionScreen` into a compact icon button with tooltip.
+- [x] **Unified Financial Category Chart, Privacy Policy Revisions & Support ([0.9.1]):**
+  - **Three Switchable Dashboard Charts (`OverviewScreen`):** Retained existing `Cash Flow` and `Portfolio Assets` charts, adding a third unified `Assets & Liabilities by Category` distribution chart as the default dashboard view. Persisted selection to Drift database (`AppSettingsDao`).
+  - **Standardized Financial Categories:** Integrated canonical asset and liability categories (`Mutual Funds / SIP`, `Stocks`, `ETFs`, `Fixed Deposits (FD)`, `Recurring Deposits (RD)`, `PPF`, `EPF`, `GPF`, `NPS`, `Gold`, `Bonds`, `Bank Balance`, `Cash`, `Other Assets`; and for liabilities: `Home Loan`, `Personal Loan`, `Vehicle Loan`, `Education Loan`, `Credit Card Dues`, `EMI / Other Loan Dues`, `Other Liabilities`). Zero-value slices are omitted from the pie chart while maintaining non-zero breakdown legends and ₹0 empty liability previews.
+  - **Dedicated Support Section (`SettingsScreen`):** Added a dedicated Support section before About containing developer portfolio link (`https://amruthlp.vercel.app`), direct Privacy Policy navigation, and placeholder `"Contact details will be provided here."`.
+  - **Revised Privacy Policy:** Removed Section 13 (Open Source) and standalone Section 14 (Contact Info); removed CHANGELOG.md point 3 under Section 11; added Financial Data Accuracy & Market Delays section; updated Advertising disclosures; renumbered cleanly (1 to 14 + Support); and ensured 100% word-for-word synchronization between `docs/privacy-policy.md` and `PrivacyPolicyScreen`.
 - [ ] **Milestone 5 — Transaction & Valuation Engine:** Simulated installments, lump-sum purchases, redemptions, unit calculations.
 - [ ] **Milestone 6 — Dashboard & Overview:** Real-time net worth calculation, active SIPs, upcoming EMIs.
 - [ ] **Milestone 7 — Financial Analytics:** Dated-cashflow XIRR (Newton-Raphson), asset allocation, historical charts.
@@ -185,12 +190,13 @@ make clean
 
 ---
 
-## 6. Developer & Privacy Information
+## 6. Developer, Support & Privacy Information
 
 - **Built by:** Amruth L P
 - **Developer Portfolio:** [https://amruthlp.vercel.app](https://amruthlp.vercel.app)
 - **Application Version:** `v1.0.0`
-- **In-App Privacy Policy:** Open `Settings` $\rightarrow$ `About` $\rightarrow$ `Privacy Policy`.
+- **Support & Inquiries:** Accessible in-app under `Settings` $\rightarrow$ `Support` (`Contact details will be provided here.`).
+- **In-App Privacy Policy:** Open `Settings` $\rightarrow$ `Support` $\rightarrow$ `Privacy Policy`.
 - **Privacy Policy Markdown File:** Located in the repository at [`docs/privacy-policy.md`](docs/privacy-policy.md).
 - **Public Privacy Policy URL:** Hosted at [https://amruthlp.vercel.app/finbalance_policy](https://amruthlp.vercel.app/finbalance_policy).
 
@@ -198,4 +204,4 @@ make clean
 To host the policy document publicly:
 1. Copy or reference `docs/privacy-policy.md` in your Next.js/Vercel project at the route `/finbalance_policy`.
 2. Use standard Markdown rendering (such as `react-markdown` or Next.js MDX) to serve the page at `https://amruthlp.vercel.app/finbalance_policy`.
-3. The content matches the in-app `PrivacyPolicyScreen` identically, detailing the 15 privacy clauses, local-first on-device database architecture, and network usage restricted strictly to public AMFI mutual fund NAV rates with zero user data transmission.
+3. The content matches the in-app `PrivacyPolicyScreen` identically, detailing the 14 privacy clauses, local-first on-device database architecture, financial data accuracy and market delays disclosures, and network usage restricted strictly to public AMFI mutual fund NAV rates with zero user data transmission.

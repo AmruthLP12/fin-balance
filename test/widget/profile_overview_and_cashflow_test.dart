@@ -149,7 +149,12 @@ void main() {
       expect(find.textContaining('NET WORTH'), findsOneWidget);
       expect(find.text('₹1,00,000.00'), findsWidgets);
 
-      // Category Allocation
+      // Default unified category chart
+      expect(find.text('Assets & Liabilities by Category'), findsOneWidget);
+
+      // Switch to Portfolio Assets and verify donut chart
+      await tester.tap(find.text('Portfolio Assets'));
+      await tester.pumpAndSettle();
       expect(find.text('Asset Category Allocation'), findsOneWidget);
 
       // FinBalance clickable logo and ProfileAvatar in header

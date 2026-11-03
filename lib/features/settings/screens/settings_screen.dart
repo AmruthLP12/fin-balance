@@ -343,6 +343,58 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
           const SizedBox(height: AppSpacing.lg),
 
+          // Support Section
+          const SectionHeader(title: 'Support'),
+          FinCard(
+            padding: EdgeInsets.zero,
+            child: Column(
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.language_rounded),
+                  title: const Text('Developer Portfolio',
+                      style: AppTypography.titleMedium),
+                  subtitle: const Text('https://amruthlp.vercel.app',
+                      style: AppTypography.bodySmall),
+                  trailing: const Icon(Icons.open_in_new_rounded, size: 18),
+                  onTap: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Portfolio: https://amruthlp.vercel.app'),
+                      ),
+                    );
+                  },
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.privacy_tip_outlined),
+                  title: const Text('Privacy Policy',
+                      style: AppTypography.titleMedium),
+                  subtitle: const Text(
+                      'Local-first privacy and zero-telemetry policy',
+                      style: AppTypography.bodySmall),
+                  trailing: const Icon(Icons.chevron_right_rounded),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute<void>(
+                        builder: (_) => const PrivacyPolicyScreen(),
+                      ),
+                    );
+                  },
+                ),
+                const Divider(height: 1),
+                const ListTile(
+                  leading: Icon(Icons.contact_support_outlined),
+                  title:
+                      Text('Contact Details', style: AppTypography.titleMedium),
+                  subtitle: Text('Contact details will be provided here.',
+                      style: AppTypography.bodySmall),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+
           // About Section
           const SectionHeader(title: 'About'),
           FinCard(
@@ -395,41 +447,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       ),
                     ),
                   ],
-                ),
-                const SizedBox(height: AppSpacing.xs),
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.language_rounded, size: 20),
-                  title: const Text('Developer Portfolio',
-                      style: AppTypography.bodyMedium),
-                  subtitle: const Text('https://amruthlp.vercel.app',
-                      style: AppTypography.labelSmall),
-                  trailing: const Icon(Icons.open_in_new_rounded, size: 18),
-                  onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Portfolio: https://amruthlp.vercel.app'),
-                      ),
-                    );
-                  },
-                ),
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.privacy_tip_outlined, size: 20),
-                  title: const Text('Privacy Policy',
-                      style: AppTypography.bodyMedium),
-                  subtitle: const Text(
-                      'Local-first privacy and zero-telemetry policy',
-                      style: AppTypography.labelSmall),
-                  trailing: const Icon(Icons.chevron_right_rounded),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute<void>(
-                        builder: (_) => const PrivacyPolicyScreen(),
-                      ),
-                    );
-                  },
                 ),
               ],
             ),
