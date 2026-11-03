@@ -14,11 +14,19 @@ import '../../../core/widgets/section_header.dart';
 import '../../../core/widgets/status_badge.dart';
 import '../../../database/app_database.dart';
 import '../../assets/screens/mutual_fund_search_screen.dart';
-import '../../profile/widgets/profile_avatar.dart';
+import '../../profile/widgets/profile_menu_button.dart';
 
 /// FinBalance Overview / Net Worth Dashboard dynamically scoped to active financial profile.
-class OverviewScreen extends ConsumerWidget {
+class OverviewScreen extends ConsumerStatefulWidget {
   const OverviewScreen({super.key});
+
+  @override
+  ConsumerState<OverviewScreen> createState() => _OverviewScreenState();
+}
+
+class _OverviewScreenState extends ConsumerState<OverviewScreen> {
+  int _selectedDistributionTab = 0; // 0: Assets, 1: Liabilities
+  int _touchedIndex = -1;
 
   static const List<Color> _chartPalette = [
     AppColors.brandPrimary,
@@ -34,7 +42,7 @@ class OverviewScreen extends ConsumerWidget {
   ];
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
@@ -94,22 +102,9 @@ class OverviewScreen extends ConsumerWidget {
             ),
           ),
         ),
-        actions: [
-          Tooltip(
-            message: 'Switch Family Profile',
-            child: InkWell(
-              borderRadius: BorderRadius.circular(20),
-              onTap: () {
-                ref.read(hasSelectedInitialProfileProvider.notifier).state =
-                    false;
-              },
-              child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: ProfileAvatar(profile: profile, radius: 16),
-              ),
-            ),
-          ),
-          const SizedBox(width: AppSpacing.xs),
+        actions: const [
+          ProfileMenuButton(radius: 16),
+          SizedBox(width: AppSpacing.xs),
         ],
       ),
       body: ListView(
@@ -262,8 +257,8 @@ class OverviewScreen extends ConsumerWidget {
           ),
           const SizedBox(height: AppSpacing.lg),
 
-          // Asset Allocation Donut Chart Section
-          _buildAssetAllocationSection(
+          // Asset & Liability Distribution Section
+          _buildDistributionSection(
             context: context,
             isDark: isDark,
             activeAssets: activeAssets,
@@ -376,7 +371,101 @@ class OverviewScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildAssetAllocationSection({
+  Widget _buildDistributionSection({
+    required BuildContext context,
+    required bool isDark,
+    required List<FinancialItem> activeAssets,
+    required Map<int, String> categoriesMap,
+    required int totalValuationPaise,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: AppSpacing.sm,
+          runSpacing: AppSpacing.xs,
+          children: [
+            Text(
+              'Asset & Liability Distribution',
+              style: AppTypography.titleMedium.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            Container(
+              decoration: BoxDecoration(
+                color:
+                    isDark ? AppColors.darkSurface : AppColors.lightBackground,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildSegmentPill(
+                    label: 'Assets',
+                    isSelected: _selectedDistributionTab == 0,
+                    isDark: isDark,
+                    onTap: () => setState(() => _selectedDistributionTab = 0),
+                  ),
+                  _buildSegmentPill(
+                    label: 'Liabilities',
+                    isSelected: _selectedDistributionTab == 1,
+                    isDark: isDark,
+                    onTap: () => setState(() => _selectedDistributionTab = 1),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        if (_selectedDistributionTab == 0)
+          _buildAssetAllocationCard(
+            context: context,
+            isDark: isDark,
+            activeAssets: activeAssets,
+            categoriesMap: categoriesMap,
+            totalValuationPaise: totalValuationPaise,
+          )
+        else
+          _buildLiabilityDistributionCard(isDark: isDark),
+      ],
+    );
+  }
+
+  Widget _buildSegmentPill({
+    required String label,
+    required bool isSelected,
+    required bool isDark,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(20),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.brandPrimary : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          label,
+          style: AppTypography.labelSmall.copyWith(
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+            color: isSelected
+                ? Colors.white
+                : (isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAssetAllocationCard({
     required BuildContext context,
     required bool isDark,
     required List<FinancialItem> activeAssets,
@@ -412,6 +501,7 @@ class OverviewScreen extends ConsumerWidget {
     final List<PieChartSectionData> chartSections = [];
     for (int i = 0; i < sortedCategories.length; i++) {
       final entry = sortedCategories[i];
+      final isTouched = i == _touchedIndex;
       final color = _chartPalette[i % _chartPalette.length];
       final percentage = (entry.value / totalValuationPaise) * 100;
 
@@ -419,8 +509,8 @@ class OverviewScreen extends ConsumerWidget {
         PieChartSectionData(
           color: color,
           value: entry.value.toDouble(),
-          title: percentage >= 5 ? '${percentage.toStringAsFixed(0)}%' : '',
-          radius: 36,
+          title: percentage >= 8 ? '${percentage.toStringAsFixed(0)}%' : '',
+          radius: isTouched ? 42 : 36,
           titleStyle: const TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.bold,
@@ -438,17 +528,32 @@ class OverviewScreen extends ConsumerWidget {
             'Asset Category Allocation',
             style: AppTypography.titleMedium.copyWith(
               fontWeight: FontWeight.w700,
+              fontSize: 14,
             ),
           ),
           const SizedBox(height: AppSpacing.md),
           SizedBox(
-            height: 180,
+            height: 190,
             child: Row(
               children: [
                 Expanded(
                   flex: 5,
                   child: PieChart(
                     PieChartData(
+                      pieTouchData: PieTouchData(
+                        touchCallback: (FlTouchEvent event, pieTouchResponse) {
+                          setState(() {
+                            if (!event.isInterestedForInteractions ||
+                                pieTouchResponse == null ||
+                                pieTouchResponse.touchedSection == null) {
+                              _touchedIndex = -1;
+                              return;
+                            }
+                            _touchedIndex = pieTouchResponse
+                                .touchedSection!.touchedSectionIndex;
+                          });
+                        },
+                      ),
                       sections: chartSections,
                       centerSpaceRadius: 36,
                       sectionsSpace: 2,
@@ -460,9 +565,8 @@ class OverviewScreen extends ConsumerWidget {
                   flex: 6,
                   child: ListView.separated(
                     shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
                     itemCount: sortedCategories.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 6),
+                    separatorBuilder: (_, __) => const SizedBox(height: 8),
                     itemBuilder: (context, i) {
                       final entry = sortedCategories[i];
                       final color = _chartPalette[i % _chartPalette.length];
@@ -478,7 +582,7 @@ class OverviewScreen extends ConsumerWidget {
                               shape: BoxShape.circle,
                             ),
                           ),
-                          const SizedBox(width: 6),
+                          const SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               entry.key,
@@ -490,15 +594,28 @@ class OverviewScreen extends ConsumerWidget {
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                          Text(
-                            '${pct.toStringAsFixed(1)}%',
-                            style: AppTypography.labelSmall.copyWith(
-                              fontWeight: FontWeight.w600,
-                              color: isDark
-                                  ? AppColors.darkTextMuted
-                                  : AppColors.lightTextMuted,
-                              fontSize: 11,
-                            ),
+                          const SizedBox(width: 4),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text(
+                                CurrencyFormatter.formatPaise(entry.value),
+                                style: AppTypography.bodySmall.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 12,
+                                ),
+                              ),
+                              Text(
+                                '${pct.toStringAsFixed(1)}%',
+                                style: AppTypography.labelSmall.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  color: isDark
+                                      ? AppColors.darkTextMuted
+                                      : AppColors.lightTextMuted,
+                                  fontSize: 10,
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       );
@@ -507,6 +624,96 @@ class OverviewScreen extends ConsumerWidget {
                 ),
               ],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLiabilityDistributionCard({required bool isDark}) {
+    const plannedCategories = [
+      'Home Loans',
+      'Personal Loans',
+      'Vehicle Loans',
+      'Education Loans',
+      'Credit Card Dues',
+      'Other Liabilities',
+    ];
+
+    return FinCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.xs,
+            children: [
+              Text(
+                'Total Liabilities: ₹0',
+                style: AppTypography.titleMedium.copyWith(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                  color: isDark
+                      ? AppColors.darkTextPrimary
+                      : AppColors.lightTextPrimary,
+                ),
+              ),
+              const StatusBadge(
+                label: 'Coming in a future milestone',
+                type: BadgeType.brand,
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            'Liability tracking is scheduled for an upcoming milestone. No liabilities are recorded for this profile.',
+            style: AppTypography.bodySmall.copyWith(
+              color:
+                  isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          const Divider(height: 1),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            'Planned Categories',
+            style: AppTypography.labelMedium.copyWith(
+              fontWeight: FontWeight.w600,
+              color:
+                  isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Wrap(
+            spacing: AppSpacing.xs,
+            runSpacing: AppSpacing.xs,
+            children: plannedCategories.map((cat) {
+              return Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? AppColors.darkSurfaceHighlight
+                      : AppColors.lightSurfaceHighlight,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color:
+                        isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                  ),
+                ),
+                child: Text(
+                  '$cat • ₹0',
+                  style: AppTypography.labelSmall.copyWith(
+                    color: isDark
+                        ? AppColors.darkTextMuted
+                        : AppColors.lightTextMuted,
+                    fontSize: 11,
+                  ),
+                ),
+              );
+            }).toList(),
           ),
         ],
       ),

@@ -38,11 +38,16 @@ void main() {
     expect(find.byType(FinBalanceLogo), findsWidgets);
 
     // Verify 5 navigation bar destinations
-    expect(find.text('Overview'), findsOneWidget);
-    expect(find.text('Assets'), findsOneWidget);
-    expect(find.text('Liabilities'), findsOneWidget);
-    expect(find.text('Activity'), findsOneWidget);
-    expect(find.text('Settings'), findsOneWidget);
+    expect(
+        find.widgetWithText(NavigationDestination, 'Overview'), findsOneWidget);
+    expect(
+        find.widgetWithText(NavigationDestination, 'Assets'), findsOneWidget);
+    expect(find.widgetWithText(NavigationDestination, 'Liabilities'),
+        findsOneWidget);
+    expect(
+        find.widgetWithText(NavigationDestination, 'Activity'), findsOneWidget);
+    expect(
+        find.widgetWithText(NavigationDestination, 'Settings'), findsOneWidget);
 
     // Verify Overview default content
     expect(find.textContaining('NET WORTH'), findsOneWidget);
@@ -50,7 +55,7 @@ void main() {
     expect(find.text('Total Liabilities'), findsOneWidget);
 
     // Tap on Assets tab
-    await tester.tap(find.text('Assets'));
+    await tester.tap(find.widgetWithText(NavigationDestination, 'Assets'));
     await tester.pumpAndSettle();
     expect(find.text('All Assets'), findsOneWidget);
 

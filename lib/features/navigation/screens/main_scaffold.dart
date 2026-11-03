@@ -9,7 +9,7 @@ import '../../assets/screens/assets_screen.dart';
 import '../../assets/screens/mutual_fund_search_screen.dart';
 import '../../liabilities/screens/liabilities_screen.dart';
 import '../../overview/screens/overview_screen.dart';
-import '../../profile/widgets/profile_avatar.dart';
+import '../../profile/widgets/profile_menu_button.dart';
 import '../../settings/screens/settings_screen.dart';
 
 /// Responsive main navigation scaffold adapting cleanly between mobile, tablet, and desktop layouts.
@@ -101,24 +101,12 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
                         ),
                       ),
                     ),
-                    trailing: Expanded(
+                    trailing: const Expanded(
                       child: Align(
                         alignment: Alignment.bottomCenter,
                         child: Padding(
-                          padding: const EdgeInsets.only(bottom: AppSpacing.md),
-                          child: Tooltip(
-                            message: 'Switch Family Profile',
-                            child: InkWell(
-                              borderRadius: BorderRadius.circular(20),
-                              onTap: () {
-                                ref
-                                    .read(hasSelectedInitialProfileProvider
-                                        .notifier)
-                                    .state = false;
-                              },
-                              child: ProfileAvatar.active(radius: 18),
-                            ),
-                          ),
+                          padding: EdgeInsets.only(bottom: AppSpacing.md),
+                          child: ProfileMenuButton(radius: 18),
                         ),
                       ),
                     ),

@@ -33,9 +33,10 @@ final schemeSearchQueryProvider = StateProvider<String>((ref) => '');
 final schemeSearchResultsProvider =
     FutureProvider.family<List<MutualFundSearchResult>, String>(
         (ref, query) async {
-  if (query.trim().isEmpty) return [];
+  final clean = query.trim();
+  if (clean.length < 3) return [];
   final syncService = ref.watch(navSyncServiceProvider);
-  return syncService.searchSchemes(query);
+  return syncService.searchSchemes(clean);
 });
 
 /// Configured NAV sync frequency policy ('daily', 'weekly', 'manual').

@@ -55,7 +55,8 @@ void main() {
     // Verify transition to main scaffold
     expect(find.byType(FinBalanceLogo), findsWidgets);
     expect(find.text('Overview'), findsOneWidget);
-    expect(find.text('Assets'), findsOneWidget);
+    expect(
+        find.widgetWithText(NavigationDestination, 'Assets'), findsOneWidget);
 
     // Allow stream cancellation timers to complete
     await tester.pumpWidget(const SizedBox());

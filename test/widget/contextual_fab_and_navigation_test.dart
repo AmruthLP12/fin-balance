@@ -45,7 +45,7 @@ void main() {
       expect(fabWidget0.tooltip, 'Add Investment Schedule');
 
       // 2. Assets Tab (Index 1)
-      await tester.tap(find.text('Assets'));
+      await tester.tap(find.widgetWithText(NavigationDestination, 'Assets'));
       await tester.pumpAndSettle();
       final assetsFab = find.byType(FloatingActionButton);
       expect(assetsFab, findsOneWidget);
@@ -53,18 +53,19 @@ void main() {
       expect(fabWidget1.tooltip, 'Add Asset');
 
       // 3. Liabilities Tab (Index 2) -> FAB Suppressed for milestone scope control
-      await tester.tap(find.text('Liabilities'));
+      await tester
+          .tap(find.widgetWithText(NavigationDestination, 'Liabilities'));
       await tester.pumpAndSettle();
       expect(find.byType(FloatingActionButton), findsNothing);
       expect(find.text('Coming in Future Milestone'), findsOneWidget);
 
       // 4. Activity Tab (Index 3) -> FAB Suppressed for milestone scope control
-      await tester.tap(find.text('Activity'));
+      await tester.tap(find.widgetWithText(NavigationDestination, 'Activity'));
       await tester.pumpAndSettle();
       expect(find.byType(FloatingActionButton), findsNothing);
 
       // 5. Settings Tab (Index 4) -> FAB MUST BE NULL
-      await tester.tap(find.text('Settings'));
+      await tester.tap(find.widgetWithText(NavigationDestination, 'Settings'));
       await tester.pumpAndSettle();
       expect(find.byType(FloatingActionButton), findsNothing);
 
@@ -127,12 +128,12 @@ void main() {
       expect(find.widgetWithIcon(IconButton, Icons.sync_rounded), findsNothing);
 
       // Assets: Verify no sync button in AppBar
-      await tester.tap(find.text('Assets'));
+      await tester.tap(find.widgetWithText(NavigationDestination, 'Assets'));
       await tester.pumpAndSettle();
       expect(find.widgetWithIcon(IconButton, Icons.sync_rounded), findsNothing);
 
       // Settings: Verify full sync section exists
-      await tester.tap(find.text('Settings'));
+      await tester.tap(find.widgetWithText(NavigationDestination, 'Settings'));
       await tester.pumpAndSettle();
 
       expect(find.text('Data Synchronization'), findsOneWidget);

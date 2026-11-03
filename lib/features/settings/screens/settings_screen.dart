@@ -14,7 +14,8 @@ import '../../../core/widgets/section_header.dart';
 import '../../../core/widgets/status_badge.dart';
 import '../../../data/nav/models/nav_models.dart';
 import '../../profile/screens/profile_management_screen.dart';
-import '../../profile/widgets/profile_avatar.dart';
+import '../../profile/widgets/profile_menu_button.dart';
+import 'privacy_policy_screen.dart';
 
 /// Settings screen for managing application preferences, backup, and sync.
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -54,22 +55,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
           ),
         ),
-        actions: [
-          Tooltip(
-            message: 'Switch Family Profile',
-            child: InkWell(
-              borderRadius: BorderRadius.circular(20),
-              onTap: () {
-                ref.read(hasSelectedInitialProfileProvider.notifier).state =
-                    false;
-              },
-              child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: ProfileAvatar.active(radius: 16),
-              ),
-            ),
-          ),
-          const SizedBox(width: AppSpacing.xs),
+        actions: const [
+          ProfileMenuButton(radius: 16),
+          SizedBox(width: AppSpacing.xs),
         ],
       ),
       body: ListView(
@@ -251,7 +239,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   title: const Text('Manual NAV Sync',
                       style: AppTypography.titleMedium),
                   subtitle: const Text(
-                      'Fetch latest published values from MFapi',
+                      'Fetch latest published mutual fund values',
                       style: AppTypography.bodyMedium),
                   trailing: OutlinedButton(
                     onPressed: _isSyncing ? null : _runManualNavSync,
@@ -286,7 +274,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       style: AppTypography.titleMedium,
                     ),
                     subtitle: Text(
-                      'Success: ${_lastSyncSummary!.successCount} / ${_lastSyncSummary!.totalSchemes} schemes via ${_lastSyncSummary!.primaryProvider ?? "MFapi"}.${_lastSyncSummary!.failedCount > 0 ? " Failed: ${_lastSyncSummary!.failedCount}." : ""}',
+                      'Success: ${_lastSyncSummary!.successCount} / ${_lastSyncSummary!.totalSchemes} schemes updated.${_lastSyncSummary!.failedCount > 0 ? " Failed: ${_lastSyncSummary!.failedCount}." : ""}',
                       style: AppTypography.bodyMedium,
                     ),
                   ),
@@ -381,12 +369,67 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 Text(
-                  '${AppConstants.appTagline}\nArchitected for privacy, SQLite persistence, and comprehensive personal balance sheets.',
+                  '${AppConstants.appTagline}\nArchitected for local privacy, offline reliability, and comprehensive personal balance sheets.',
                   style: AppTypography.bodyMedium.copyWith(
                     color: isDark
                         ? AppColors.darkTextSecondary
                         : AppColors.lightTextSecondary,
                   ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                const Divider(),
+                const SizedBox(height: AppSpacing.xs),
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.code_rounded,
+                      size: 20,
+                      color: AppColors.brandPrimaryLight,
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    Text(
+                      'Built by Amruth L P',
+                      style: AppTypography.titleMedium.copyWith(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.language_rounded, size: 20),
+                  title: const Text('Developer Portfolio',
+                      style: AppTypography.bodyMedium),
+                  subtitle: const Text('https://amruthlp.vercel.app',
+                      style: AppTypography.labelSmall),
+                  trailing: const Icon(Icons.open_in_new_rounded, size: 18),
+                  onTap: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Portfolio: https://amruthlp.vercel.app'),
+                      ),
+                    );
+                  },
+                ),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.privacy_tip_outlined, size: 20),
+                  title: const Text('Privacy Policy',
+                      style: AppTypography.bodyMedium),
+                  subtitle: const Text(
+                      'Local-first privacy and zero-telemetry policy',
+                      style: AppTypography.labelSmall),
+                  trailing: const Icon(Icons.chevron_right_rounded),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute<void>(
+                        builder: (_) => const PrivacyPolicyScreen(),
+                      ),
+                    );
+                  },
                 ),
               ],
             ),
@@ -597,7 +640,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(summary.totalSchemes > 0
-                ? 'NAV sync complete: Updated ${summary.successCount} of ${summary.totalSchemes} schemes (${summary.primaryProvider ?? "MFapi"}).'
+                ? 'Mutual fund NAV updated successfully: ${summary.successCount} of ${summary.totalSchemes} schemes.'
                 : 'No tracked schemes to sync in portfolio.'),
             backgroundColor:
                 summary.failedCount == 0 ? AppColors.asset : AppColors.warning,
@@ -608,8 +651,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       if (mounted) {
         setState(() => _lastSyncError = e.toString());
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('NAV sync failed: $e'),
+          const SnackBar(
+            content: Text(
+                'Unable to update mutual fund NAV. Please try again later.'),
             backgroundColor: AppColors.liability,
           ),
         );

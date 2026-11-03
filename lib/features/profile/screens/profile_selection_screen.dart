@@ -85,10 +85,9 @@ class ProfileSelectionScreen extends ConsumerWidget {
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
-                            TextButton.icon(
-                              icon: const Icon(Icons.person_add_outlined,
-                                  size: 18),
-                              label: const Text('+ Add Profile'),
+                            IconButton(
+                              icon: const Icon(Icons.add_rounded),
+                              tooltip: 'Add Profile',
                               onPressed: () =>
                                   _openCreateProfileDialog(context),
                             ),

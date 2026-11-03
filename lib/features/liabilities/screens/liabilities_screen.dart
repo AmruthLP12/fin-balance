@@ -8,7 +8,7 @@ import '../../../core/widgets/fin_card.dart';
 import '../../../core/widgets/finbalance_logo.dart';
 import '../../../core/widgets/section_header.dart';
 import '../../../core/widgets/status_badge.dart';
-import '../../profile/widgets/profile_avatar.dart';
+import '../../profile/widgets/profile_menu_button.dart';
 
 /// Liabilities screen presenting the planned liability and debt tracking capabilities
 /// for a future milestone (home loans, personal loans, vehicle loans, education loans,
@@ -84,22 +84,9 @@ class LiabilitiesScreen extends ConsumerWidget {
             ),
           ),
         ),
-        actions: [
-          Tooltip(
-            message: 'Switch Family Profile',
-            child: InkWell(
-              borderRadius: BorderRadius.circular(20),
-              onTap: () {
-                ref.read(hasSelectedInitialProfileProvider.notifier).state =
-                    false;
-              },
-              child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: ProfileAvatar.active(radius: 16),
-              ),
-            ),
-          ),
-          const SizedBox(width: AppSpacing.xs),
+        actions: const [
+          ProfileMenuButton(radius: 16),
+          SizedBox(width: AppSpacing.xs),
         ],
       ),
       body: ListView(

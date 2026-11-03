@@ -85,9 +85,11 @@ class _MutualFundSearchScreenState extends ConsumerState<MutualFundSearchScreen>
   }
 
   Widget _buildSearchTab(BuildContext context, bool isDark) {
-    final searchResultsAsync = _activeQuery.isEmpty
+    final cleanQuery = _activeQuery.trim();
+    final isQueryTooShort = cleanQuery.isNotEmpty && cleanQuery.length < 3;
+    final searchResultsAsync = cleanQuery.length < 3
         ? null
-        : ref.watch(schemeSearchResultsProvider(_activeQuery));
+        : ref.watch(schemeSearchResultsProvider(cleanQuery));
 
     return Column(
       children: [
@@ -107,9 +109,13 @@ class _MutualFundSearchScreenState extends ConsumerState<MutualFundSearchScreen>
                   suffixIcon: _searchController.text.isNotEmpty
                       ? IconButton(
                           icon: const Icon(Icons.clear_rounded),
+                          tooltip: 'Clear search',
                           onPressed: () {
+                            _debounceTimer?.cancel();
                             _searchController.clear();
-                            _onSearchChanged('');
+                            setState(() {
+                              _activeQuery = '';
+                            });
                           },
                         )
                       : null,
@@ -135,7 +141,7 @@ class _MutualFundSearchScreenState extends ConsumerState<MutualFundSearchScreen>
                   ),
                   const SizedBox(width: AppSpacing.xs),
                   Text(
-                    'NAV Source: MFapi.in (Primary) • Offline Cached',
+                    'Live Market NAV • Offline Cached',
                     style: AppTypography.labelSmall.copyWith(
                       color: isDark
                           ? AppColors.darkTextMuted
@@ -151,58 +157,85 @@ class _MutualFundSearchScreenState extends ConsumerState<MutualFundSearchScreen>
 
         // Results view
         Expanded(
-          child: _activeQuery.isEmpty
-              ? const EmptyStateView(
-                  icon: Icons.manage_search_rounded,
-                  title: 'Search Mutual Funds',
-                  description:
-                      'Search thousands of direct and regular mutual fund schemes in India with live AMFI NAV synchronization.',
-                )
-              : searchResultsAsync!.when(
-                  data: (results) {
-                    if (results.isEmpty) {
-                      return EmptyStateView(
-                        icon: Icons.search_off_rounded,
-                        title: 'No Schemes Found',
-                        description:
-                            'No schemes matching "$_activeQuery". Try checking for spelling or another keyword.',
-                      );
-                    }
-
-                    return ListView.separated(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.md,
-                        vertical: AppSpacing.sm,
-                      ),
-                      itemCount: results.length,
-                      separatorBuilder: (_, __) =>
-                          const SizedBox(height: AppSpacing.sm),
-                      itemBuilder: (context, index) {
-                        final scheme = results[index];
-                        return MutualFundCard(
-                          scheme: scheme,
-                          onTap: () =>
-                              _openSchemeDetails(context, scheme.schemeCode),
-                        );
-                      },
-                    );
-                  },
-                  loading: () => const Center(
-                    child: CircularProgressIndicator(),
-                  ),
-                  error: (err, _) => EmptyStateView(
-                    icon: Icons.cloud_off_rounded,
-                    title: 'Search Error',
-                    description:
-                        'Could not connect to NAV provider. Please check network connection.',
-                    actionLabel: 'Retry',
-                    onAction: () => ref.refresh(
-                      schemeSearchResultsProvider(_activeQuery),
-                    ),
-                  ),
-                ),
+          child: _buildSearchResults(
+            context,
+            cleanQuery,
+            isQueryTooShort,
+            searchResultsAsync,
+          ),
         ),
       ],
+    );
+  }
+
+  Widget _buildSearchResults(
+    BuildContext context,
+    String cleanQuery,
+    bool isQueryTooShort,
+    AsyncValue<List<MutualFundSearchResult>>? searchResultsAsync,
+  ) {
+    if (cleanQuery.isEmpty) {
+      return const EmptyStateView(
+        icon: Icons.manage_search_rounded,
+        title: 'Search Mutual Funds',
+        description:
+            'Search thousands of direct and regular mutual fund schemes in India with live AMFI NAV synchronization.',
+      );
+    }
+
+    if (isQueryTooShort) {
+      return const EmptyStateView(
+        icon: Icons.search_rounded,
+        title: 'Enter at least 3 characters to search',
+        description:
+            'Type at least 3 characters of the scheme name or AMFI code to search.',
+      );
+    }
+
+    if (searchResultsAsync == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    return searchResultsAsync.when(
+      data: (results) {
+        if (results.isEmpty) {
+          return EmptyStateView(
+            icon: Icons.search_off_rounded,
+            title: 'No Schemes Found',
+            description:
+                'No schemes matching "$cleanQuery". Try checking for spelling or another keyword.',
+          );
+        }
+
+        return ListView.separated(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md,
+            vertical: AppSpacing.sm,
+          ),
+          itemCount: results.length,
+          separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
+          itemBuilder: (context, index) {
+            final scheme = results[index];
+            return MutualFundCard(
+              scheme: scheme,
+              onTap: () => _openSchemeDetails(context, scheme.schemeCode),
+            );
+          },
+        );
+      },
+      loading: () => const Center(
+        child: CircularProgressIndicator(),
+      ),
+      error: (err, _) => EmptyStateView(
+        icon: Icons.cloud_off_rounded,
+        title: 'Search Error',
+        description:
+            'Could not connect to market data service. Please check network connection.',
+        actionLabel: 'Retry',
+        onAction: () => ref.refresh(
+          schemeSearchResultsProvider(cleanQuery),
+        ),
+      ),
     );
   }
 

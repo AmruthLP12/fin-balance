@@ -265,33 +265,14 @@ class _SchemeDetailsSheetState extends ConsumerState<SchemeDetailsSheet> {
         ),
         const SizedBox(height: AppSpacing.md),
 
-        // Action Buttons: Add to Portfolio & Bookmark
-        Row(
-          children: [
-            Expanded(
-              child: FilledButton.icon(
-                icon: const Icon(Icons.add_chart_rounded),
-                label: const Text('Add to Portfolio Assets'),
-                onPressed: () =>
-                    AddToProfileDialog.show(context, scheme: details),
-              ),
-            ),
-            const SizedBox(width: AppSpacing.sm),
-            IconButton.filledTonal(
-              icon: const Icon(Icons.star_rounded),
-              tooltip: 'Bookmark Scheme',
-              onPressed: () async {
-                final dao = ref.read(mutualFundDaoProvider);
-                await dao.setFavorite(details.schemeCode, true);
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                        content: Text('Added to favourite schemes!')),
-                  );
-                }
-              },
-            ),
-          ],
+        // Action Button: Add to Portfolio
+        SizedBox(
+          width: double.infinity,
+          child: FilledButton.icon(
+            icon: const Icon(Icons.add_chart_rounded),
+            label: const Text('Add to Portfolio Assets'),
+            onPressed: () => AddToProfileDialog.show(context, scheme: details),
+          ),
         ),
         const SizedBox(height: AppSpacing.lg),
 

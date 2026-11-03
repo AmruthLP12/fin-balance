@@ -5,6 +5,42 @@ All notable changes to the FinBalance application will be documented in this fil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.0] - 2026-11-03
+
+### Added
+- **Asset & Liability Distribution Dashboard (`OverviewScreen`):**
+  - Added dedicated "Asset & Liability Distribution" section on the individual profile dashboard with an interactive segmented switch (`[Assets | Liabilities]`).
+  - Donut chart visualization powered by `fl_chart` for profile assets grouped by category (Mutual Funds, Stocks, Gold, Fixed Deposits, NPS, PPF, EPF, GPF, Bonds, Cash & Bank, Other Assets).
+  - Clear, responsive legend with colored category indicators, category names, INR-formatted amounts (`CurrencyFormatter.formatPaise`), and percentage allocations.
+  - Interactive touch response scaling tapped slice radius for inspection.
+  - Visually isolated liability distribution card showing `Total Liabilities: ₹0`, StatusBadge "Coming in a future milestone", and planned liability category preview tags (Home Loans, Personal Loans, Vehicle Loans, Education Loans, Credit Card Dues, Other Liabilities). Zero dummy values or combined positive percentages.
+  - Preserved independent Cash Flow graph completely unchanged.
+- **Profile Avatar Popup Menu (`ProfileMenuButton`):**
+  - Created reusable `ProfileMenuButton` replacing immediate navigation on avatar tap across Overview, Assets, Liabilities, Activity, Settings, and desktop NavigationRail.
+  - Displays compact anchored popover menu with avatar initials, profile name, relationship badge, and actions: "Switch Profile", "Manage Profiles", and "Add Family Member".
+  - Tapping outside cleanly dismisses the menu without unintended navigation.
+  - Clickable `FinBalanceLogo` header shortcut remains dedicated to instant family profile switching.
+- **In-App Privacy Policy Page (`PrivacyPolicyScreen`):**
+  - Added dedicated, comprehensive 15-section Privacy Policy screen accessible from Settings.
+  - Formatted without any mentions of SQLite or specific API provider names.
+  - Clearly explains local-first on-device database architecture, zero telemetry/analytics SDKs, zero user tracking, and network usage strictly limited to public AMFI mutual fund NAV rates with zero personal data transmission.
+- **Standalone Markdown Privacy Policy Document (`docs/privacy-policy.md`):**
+  - Created canonical markdown policy document at `docs/privacy-policy.md` matching in-app wording.
+  - Added developer and hosting documentation in `README.md` for public deployment at `https://amruthlp.vercel.app/finbalance_policy`.
+- **Developer Information in Settings (`SettingsScreen`):**
+  - Added "Built by Amruth L P", version `v1.0.0`, developer portfolio link `https://amruthlp.vercel.app`, and Privacy Policy navigation tile to Settings About card.
+  - Removed internal SQLite references from user-facing About card copy.
+- **Mutual Fund Search Minimum 3 Characters & Reset:**
+  - Enforced minimum 3 characters threshold in `schemeSearchResultsProvider` and `MutualFundSearchScreen` before issuing search requests.
+  - Displayed informative hint state "Enter at least 3 characters to search" when query length is 1-2 characters.
+  - Clearing search input immediately cancels debounce timer and resets results to empty.
+- **UI Polish & Provider Neutrality:**
+  - Removed duplicate favourite star icon button beside "Add to Portfolio Assets" button in `SchemeDetailsSheet`, keeping the single prominent star in the header.
+  - Converted `+ Add Profile` text button on `ProfileSelectionScreen` into a compact icon button (`IconButton(icon: Icon(Icons.add_rounded), tooltip: 'Add Profile')`).
+  - Removed all user-facing mentions of `MFapi` from search screens, sync subtitles, and snackbars in favor of neutral terminology ("Live Market NAV", "market data service").
+
+---
+
 ## [0.8.0] - 2026-11-02
 
 ### Added

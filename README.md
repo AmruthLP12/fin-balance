@@ -170,6 +170,13 @@ make clean
   - Fixed critical SIP Cash Flow integration: included confirmed SIP contributions (`investment_purchase`) as investment outflows ($Total Outflow = Expenses + Investment Outflows$, $Net Cash Movement = Income - Total Outflow$).
   - Granular asset categories replacing generic "Retirement" with specific categories (PPF, EPF, GPF, NPS, Bonds, Other Assets) and non-destructive automated migration routine in `AppDatabase`.
   - SIP detail popup layout fixes with responsive `Wrap` layouts and post-save redirect popping back to root workspace with success SnackBar.
+- [x] **Category Charts, Profile Menu, Privacy Policy & UI Polish ([0.9.0]):**
+  - **Asset & Liability Distribution:** Added dedicated distribution section on individual profile dashboard with an FL Chart donut chart for actual assets (Mutual Funds, Stocks, Gold, FDs, NPS, PPF, EPF, GPF, Bonds, Cash & Bank, Other) with complete legend (names, INR formatted valuations, and percentages). Visually isolated liability breakdown with ₹0 indicator and "Coming in a future milestone" status without combining assets and liabilities or fabricating dummy values.
+  - **Profile Avatar Popup Menu (`ProfileMenuButton`):** Tapping the profile avatar in headers opens an anchored popover menu with avatar, profile name, relationship, Switch Profile, Manage Profiles, and Add Family Member. The clickable `FinBalanceLogo` shortcut remains dedicated to instant family profile switching.
+  - **Comprehensive Privacy Policy:** Added 15-section in-app `PrivacyPolicyScreen` accessible from Settings, detailing the local-first architecture, zero analytics, sandboxed on-device database, and public AMFI NAV network usage with zero personal data transmission. Created canonical markdown file at `docs/privacy-policy.md` for hosting at `https://amruthlp.vercel.app/finbalance_policy`.
+  - **Developer Information:** Added "Built by Amruth L P", version `v1.0.0`, portfolio link (`https://amruthlp.vercel.app`), and Privacy Policy link in the Settings About card.
+  - **Provider Neutrality:** Removed all user-facing mentions of `MFapi` in settings, sync statuses, and search views in favor of neutral terminology ("Live Market NAV", "market data service"), while strictly preserving underlying `MFapiProvider` implementation and API adapters.
+  - **Search & UI Refinements:** Enforced minimum 3 characters for mutual fund search with helpful hint state and instant timer cancellation on query reset. Removed redundant second favourite star in `SchemeDetailsSheet`. Converted "+ Add Profile" text button on `ProfileSelectionScreen` into a compact icon button with tooltip.
 - [ ] **Milestone 5 — Transaction & Valuation Engine:** Simulated installments, lump-sum purchases, redemptions, unit calculations.
 - [ ] **Milestone 6 — Dashboard & Overview:** Real-time net worth calculation, active SIPs, upcoming EMIs.
 - [ ] **Milestone 7 — Financial Analytics:** Dated-cashflow XIRR (Newton-Raphson), asset allocation, historical charts.
@@ -178,6 +185,17 @@ make clean
 
 ---
 
-## 6. License & Privacy
+## 6. Developer & Privacy Information
 
-FinBalance is designed for complete local privacy. No user financial data is transmitted to external servers.
+- **Built by:** Amruth L P
+- **Developer Portfolio:** [https://amruthlp.vercel.app](https://amruthlp.vercel.app)
+- **Application Version:** `v1.0.0`
+- **In-App Privacy Policy:** Open `Settings` $\rightarrow$ `About` $\rightarrow$ `Privacy Policy`.
+- **Privacy Policy Markdown File:** Located in the repository at [`docs/privacy-policy.md`](docs/privacy-policy.md).
+- **Public Privacy Policy URL:** Hosted at [https://amruthlp.vercel.app/finbalance_policy](https://amruthlp.vercel.app/finbalance_policy).
+
+### Privacy Policy Hosting Instructions
+To host the policy document publicly:
+1. Copy or reference `docs/privacy-policy.md` in your Next.js/Vercel project at the route `/finbalance_policy`.
+2. Use standard Markdown rendering (such as `react-markdown` or Next.js MDX) to serve the page at `https://amruthlp.vercel.app/finbalance_policy`.
+3. The content matches the in-app `PrivacyPolicyScreen` identically, detailing the 15 privacy clauses, local-first on-device database architecture, and network usage restricted strictly to public AMFI mutual fund NAV rates with zero user data transmission.
