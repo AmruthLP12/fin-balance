@@ -5,6 +5,7 @@ import '../../../core/formatting/currency_formatter.dart';
 import '../../../core/formatting/date_formatter.dart';
 import '../../../core/providers/database_provider.dart';
 import '../../../core/providers/nav_providers.dart';
+import '../../../core/scheduling/investment_schedule_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
@@ -58,6 +59,8 @@ class _AddInvestmentTransactionScreenState
   late TextEditingController _unitsController;
   late TextEditingController _chargesController;
   late TextEditingController _notesController;
+  late TextEditingController _installmentsController;
+  ScheduleFrequency _frequency = ScheduleFrequency.monthly;
 
   int? _selectedSipId;
   int? _selectedLinkedHoldingId;
@@ -90,6 +93,7 @@ class _AddInvestmentTransactionScreenState
     _unitsController = TextEditingController();
     _chargesController = TextEditingController(text: '0.00');
     _notesController = TextEditingController();
+    _installmentsController = TextEditingController(text: '1');
 
     if (widget.sips.isNotEmpty) {
       _selectedSipId = widget.sips.first.id;
@@ -138,6 +142,7 @@ class _AddInvestmentTransactionScreenState
     _unitsController.dispose();
     _chargesController.dispose();
     _notesController.dispose();
+    _installmentsController.dispose();
     super.dispose();
   }
 
@@ -148,7 +153,7 @@ class _AddInvestmentTransactionScreenState
     final nav = double.tryParse(_navController.text.trim()) ?? 0.0;
     if (nav > 0 && amt >= 0) {
       final units = amt / nav;
-      _unitsController.text = units.toStringAsFixed(4);
+      _unitsController.text = units.toStringAsFixed(3);
     }
     _isSyncing = false;
   }
@@ -205,7 +210,7 @@ class _AddInvestmentTransactionScreenState
               (
                 title: 'SIP Investment',
                 desc:
-                    'Recurring automated installment credited towards your investment schedule period.',
+                    'Recurring investment. Set the frequency and number of installments to also plan the remaining ones; this entry is recorded as the first installment and ticks off the matching planned one.',
                 icon: Icons.alarm_on_rounded,
                 color: AppColors.brandPrimary,
               ),
@@ -233,7 +238,7 @@ class _AddInvestmentTransactionScreenState
               (
                 title: 'SWP Withdrawal',
                 desc:
-                    'Systematic periodic withdrawal of cash or units from your holding into your bank account according to your schedule.',
+                    'Systematic periodic withdrawal from your holding. Set the frequency and number of installments to plan the remaining withdrawals; this entry is recorded as the first one.',
                 icon: Icons.outbox_rounded,
                 color: AppColors.asset,
               ),
@@ -549,9 +554,80 @@ class _AddInvestmentTransactionScreenState
 
         ref.invalidate(activeProfileAssetsProvider);
       } else {
-        // Standard single investment transaction
-        final sipId = _selectedType == 'sip_investment' ? _selectedSipId : null;
+        // Standard investment transaction. SIP / SWP can also plan the remaining
+        // installments of a schedule; the entered one is recorded as installment #1.
+        final isSip = _selectedType == 'sip_investment';
+        final isSwp = _selectedType == 'swp_withdrawal';
+        final count = (isSip || isSwp) ? _installmentCount : 1;
+        final day = DateTime.utc(_transactionDate.year, _transactionDate.month,
+            _transactionDate.day);
+        final schemeCode = int.tryParse(widget.holding.externalCode ?? '') ?? 0;
+        if (count > 1 && schemeCode <= 0) {
+          throw ArgumentError(
+              'This holding has no scheme code, so a schedule cannot be created.');
+        }
+
         await db.transaction(() async {
+          final sipsDao = ref.read(sipsDaoProvider);
+          final swpsDao = ref.read(swpsDaoProvider);
+
+          int? sipId = isSip ? _selectedSipId : null;
+          int? swpId;
+          if (isSwp) {
+            final plans = await swpsDao.getSwpsByHolding(widget.holding.id);
+            swpId = plans.where((p) => p.status == 'active').firstOrNull?.id;
+          }
+
+          if (count > 1 && isSip) {
+            if (sipId != null) {
+              await sipsDao.addSchedulePeriod(
+                sipPlanId: sipId,
+                effectiveFrom: day,
+                amountPaise: grossAmountPaise,
+                deductionDay: day.day,
+                frequency: _frequency.name,
+                installmentCount: count,
+              );
+            } else {
+              sipId = await sipsDao.createSipWithPeriod(
+                profileId: widget.holding.profileId,
+                schemeCode: schemeCode,
+                name: '${widget.holding.name} (SIP)',
+                startDate: day,
+                amountPaise: grossAmountPaise,
+                deductionDay: day.day,
+                frequency: _frequency.name,
+                installmentCount: count,
+                financialItemId: widget.holding.id,
+              );
+            }
+          } else if (count > 1 && isSwp) {
+            if (swpId != null) {
+              await swpsDao.addSchedulePeriod(
+                swpPlanId: swpId,
+                effectiveFrom: day,
+                withdrawalMode: 'amount',
+                amountPaise: grossAmountPaise,
+                deductionDay: day.day,
+                frequency: _frequency.name,
+                installmentCount: count,
+              );
+            } else {
+              swpId = await swpsDao.createSwpWithPeriod(
+                profileId: widget.holding.profileId,
+                schemeCode: schemeCode,
+                name: '${widget.holding.name} (SWP)',
+                withdrawalMode: 'amount',
+                startDate: day,
+                amountPaise: grossAmountPaise,
+                deductionDay: day.day,
+                frequency: _frequency.name,
+                installmentCount: count,
+                financialItemId: widget.holding.id,
+              );
+            }
+          }
+
           final txId = await txDao.recordInvestmentTransaction(
             profileId: widget.holding.profileId,
             financialItemId: widget.holding.id,
@@ -563,25 +639,40 @@ class _AddInvestmentTransactionScreenState
             unitsMicroUnits: unitsMicro,
             unitPriceMicroPaise: navMicroPaise,
             sipPlanId: sipId,
+            swpPlanId: swpId,
             notes: notes,
           );
-          // Tick off the matching planned installment of the chosen SIP.
+
+          // Tick off the matching planned installment.
           if (sipId != null) {
-            await ref.read(sipsDaoProvider).linkTransactionToInstallment(
-                  sipPlanId: sipId,
-                  transactionId: txId,
-                  transactionDate: _transactionDate,
-                  amountPaise: grossAmountPaise,
-                  navMicroPaise: navMicroPaise,
-                  unitsMicroUnits: unitsMicro,
-                );
+            await sipsDao.linkTransactionToInstallment(
+              sipPlanId: sipId,
+              transactionId: txId,
+              transactionDate: _transactionDate,
+              amountPaise: grossAmountPaise,
+              navMicroPaise: navMicroPaise,
+              unitsMicroUnits: unitsMicro,
+            );
+          } else if (swpId != null) {
+            await swpsDao.linkTransactionToInstallment(
+              swpPlanId: swpId,
+              transactionId: txId,
+              transactionDate: _transactionDate,
+              amountPaise: grossAmountPaise,
+              navMicroPaise: navMicroPaise,
+              unitsMicroUnits: unitsMicro,
+            );
           }
         });
       }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Transaction recorded successfully.')),
+          SnackBar(
+            content: Text(_isRecurringType && _installmentCount > 1
+                ? 'Recorded and planned ${_installmentCount - 1} more installments.'
+                : 'Transaction recorded successfully.'),
+          ),
         );
         Navigator.of(context).pop(true);
       }
@@ -599,6 +690,101 @@ class _AddInvestmentTransactionScreenState
         setState(() => _isSaving = false);
       }
     }
+  }
+
+  /// Market-aware hint for the charges field (Indian mutual funds).
+  String _chargesHint(bool isRedemptionLike) {
+    final amount = double.tryParse(_amountController.text.trim()) ?? 0;
+    switch (_selectedType) {
+      case 'investment_purchase':
+      case 'sip_investment':
+      case 'switch_in':
+        final stamp = amount * 0.00005; // 0.005% stamp duty on purchases
+        return amount > 0
+            ? 'Stamp duty is typically 0.005% (about ${CurrencyFormatter.formatPaise(FinancialPrecision.rupeesToPaise(stamp))}). Charges add to the cash outflow.'
+            : 'Stamp duty is typically 0.005% of the amount. Charges add to the cash outflow.';
+      case 'redemption':
+      case 'swp_withdrawal':
+      case 'switch_out':
+        return 'Exit load, STT (0.001% on equity funds) and TDS, if any, are deducted from gross proceeds.';
+      case 'dividend_payout':
+        return 'TDS, if any, is deducted from the payout.';
+      default:
+        return isRedemptionLike
+            ? 'Charges are deducted from gross proceeds.'
+            : 'Charges increase effective cash outflow.';
+    }
+  }
+
+  bool get _isRecurringType =>
+      _selectedType == 'sip_investment' || _selectedType == 'swp_withdrawal';
+
+  int get _installmentCount =>
+      (int.tryParse(_installmentsController.text.trim()) ?? 1).clamp(1, 600);
+
+  Widget _buildScheduleFields(bool isDark) {
+    final isSip = _selectedType == 'sip_investment';
+    final count = _installmentCount;
+    final noun = isSip ? 'SIP' : 'SWP';
+
+    String summary;
+    if (count <= 1) {
+      summary = 'Records this one installment only.';
+    } else {
+      final dates = InvestmentScheduleService.generateScheduleDates(
+        startDate: _transactionDate,
+        installmentCount: count,
+        frequency: _frequency,
+      );
+      summary = 'Records this installment now and plans ${count - 1} more '
+          '${_frequency.label.toLowerCase()} $noun installments, '
+          'the last on ${DateFormatter.formatDate(dates.last)}.';
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          'Frequency',
+          style:
+              AppTypography.labelMedium.copyWith(fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: AppSpacing.xs),
+        DropdownButtonFormField<ScheduleFrequency>(
+          initialValue: _frequency,
+          isExpanded: true,
+          decoration: const InputDecoration(border: OutlineInputBorder()),
+          items: [
+            for (final f in ScheduleFrequency.values)
+              if (f != ScheduleFrequency.oneTime)
+                DropdownMenuItem(value: f, child: Text(f.label)),
+          ],
+          onChanged: (f) => setState(() => _frequency = f ?? _frequency),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        Text(
+          'Number of Installments',
+          style:
+              AppTypography.labelMedium.copyWith(fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: AppSpacing.xs),
+        TextFormField(
+          controller: _installmentsController,
+          keyboardType: TextInputType.number,
+          decoration: InputDecoration(
+            border: const OutlineInputBorder(),
+            helperText: summary,
+            helperMaxLines: 3,
+          ),
+          onChanged: (_) => setState(() {}),
+          validator: (v) {
+            final n = int.tryParse((v ?? '').trim());
+            if (n == null || n < 1 || n > 600) return 'Enter 1 to 600';
+            return null;
+          },
+        ),
+      ],
+    );
   }
 
   @override
@@ -669,10 +855,13 @@ class _AddInvestmentTransactionScreenState
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          'Transaction Type',
-                          style: AppTypography.labelMedium.copyWith(
-                            fontWeight: FontWeight.bold,
+                        Expanded(
+                          child: Text(
+                            'Transaction Type',
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTypography.labelMedium.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                         TextButton.icon(
@@ -722,7 +911,7 @@ class _AddInvestmentTransactionScreenState
                     if (_selectedType == 'sip_investment' &&
                         widget.sips.isNotEmpty) ...[
                       Text(
-                        'Linked SIP Schedule Period',
+                        'Linked SIP',
                         style: AppTypography.labelMedium.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
@@ -730,13 +919,18 @@ class _AddInvestmentTransactionScreenState
                       const SizedBox(height: AppSpacing.xs),
                       DropdownButtonFormField<int>(
                         initialValue: _selectedSipId,
+                        isExpanded: true,
                         decoration: const InputDecoration(
                           border: OutlineInputBorder(),
                         ),
                         items: widget.sips.map((sip) {
                           return DropdownMenuItem(
                             value: sip.id,
-                            child: Text('${sip.name} (${sip.status})'),
+                            child: Text(
+                              '${sip.name} (${sip.status})',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           );
                         }).toList(),
                         onChanged: (val) =>
@@ -890,6 +1084,12 @@ class _AddInvestmentTransactionScreenState
                     ),
                     const SizedBox(height: AppSpacing.md),
 
+                    // Frequency & installments for recurring types
+                    if (_isRecurringType) ...[
+                      _buildScheduleFields(isDark),
+                      const SizedBox(height: AppSpacing.md),
+                    ],
+
                     // Amount Field
                     Text(
                       isDividendPayout
@@ -912,7 +1112,10 @@ class _AddInvestmentTransactionScreenState
                         prefixText: '₹ ',
                         border: OutlineInputBorder(),
                       ),
-                      onChanged: (_) => _syncUnitsFromAmount(),
+                      onChanged: (_) {
+                        _syncUnitsFromAmount();
+                        setState(() {});
+                      },
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
                           return 'Enter amount';
@@ -940,7 +1143,11 @@ class _AddInvestmentTransactionScreenState
                         decoration: InputDecoration(
                           prefixText: '₹ ',
                           border: const OutlineInputBorder(),
-                          helperText: _navNote,
+                          helperText: [
+                            if (_navNote != null) _navNote!,
+                            'Use the NAV applicable to your order (cut-off is usually 3 PM).',
+                          ].join('\n'),
+                          helperMaxLines: 3,
                         ),
                         onChanged: (_) {
                           _navEdited = true;
@@ -976,7 +1183,18 @@ class _AddInvestmentTransactionScreenState
                         decoration: InputDecoration(
                           border: const OutlineInputBorder(),
                           helperText: isRedemptionLike
-                              ? 'Available: ${availableUnits.toStringAsFixed(4)} units'
+                              ? 'Available: ${availableUnits.toStringAsFixed(3)} units'
+                              : null,
+                          suffixIcon: isRedemptionLike
+                              ? TextButton(
+                                  onPressed: () {
+                                    _unitsController.text =
+                                        availableUnits.toStringAsFixed(6);
+                                    _syncAmountFromUnits();
+                                    setState(() {});
+                                  },
+                                  child: const Text('All'),
+                                )
                               : null,
                         ),
                         onChanged: (_) => _syncAmountFromUnits(),
@@ -1013,9 +1231,8 @@ class _AddInvestmentTransactionScreenState
                         prefixText: '₹ ',
                         hintText: '0.00',
                         border: const OutlineInputBorder(),
-                        helperText: isRedemptionLike
-                            ? 'Charges are deducted from gross proceeds.'
-                            : 'Charges increase effective cash outflow.',
+                        helperText: _chargesHint(isRedemptionLike),
+                        helperMaxLines: 3,
                       ),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) return null;

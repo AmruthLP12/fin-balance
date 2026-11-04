@@ -5,6 +5,28 @@ All notable changes to the FinBalance application will be documented in this fil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.14.0] - 2026-11-04
+
+### Added
+- **Frequency & Number of Installments on the Transaction Form (`AddInvestmentTransactionScreen`):** choosing *SIP Investment* or *SWP Withdrawal* now shows Frequency (all frequencies except One Time) and Number of Installments, with a live summary such as "Records this installment now and plans 11 more monthly SIP installments, the last on 04 Oct 2027".
+  - 1 installment records just this entry.
+  - More than 1 records the entry as installment #1 and plans the rest: it adds a schedule period to the linked SIP (or the holding's active SWP), or creates a new SIP / SWP for the holding when none exists. Everything is saved in one database transaction.
+- **SWP withdrawals update the schedule (`SwpsDao.linkTransactionToInstallment`):** a recorded SWP withdrawal ticks off the nearest upcoming SWP installment (within 31 days) and the transaction carries the SWP plan id, mirroring the SIP behaviour from 0.13.0.
+- **Market-aware transaction form for Indian mutual funds:**
+  - Charges hint per type: stamp duty is typically 0.005% on purchases, SIP and switch-in (with the computed amount); exit load, STT (0.001% on equity funds) and TDS on redemption, SWP and switch-out; TDS on IDCW payout.
+  - NAV helper reminds that the applicable NAV follows the fund cut-off (usually 3 PM).
+  - "All" button on the units field for redemption, SWP and switch-out fills the exact units held.
+  - Auto-calculated units now use 3 decimals, as allotted by registrars.
+- **Tests:** `sip_swp_transaction_form_test.dart` (frequency/installment fields, long SIP name, 3-installment SIP, 2-installment SWP).
+
+### Fixed
+- **Long SIP names overflowed** the "Linked SIP" dropdown; it now expands to the field width with an ellipsis. The dropdown label is shortened to "Linked SIP".
+- **"Transaction Type" row overflowed** on narrow phones (about 360 px wide).
+- Help text for SIP and SWP types now describes frequency and installments.
+
+### Notes
+- Not added: STP (systematic transfer between schemes), bonus units and capital-gains tax reporting. STP would need its own schedule model; see the README roadmap.
+
 ## [0.13.1] - 2026-11-04
 
 ### Changed

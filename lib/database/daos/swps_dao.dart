@@ -325,6 +325,51 @@ class SwpsDao extends DatabaseAccessor<AppDatabase> with _$SwpsDaoMixin {
     });
   }
 
+  /// Marks the planned installment closest to [transactionDate] as recorded by an
+  /// already-saved withdrawal transaction. Only `upcoming` installments within
+  /// [tolerance] are considered; the holding is not touched (the transaction DAO has
+  /// already applied units and amount). Returns false when nothing matched.
+  Future<bool> linkTransactionToInstallment({
+    required int swpPlanId,
+    required int transactionId,
+    required DateTime transactionDate,
+    required int amountPaise,
+    int? navMicroPaise,
+    int? unitsMicroUnits,
+    Duration tolerance = const Duration(days: 31),
+  }) async {
+    final candidates = await (select(swpInstallments)
+          ..where((tbl) =>
+              tbl.swpPlanId.equals(swpPlanId) & tbl.status.equals('upcoming')))
+        .get();
+
+    SwpInstallment? best;
+    var bestGap = tolerance + const Duration(days: 1);
+    for (final c in candidates) {
+      final gap = c.scheduledDate.difference(transactionDate).abs();
+      if (gap <= tolerance && gap < bestGap) {
+        best = c;
+        bestGap = gap;
+      }
+    }
+    if (best == null) return false;
+
+    await (update(swpInstallments)..where((tbl) => tbl.id.equals(best!.id)))
+        .write(
+      SwpInstallmentsCompanion(
+        status: const Value('recorded'),
+        isSimulated: const Value(false),
+        actualWithdrawalDate: Value(transactionDate),
+        actualAmountPaise: Value(amountPaise),
+        withdrawalNavMicroPaise: Value(navMicroPaise),
+        unitsMicroUnits: Value(unitsMicroUnits),
+        transactionId: Value(transactionId),
+        updatedAt: Value(DateTime.now().toUtc()),
+      ),
+    );
+    return true;
+  }
+
   /// Delete an SWP plan. Foreign keys cascade to its periods and installments and
   /// null `swpPlanId` on any transactions, which are kept.
   Future<void> deleteSwpCascade(int swpPlanId) async {
