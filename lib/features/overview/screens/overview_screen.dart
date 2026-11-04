@@ -15,6 +15,7 @@ import '../../../core/widgets/status_badge.dart';
 import '../../../database/app_database.dart';
 import '../../assets/screens/mutual_fund_search_screen.dart';
 import '../../profile/widgets/profile_menu_button.dart';
+import '../widgets/portfolio_summary_card.dart';
 
 /// FinBalance Overview / Net Worth Dashboard dynamically scoped to active financial profile.
 class OverviewScreen extends ConsumerStatefulWidget {
@@ -315,7 +316,11 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
               ],
             ),
           ),
-          const SizedBox(height: AppSpacing.lg),
+          const SizedBox(height: AppSpacing.md),
+          PortfolioSummaryCard(
+            activeAssets: activeAssets,
+            transactions: transactions,
+          ),
 
           // Distribution & Analytics Section (Three switchable charts)
           _buildDistributionSection(

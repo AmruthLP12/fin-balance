@@ -5,6 +5,11 @@ All notable changes to the FinBalance application will be documented in this fil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.15.0] - 2026-11-04
+
+### Added
+- **Portfolio summary card on the profile Overview:** a card above the charts shows, for all active assets of the selected profile, Invested, Current value, Profit / Loss, Return % and XIRR, so the profile can be read at a glance without opening each asset. Computed on-device from existing holdings and transactions (no new data or network use).
+
 ## [0.14.0] - 2026-11-04
 
 ### Added

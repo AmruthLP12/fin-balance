@@ -194,6 +194,7 @@ make clean
   - **Fixes & cleanup:** daily end-date schedules no longer truncated at 360 dates; no ₹100 fallback NAV (holdings fall back to cost); shared holding-update helper and single XIRR implementation.
 - [x] **Android Toolchain Upgrade ([0.13.1]):** removed ignored duplicate `*.gradle.kts` files under `android/`; upgraded to Gradle 9.3.1, AGP 9.1.0 and Kotlin 2.4.0 (built-in Kotlin); debug and release APKs verified.
 - [x] **Recurring Transactions from the Form & Market-Aware Hints ([0.14.0]):** SIP Investment and SWP Withdrawal on the transaction form take a frequency and number of installments (first one recorded, rest planned, SIP/SWP created or extended); SWP withdrawals tick off schedule installments; charges, NAV cut-off and units hints follow Indian mutual fund rules; overflow fixes for long SIP names and narrow screens. Not yet: STP, bonus units, tax reporting.
+- [x] **Portfolio Summary Card ([0.15.0]):** the profile Overview shows invested, current value, profit/loss, return % and XIRR for all active assets above the charts.
 - [ ] **Milestone 5 — Transaction & Valuation Engine:** Simulated installments, lump-sum purchases, redemptions, unit calculations.
 - [ ] **Milestone 6 — Dashboard & Overview:** Real-time net worth calculation, active SIPs, upcoming EMIs.
 - [ ] **Milestone 7 — Financial Analytics:** Dated-cashflow XIRR (Newton-Raphson), asset allocation, historical charts.
