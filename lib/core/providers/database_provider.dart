@@ -68,6 +68,9 @@ final swpsDaoProvider = Provider<SwpsDao>((ref) {
 /// Selected main tab (0 Overview, 1 Assets, 2 Liabilities, 3 Activity, 4 Settings).
 final mainTabProvider = StateProvider<int>((ref) => 0);
 
+/// One-shot request for the Assets tab to show a category (e.g. 'mutual_fund'); consumed by the screen.
+final assetsCategoryRequestProvider = StateProvider<String?>((ref) => null);
+
 final hasSelectedInitialProfileProvider = StateProvider<bool>((ref) => false);
 
 /// StateNotifier to manage active profile selection and persistence.

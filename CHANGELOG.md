@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.16.0] - 2026-11-04
 
 ### Added
-- **Holdings list on the profile Overview:** below the charts, every active asset and liability of the profile is listed with its current amount and a section total. Tapping a mutual fund opens its details page; other assets open the Assets tab; liabilities open the Liabilities tab (tab selection is now the shared `mainTabProvider`).
+- **Category breakdown on the profile Overview:** below the charts, active assets and liabilities are grouped by category (Mutual Funds, Stocks & ETFs, Fixed Deposits, Gold, Home Loan, Personal Loan, ...) with item count and total per category, plus a total for Assets and for Liabilities. Tapping an asset category opens the Assets tab on that category; a liability category opens the Liabilities tab (shared `mainTabProvider` / `assetsCategoryRequestProvider`).
 - **Automatic NAV refresh once per launch** when due under the NAV refresh setting (daily / weekly / manual). Previously the setting only controlled the manual button and no automatic refresh ran.
 - **Tests:** `nav_cache_test.dart` (history downloaded once, fresh cache never hits the network, manual policy).
 

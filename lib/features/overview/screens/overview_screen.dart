@@ -17,7 +17,6 @@ import '../../assets/screens/mutual_fund_search_screen.dart';
 import '../../profile/widgets/profile_menu_button.dart';
 import '../widgets/holdings_list_card.dart';
 import '../widgets/portfolio_summary_card.dart';
-import '../../assets/screens/sip_details_screen.dart';
 
 /// FinBalance Overview / Net Worth Dashboard dynamically scoped to active financial profile.
 class OverviewScreen extends ConsumerStatefulWidget {
@@ -339,13 +338,18 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
           HoldingsListCard(
             assets: activeAssets,
             liabilities: activeLiabilities,
-            onTap: (item) {
-              if (item.itemType == 'liability') {
+            onTap: (subType, {required isLiability}) {
+              if (isLiability) {
                 ref.read(mainTabProvider.notifier).state = 2;
-              } else if (item.subType == 'mutual_fund') {
-                Navigator.of(context).push(MaterialPageRoute<void>(
-                    builder: (_) => SipDetailsScreen(holding: item)));
               } else {
+                const filters = {
+                  'mutual_fund',
+                  'stock',
+                  'fixed_deposit',
+                  'gold'
+                };
+                ref.read(assetsCategoryRequestProvider.notifier).state =
+                    filters.contains(subType) ? subType : 'all';
                 ref.read(mainTabProvider.notifier).state = 1;
               }
             },

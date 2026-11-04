@@ -6,11 +6,12 @@ import '../../../core/widgets/fin_card.dart';
 import '../../../core/widgets/section_header.dart';
 import '../../../database/app_database.dart';
 
-/// Every active asset and liability of the profile with its current amount; rows are tappable.
+/// Category-level breakdown (Mutual Funds, Stocks, Home Loan, ...) of the profile's
+/// active assets and liabilities, with count and total per category; rows are tappable.
 class HoldingsListCard extends StatelessWidget {
   final List<FinancialItem> assets;
   final List<FinancialItem> liabilities;
-  final ValueChanged<FinancialItem> onTap;
+  final void Function(String subType, {required bool isLiability}) onTap;
 
   const HoldingsListCard({
     super.key,
@@ -19,13 +20,26 @@ class HoldingsListCard extends StatelessWidget {
     required this.onTap,
   });
 
-  static String _typeLabel(String subType) => switch (subType) {
-        'mutual_fund' => 'Mutual Fund',
-        'stock' => 'Stock / ETF',
-        'fixed_deposit' => 'Fixed Deposit',
-        'gold' => 'Gold',
-        _ => subType.replaceAll('_', ' '),
-      };
+  static const _labels = {
+    'mutual_fund': 'Mutual Funds',
+    'stock': 'Stocks & ETFs',
+    'fixed_deposit': 'Fixed Deposits',
+    'recurring_deposit': 'Recurring Deposits',
+    'gold': 'Gold',
+    'home_loan': 'Home Loan',
+    'vehicle_loan': 'Vehicle / Auto Loan',
+    'personal_loan': 'Personal Loan',
+    'education_loan': 'Education Loan',
+    'credit_card': 'Credit Card Due',
+    'other_liability': 'Other Borrowing',
+  };
+
+  static String _label(String subType) =>
+      _labels[subType] ??
+      subType
+          .split('_')
+          .map((w) => w.isEmpty ? w : '${w[0].toUpperCase()}${w.substring(1)}')
+          .join(' ');
 
   @override
   Widget build(BuildContext context) {
@@ -33,14 +47,23 @@ class HoldingsListCard extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final muted = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
 
-    Widget section(String title, List<FinancialItem> items, Color color) {
-      final total = items.fold<int>(0, (s, i) => s + i.currentValuationPaise);
+    Widget section(String title, List<FinancialItem> items, Color color,
+        bool isLiability) {
+      final groups = <String, List<FinancialItem>>{};
+      for (final i in items) {
+        groups.putIfAbsent(i.subType, () => []).add(i);
+      }
+      int total(List<FinancialItem> l) =>
+          l.fold(0, (s, i) => s + i.currentValuationPaise);
+      final entries = groups.entries.toList()
+        ..sort((a, b) => total(b.value).compareTo(total(a.value)));
+
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SectionHeader(
             title: title,
-            badge: Text(CurrencyFormatter.formatPaise(total),
+            badge: Text(CurrencyFormatter.formatPaise(total(items)),
                 style: AppTypography.labelMedium
                     .copyWith(color: color, fontWeight: FontWeight.w700)),
           ),
@@ -48,30 +71,32 @@ class HoldingsListCard extends StatelessWidget {
             padding: EdgeInsets.zero,
             child: Column(
               children: [
-                for (var i = 0; i < items.length; i++) ...[
+                for (var i = 0; i < entries.length; i++) ...[
                   if (i > 0) const Divider(height: 1),
                   ListTile(
                     dense: true,
-                    title: Text(items[i].name,
+                    title: Text(_label(entries[i].key),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: AppTypography.bodyMedium
                             .copyWith(fontWeight: FontWeight.w600)),
-                    subtitle: Text(_typeLabel(items[i].subType),
+                    subtitle: Text(
+                        '${entries[i].value.length} ${entries[i].value.length == 1 ? 'item' : 'items'}',
                         style: AppTypography.labelSmall.copyWith(color: muted)),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
                             CurrencyFormatter.formatPaise(
-                                items[i].currentValuationPaise),
+                                total(entries[i].value)),
                             style: AppTypography.labelMedium
                                 .copyWith(fontWeight: FontWeight.w700)),
                         Icon(Icons.chevron_right_rounded,
                             size: 18, color: muted),
                       ],
                     ),
-                    onTap: () => onTap(items[i]),
+                    onTap: () =>
+                        onTap(entries[i].key, isLiability: isLiability),
                   ),
                 ],
               ],
@@ -84,11 +109,12 @@ class HoldingsListCard extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (assets.isNotEmpty) section('Assets', assets, AppColors.asset),
+        if (assets.isNotEmpty)
+          section('Assets', assets, AppColors.asset, false),
         if (assets.isNotEmpty && liabilities.isNotEmpty)
           const SizedBox(height: 16),
         if (liabilities.isNotEmpty)
-          section('Liabilities', liabilities, AppColors.liability),
+          section('Liabilities', liabilities, AppColors.liability, true),
       ],
     );
   }

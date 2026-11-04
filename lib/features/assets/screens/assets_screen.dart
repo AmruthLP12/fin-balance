@@ -33,6 +33,11 @@ class _AssetsScreenState extends ConsumerState<AssetsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<String?>(assetsCategoryRequestProvider, (_, category) {
+      if (category == null) return;
+      setState(() => _selectedCategoryFilter = category);
+      ref.read(assetsCategoryRequestProvider.notifier).state = null;
+    });
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final activeProfileAsync = ref.watch(activeProfileProvider);
