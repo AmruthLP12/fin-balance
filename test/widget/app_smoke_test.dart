@@ -52,7 +52,7 @@ void main() {
     // Verify Overview default content
     expect(find.textContaining('NET WORTH'), findsOneWidget);
     expect(find.text('Total Assets'), findsOneWidget);
-    expect(find.text('Total Liabilities'), findsOneWidget);
+    expect(find.text('Total Liabilities'), findsNothing);
 
     // Tap on Assets tab
     await tester.tap(find.widgetWithText(NavigationDestination, 'Assets'));

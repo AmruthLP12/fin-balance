@@ -5,6 +5,20 @@ All notable changes to the FinBalance application will be documented in this fil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.17.0] - 2026-11-04
+
+### Added
+- **Support the Developer (Settings):** optional Ko-fi, PayPal and UPI support. UPI opens a sheet with an on-device generated QR code (`qr_flutter`), the UPI ID with a copy button, and an "Open UPI app" button. The card states that FinBalance is free with no ads or paid features and that we will try to keep it that way for as long as community support allows. Nothing is unlocked by supporting.
+- **Settings button on the profile selection (start) page.** The Settings screen shows a back button when opened this way.
+- **Swipe between Assets categories:** swipe left/right on the Assets tab to move between Mutual Funds, Stocks & ETFs, Fixed Deposits, Gold and All Assets.
+- **Tests:** `holdings_list_card_test.dart`.
+
+### Changed
+- **Overview category list now shows every category, including empty ones** ("Nothing added yet", no amount), in a fixed order: Mutual Funds, Stocks & ETFs, Fixed Deposits, Recurring Deposits, Gold; Home Loan, Vehicle / Auto Loan, Personal Loan, Education Loan, Credit Card Due, Other Borrowing.
+- **Removed the "Total Liabilities ₹0 • Upcoming" block** from the Overview net worth card.
+- **Privacy policy (docs and in-app, identical):** Section 7 is now "Third-Party Services, Advertising & Voluntary Support". It states there are no ads, paid features or in-app purchases, the intent to stay ad-free and free as long as support allows (not a guarantee), that support links open externally, that no payment data is seen or stored, and that the UPI QR is generated on-device.
+- Android: `<queries>` entry for the `upi` scheme.
+
 ## [0.16.0] - 2026-11-04
 
 ### Added

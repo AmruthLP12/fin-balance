@@ -8,6 +8,7 @@ import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/fin_card.dart';
 import '../../../core/widgets/finbalance_logo.dart';
 import '../../../database/app_database.dart';
+import '../../settings/screens/settings_screen.dart';
 import '../widgets/profile_avatar.dart';
 import '../widgets/profile_form_dialog.dart';
 import 'profile_management_screen.dart';
@@ -36,6 +37,23 @@ class ProfileSelectionScreen extends ConsumerWidget {
         totalFamilyAssetsPaise - totalFamilyLiabilitiesPaise;
 
     return Scaffold(
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        toolbarHeight: 44,
+        actions: [
+          IconButton(
+            tooltip: 'Settings',
+            icon: const Icon(Icons.settings_outlined),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => const SettingsScreen()),
+            ),
+          ),
+          const SizedBox(width: AppSpacing.xs),
+        ],
+      ),
       body: SafeArea(
         child: profilesAsync.when(
           data: (profiles) {

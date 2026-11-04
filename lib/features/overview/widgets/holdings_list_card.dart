@@ -34,6 +34,22 @@ class HoldingsListCard extends StatelessWidget {
     'other_liability': 'Other Borrowing',
   };
 
+  static const _assetOrder = [
+    'mutual_fund',
+    'stock',
+    'fixed_deposit',
+    'recurring_deposit',
+    'gold',
+  ];
+  static const _liabilityOrder = [
+    'home_loan',
+    'vehicle_loan',
+    'personal_loan',
+    'education_loan',
+    'credit_card',
+    'other_liability',
+  ];
+
   static String _label(String subType) =>
       _labels[subType] ??
       subType
@@ -43,20 +59,23 @@ class HoldingsListCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (assets.isEmpty && liabilities.isEmpty) return const SizedBox.shrink();
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final muted = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
 
     Widget section(String title, List<FinancialItem> items, Color color,
-        bool isLiability) {
+        bool isLiability, List<String> order) {
       final groups = <String, List<FinancialItem>>{};
       for (final i in items) {
         groups.putIfAbsent(i.subType, () => []).add(i);
       }
       int total(List<FinancialItem> l) =>
           l.fold(0, (s, i) => s + i.currentValuationPaise);
-      final entries = groups.entries.toList()
-        ..sort((a, b) => total(b.value).compareTo(total(a.value)));
+      // Every known category is listed (even when empty) so gaps are visible.
+      final keys = [
+        ...order,
+        ...groups.keys.where((k) => !order.contains(k)),
+      ];
+      final entries = [for (final k in keys) MapEntry(k, groups[k] ?? [])];
 
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -81,7 +100,9 @@ class HoldingsListCard extends StatelessWidget {
                         style: AppTypography.bodyMedium
                             .copyWith(fontWeight: FontWeight.w600)),
                     subtitle: Text(
-                        '${entries[i].value.length} ${entries[i].value.length == 1 ? 'item' : 'items'}',
+                        entries[i].value.isEmpty
+                            ? 'Nothing added yet'
+                            : '${entries[i].value.length} ${entries[i].value.length == 1 ? 'item' : 'items'}',
                         style: AppTypography.labelSmall.copyWith(color: muted)),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -109,12 +130,10 @@ class HoldingsListCard extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (assets.isNotEmpty)
-          section('Assets', assets, AppColors.asset, false),
-        if (assets.isNotEmpty && liabilities.isNotEmpty)
-          const SizedBox(height: 16),
-        if (liabilities.isNotEmpty)
-          section('Liabilities', liabilities, AppColors.liability, true),
+        section('Assets', assets, AppColors.asset, false, _assetOrder),
+        const SizedBox(height: 16),
+        section('Liabilities', liabilities, AppColors.liability, true,
+            _liabilityOrder),
       ],
     );
   }

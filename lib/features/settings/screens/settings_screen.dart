@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/widgets/open_link.dart';
+import '../widgets/support_developer_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/formatting/date_formatter.dart';
@@ -40,7 +41,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        automaticallyImplyLeading: false,
+        automaticallyImplyLeading: Navigator.of(context).canPop(),
         title: Tooltip(
           message: 'Switch Family Profile',
           child: InkWell(
@@ -342,6 +343,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ],
             ),
           ),
+          const SizedBox(height: AppSpacing.lg),
+
+          const SectionHeader(title: 'Support the Developer'),
+          const SupportDeveloperCard(),
           const SizedBox(height: AppSpacing.lg),
 
           // Support Section

@@ -117,259 +117,170 @@ class _AssetsScreenState extends ConsumerState<AssetsScreen> {
             totalValuationPaise: totalCurrentPaise,
           );
 
-          return ListView(
-            padding: AppSpacing.screenPadding,
-            children: [
-              // 1. Category Navigation Row (Responsive scrollable pills)
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    _buildCategoryPill(
-                      label: 'Mutual Funds',
-                      categoryValue: 'mutual_fund',
-                      count: mfCount,
-                      isDark: isDark,
-                    ),
-                    const SizedBox(width: AppSpacing.xs),
-                    _buildCategoryPill(
-                      label: 'Stocks & ETFs',
-                      categoryValue: 'stock',
-                      count: stockCount,
-                      isDark: isDark,
-                    ),
-                    const SizedBox(width: AppSpacing.xs),
-                    _buildCategoryPill(
-                      label: 'Fixed Deposits',
-                      categoryValue: 'fixed_deposit',
-                      count: fdCount,
-                      isDark: isDark,
-                    ),
-                    const SizedBox(width: AppSpacing.xs),
-                    _buildCategoryPill(
-                      label: 'Gold',
-                      categoryValue: 'gold',
-                      count: goldCount,
-                      isDark: isDark,
-                    ),
-                    const SizedBox(width: AppSpacing.xs),
-                    _buildCategoryPill(
-                      label: 'All Assets',
-                      categoryValue: 'all',
-                      count: totalCount,
-                      isDark: isDark,
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: AppSpacing.md),
-
-              // 2. Compact Portfolio Summary Card
-              FinCard(
-                backgroundColor: isDark
-                    ? AppColors.darkSurfaceElevated
-                    : AppColors.lightSurface,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          '${_categoryDisplayName(_selectedCategoryFilter).toUpperCase()} SUMMARY',
-                          style: AppTypography.labelSmall.copyWith(
-                            color: isDark
-                                ? AppColors.darkTextMuted
-                                : AppColors.lightTextMuted,
-                            letterSpacing: 0.8,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        StatusBadge(
-                          label:
-                              '${filteredItems.length} ${filteredItems.length == 1 ? 'Holding' : 'Holdings'}',
-                          type: BadgeType.neutral,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    Wrap(
-                      alignment: WrapAlignment.spaceBetween,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      spacing: AppSpacing.sm,
-                      runSpacing: AppSpacing.xs,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'CURRENT VALUE',
-                              style: AppTypography.labelSmall.copyWith(
-                                color: isDark
-                                    ? AppColors.darkTextMuted
-                                    : AppColors.lightTextMuted,
-                                fontSize: 9,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              CurrencyFormatter.formatPaise(totalCurrentPaise),
-                              style: AppTypography.heroAmount.copyWith(
-                                fontSize: 20,
-                                color: isDark
-                                    ? AppColors.darkTextPrimary
-                                    : AppColors.lightTextPrimary,
-                              ),
-                            ),
-                          ],
-                        ),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'OVERALL P&L',
-                              style: AppTypography.labelSmall.copyWith(
-                                color: isDark
-                                    ? AppColors.darkTextMuted
-                                    : AppColors.lightTextMuted,
-                                fontSize: 9,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              '${isProfit ? '+' : ''}${CurrencyFormatter.formatPaise(totalPnlPaise)} (${totalPnlPercent >= 0 ? '+' : ''}${totalPnlPercent.toStringAsFixed(1)}%)',
-                              style: AppTypography.titleMedium.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: isProfit
-                                    ? AppColors.asset
-                                    : AppColors.liability,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    const Divider(height: 1),
-                    const SizedBox(height: AppSpacing.xs),
-                    Wrap(
-                      alignment: WrapAlignment.spaceBetween,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      spacing: AppSpacing.md,
-                      runSpacing: 4,
-                      children: [
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              'Invested: ',
-                              style: AppTypography.labelSmall.copyWith(
-                                color: isDark
-                                    ? AppColors.darkTextMuted
-                                    : AppColors.lightTextMuted,
-                              ),
-                            ),
-                            Text(
-                              CurrencyFormatter.formatPaise(totalInvestedPaise),
-                              style: AppTypography.labelSmall.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: isDark
-                                    ? AppColors.darkTextSecondary
-                                    : AppColors.lightTextSecondary,
-                              ),
-                            ),
-                          ],
-                        ),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              'Overall IRR: ',
-                              style: AppTypography.labelSmall.copyWith(
-                                color: isDark
-                                    ? AppColors.darkTextMuted
-                                    : AppColors.lightTextMuted,
-                              ),
-                            ),
-                            Text(
-                              overallXirr != null
-                                  ? '${overallXirr.toStringAsFixed(1)}%'
-                                  : '—',
-                              style: AppTypography.labelSmall.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: (overallXirr != null && overallXirr >= 0)
-                                    ? AppColors.asset
-                                    : ((overallXirr != null && overallXirr < 0)
-                                        ? AppColors.liability
-                                        : (isDark
-                                            ? AppColors.darkTextSecondary
-                                            : AppColors.lightTextSecondary)),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: AppSpacing.lg),
-
-              // 3. Compact Investment Holdings List
-              SectionHeader(
-                title:
-                    '${_categoryDisplayName(_selectedCategoryFilter)} (${filteredItems.length})',
-                actionLabel: _selectedCategoryFilter == 'mutual_fund' ||
-                        _selectedCategoryFilter == 'all'
-                    ? 'Search Schemes'
-                    : null,
-                onActionTap: () => _openSearchScreen(context),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-
-              if (filteredItems.isEmpty)
-                _buildCategoryEmptyState(
-                  category: _selectedCategoryFilter,
-                  profileName: profileName,
-                )
-              else
-                ...filteredItems.map(
-                  (item) => HoldingCard(
-                    item: item,
-                    onTap: () => _openHoldingDetails(context, item),
-                    onDelete: () => _confirmDeleteHolding(context, item),
+          return GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onHorizontalDragEnd: _onSwipe,
+            child: ListView(
+              padding: AppSpacing.screenPadding,
+              children: [
+                // 1. Category Navigation Row (Responsive scrollable pills)
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      _buildCategoryPill(
+                        label: 'Mutual Funds',
+                        categoryValue: 'mutual_fund',
+                        count: mfCount,
+                        isDark: isDark,
+                      ),
+                      const SizedBox(width: AppSpacing.xs),
+                      _buildCategoryPill(
+                        label: 'Stocks & ETFs',
+                        categoryValue: 'stock',
+                        count: stockCount,
+                        isDark: isDark,
+                      ),
+                      const SizedBox(width: AppSpacing.xs),
+                      _buildCategoryPill(
+                        label: 'Fixed Deposits',
+                        categoryValue: 'fixed_deposit',
+                        count: fdCount,
+                        isDark: isDark,
+                      ),
+                      const SizedBox(width: AppSpacing.xs),
+                      _buildCategoryPill(
+                        label: 'Gold',
+                        categoryValue: 'gold',
+                        count: goldCount,
+                        isDark: isDark,
+                      ),
+                      const SizedBox(width: AppSpacing.xs),
+                      _buildCategoryPill(
+                        label: 'All Assets',
+                        categoryValue: 'all',
+                        count: totalCount,
+                        isDark: isDark,
+                      ),
+                    ],
                   ),
                 ),
+                const SizedBox(height: AppSpacing.md),
 
-              // 4. SIP Schedules Section (visible when viewing Mutual Funds or All)
-              if (_selectedCategoryFilter == 'mutual_fund' ||
-                  _selectedCategoryFilter == 'all') ...[
-                const SizedBox(height: AppSpacing.xl),
-                SectionHeader(
-                  title: 'SIP Schedules (${sips.length})',
-                  actionLabel: '+ Add SIP',
-                  onActionTap: () => _openAddSipDialog(context),
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                if (sips.isEmpty)
-                  FinCard(
-                    child: Row(
-                      children: [
-                        const Icon(Icons.calendar_today_rounded,
-                            color: AppColors.scheduled),
-                        const SizedBox(width: AppSpacing.md),
-                        Expanded(
-                          child: Column(
+                // 2. Compact Portfolio Summary Card
+                FinCard(
+                  backgroundColor: isDark
+                      ? AppColors.darkSurfaceElevated
+                      : AppColors.lightSurface,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            '${_categoryDisplayName(_selectedCategoryFilter).toUpperCase()} SUMMARY',
+                            style: AppTypography.labelSmall.copyWith(
+                              color: isDark
+                                  ? AppColors.darkTextMuted
+                                  : AppColors.lightTextMuted,
+                              letterSpacing: 0.8,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          StatusBadge(
+                            label:
+                                '${filteredItems.length} ${filteredItems.length == 1 ? 'Holding' : 'Holdings'}',
+                            type: BadgeType.neutral,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      Wrap(
+                        alignment: WrapAlignment.spaceBetween,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        spacing: AppSpacing.sm,
+                        runSpacing: AppSpacing.xs,
+                        children: [
+                          Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text('No Active SIPs',
-                                  style: AppTypography.titleMedium),
                               Text(
-                                'Set up ongoing or bulk historical SIP investments for $profileName.',
+                                'CURRENT VALUE',
                                 style: AppTypography.labelSmall.copyWith(
+                                  color: isDark
+                                      ? AppColors.darkTextMuted
+                                      : AppColors.lightTextMuted,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                CurrencyFormatter.formatPaise(
+                                    totalCurrentPaise),
+                                style: AppTypography.heroAmount.copyWith(
+                                  fontSize: 20,
+                                  color: isDark
+                                      ? AppColors.darkTextPrimary
+                                      : AppColors.lightTextPrimary,
+                                ),
+                              ),
+                            ],
+                          ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'OVERALL P&L',
+                                style: AppTypography.labelSmall.copyWith(
+                                  color: isDark
+                                      ? AppColors.darkTextMuted
+                                      : AppColors.lightTextMuted,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                '${isProfit ? '+' : ''}${CurrencyFormatter.formatPaise(totalPnlPaise)} (${totalPnlPercent >= 0 ? '+' : ''}${totalPnlPercent.toStringAsFixed(1)}%)',
+                                style: AppTypography.titleMedium.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: isProfit
+                                      ? AppColors.asset
+                                      : AppColors.liability,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      const Divider(height: 1),
+                      const SizedBox(height: AppSpacing.xs),
+                      Wrap(
+                        alignment: WrapAlignment.spaceBetween,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        spacing: AppSpacing.md,
+                        runSpacing: 4,
+                        children: [
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'Invested: ',
+                                style: AppTypography.labelSmall.copyWith(
+                                  color: isDark
+                                      ? AppColors.darkTextMuted
+                                      : AppColors.lightTextMuted,
+                                ),
+                              ),
+                              Text(
+                                CurrencyFormatter.formatPaise(
+                                    totalInvestedPaise),
+                                style: AppTypography.labelSmall.copyWith(
+                                  fontWeight: FontWeight.bold,
                                   color: isDark
                                       ? AppColors.darkTextSecondary
                                       : AppColors.lightTextSecondary,
@@ -377,23 +288,120 @@ class _AssetsScreenState extends ConsumerState<AssetsScreen> {
                               ),
                             ],
                           ),
-                        ),
-                        TextButton(
-                          onPressed: () => _openAddSipDialog(context),
-                          child: const Text('Add SIP'),
-                        ),
-                      ],
-                    ),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'Overall IRR: ',
+                                style: AppTypography.labelSmall.copyWith(
+                                  color: isDark
+                                      ? AppColors.darkTextMuted
+                                      : AppColors.lightTextMuted,
+                                ),
+                              ),
+                              Text(
+                                overallXirr != null
+                                    ? '${overallXirr.toStringAsFixed(1)}%'
+                                    : '—',
+                                style: AppTypography.labelSmall.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: (overallXirr != null &&
+                                          overallXirr >= 0)
+                                      ? AppColors.asset
+                                      : ((overallXirr != null &&
+                                              overallXirr < 0)
+                                          ? AppColors.liability
+                                          : (isDark
+                                              ? AppColors.darkTextSecondary
+                                              : AppColors.lightTextSecondary)),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.lg),
+
+                // 3. Compact Investment Holdings List
+                SectionHeader(
+                  title:
+                      '${_categoryDisplayName(_selectedCategoryFilter)} (${filteredItems.length})',
+                  actionLabel: _selectedCategoryFilter == 'mutual_fund' ||
+                          _selectedCategoryFilter == 'all'
+                      ? 'Search Schemes'
+                      : null,
+                  onActionTap: () => _openSearchScreen(context),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+
+                if (filteredItems.isEmpty)
+                  _buildCategoryEmptyState(
+                    category: _selectedCategoryFilter,
+                    profileName: profileName,
                   )
                 else
-                  ...sips.map((sip) => Padding(
-                        padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                        child: SipCard(sip: sip),
-                      )),
-              ],
+                  ...filteredItems.map(
+                    (item) => HoldingCard(
+                      item: item,
+                      onTap: () => _openHoldingDetails(context, item),
+                      onDelete: () => _confirmDeleteHolding(context, item),
+                    ),
+                  ),
 
-              const SizedBox(height: 80), // FAB clearance
-            ],
+                // 4. SIP Schedules Section (visible when viewing Mutual Funds or All)
+                if (_selectedCategoryFilter == 'mutual_fund' ||
+                    _selectedCategoryFilter == 'all') ...[
+                  const SizedBox(height: AppSpacing.xl),
+                  SectionHeader(
+                    title: 'SIP Schedules (${sips.length})',
+                    actionLabel: '+ Add SIP',
+                    onActionTap: () => _openAddSipDialog(context),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  if (sips.isEmpty)
+                    FinCard(
+                      child: Row(
+                        children: [
+                          const Icon(Icons.calendar_today_rounded,
+                              color: AppColors.scheduled),
+                          const SizedBox(width: AppSpacing.md),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text('No Active SIPs',
+                                    style: AppTypography.titleMedium),
+                                Text(
+                                  'Set up ongoing or bulk historical SIP investments for $profileName.',
+                                  style: AppTypography.labelSmall.copyWith(
+                                    color: isDark
+                                        ? AppColors.darkTextSecondary
+                                        : AppColors.lightTextSecondary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () => _openAddSipDialog(context),
+                            child: const Text('Add SIP'),
+                          ),
+                        ],
+                      ),
+                    )
+                  else
+                    ...sips.map((sip) => Padding(
+                          padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                          child: SipCard(sip: sip),
+                        )),
+                ],
+
+                const SizedBox(height: 80), // FAB clearance
+              ],
+            ),
           );
         },
         loading: () => const Center(
@@ -407,6 +415,25 @@ class _AssetsScreenState extends ConsumerState<AssetsScreen> {
         ),
       ),
     );
+  }
+
+  static const _tabOrder = [
+    'mutual_fund',
+    'stock',
+    'fixed_deposit',
+    'gold',
+    'all'
+  ];
+
+  /// Swipe left/right to move between category tabs.
+  void _onSwipe(DragEndDetails d) {
+    final v = d.primaryVelocity ?? 0;
+    if (v.abs() < 300) return;
+    final i = _tabOrder.indexOf(_selectedCategoryFilter);
+    final next = i + (v < 0 ? 1 : -1);
+    if (next >= 0 && next < _tabOrder.length) {
+      setState(() => _selectedCategoryFilter = _tabOrder[next]);
+    }
   }
 
   List<FinancialItem> _filterItems(List<FinancialItem> items, String filter) {
