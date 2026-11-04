@@ -290,7 +290,7 @@ class TransactionsDao extends DatabaseAccessor<AppDatabase>
       }
 
       // Recalculate valuation
-      int latestNav = unitPriceMicroPaise ?? 100000000;
+      int latestNav = unitPriceMicroPaise ?? 0;
       final schemeCode = int.tryParse(holding.externalCode ?? '');
       if (schemeCode != null && schemeCode > 0) {
         final scheme = await db.mutualFundDao.getSchemeByCode(schemeCode);
@@ -301,10 +301,13 @@ class TransactionsDao extends DatabaseAccessor<AppDatabase>
         }
       }
 
-      final newValuation = FinancialPrecision.calculateValuationPaise(
-        unitCountMicroUnits: newUnits,
-        navMicroPaise: latestNav,
-      );
+      // No known NAV -> value at cost basis rather than inventing a price.
+      final newValuation = latestNav > 0
+          ? FinancialPrecision.calculateValuationPaise(
+              unitCountMicroUnits: newUnits,
+              navMicroPaise: latestNav,
+            )
+          : newInvested;
 
       await db.financialItemsDao.updateItem(
         holding.copyWith(

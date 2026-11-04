@@ -79,7 +79,7 @@ void main() {
       );
 
       final initialInstallments =
-          await db.sipsDao.getInstallmentsByPlan(initialResult.sipPlanId);
+          await db.sipsDao.getInstallments(initialResult.sipPlanId);
       expect(initialInstallments.length, equals(4));
 
       final pastBefore =
@@ -102,7 +102,7 @@ void main() {
 
       // 3. Inspect updated installments
       final updatedInstallments =
-          await db.sipsDao.getInstallmentsByPlan(initialResult.sipPlanId);
+          await db.sipsDao.getInstallments(initialResult.sipPlanId);
 
       // Past installments must STILL exist, with identical recorded status and transaction IDs!
       final pastAfter =

@@ -325,40 +325,9 @@ class SwpsDao extends DatabaseAccessor<AppDatabase> with _$SwpsDaoMixin {
     });
   }
 
-  /// Delete SWP plan, schedule periods, and unconfirmed simulated installments.
+  /// Delete an SWP plan. Foreign keys cascade to its periods and installments and
+  /// null `swpPlanId` on any transactions, which are kept.
   Future<void> deleteSwpCascade(int swpPlanId) async {
-    return transaction(() async {
-      // 1. Delete unconfirmed simulated installments
-      await (delete(swpInstallments)
-            ..where((tbl) =>
-                tbl.swpPlanId.equals(swpPlanId) & tbl.isSimulated.equals(true)))
-          .go();
-
-      // 2. Clear FK on confirmed installments so they don't break
-      await (update(swpInstallments)
-            ..where((tbl) => tbl.swpPlanId.equals(swpPlanId)))
-          .write(
-        const SwpInstallmentsCompanion(
-          status: Value('recorded'),
-        ),
-      );
-
-      // 3. Clear FK on transactions
-      await (update(db.transactions)
-            ..where((tbl) => tbl.swpPlanId.equals(swpPlanId)))
-          .write(
-        const TransactionsCompanion(
-          swpPlanId: Value(null),
-        ),
-      );
-
-      // 4. Delete schedule periods
-      await (delete(swpSchedulePeriods)
-            ..where((tbl) => tbl.swpPlanId.equals(swpPlanId)))
-          .go();
-
-      // 5. Delete plan
-      await (delete(swpPlans)..where((tbl) => tbl.id.equals(swpPlanId))).go();
-    });
+    await (delete(swpPlans)..where((tbl) => tbl.id.equals(swpPlanId))).go();
   }
 }

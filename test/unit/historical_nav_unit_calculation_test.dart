@@ -133,7 +133,7 @@ void main() {
       expect(result.valuedPastCount, equals(0));
 
       final installments =
-          await db.sipsDao.getInstallmentsByPlan(result.sipPlanId);
+          await db.sipsDao.getInstallments(result.sipPlanId);
       expect(installments.length, equals(1));
       expect(installments.first.status, equals('pending_valuation'));
       expect(installments.first.purchaseNavMicroPaise, isNull);
@@ -154,7 +154,7 @@ void main() {
       expect(revaluedCount, equals(1));
 
       final updatedInstallment =
-          (await db.sipsDao.getInstallmentsByPlan(result.sipPlanId)).first;
+          (await db.sipsDao.getInstallments(result.sipPlanId)).first;
       expect(updatedInstallment.status, equals('recorded'));
       expect(updatedInstallment.purchaseNavMicroPaise,
           equals(FinancialPrecision.navToMicroPaise(38.0)));
@@ -181,7 +181,7 @@ void main() {
       expect(result.confirmedUnitsMicro, equals(0));
 
       final installments =
-          await db.sipsDao.getInstallmentsByPlan(result.sipPlanId);
+          await db.sipsDao.getInstallments(result.sipPlanId);
       expect(installments.length, equals(3));
       for (final inst in installments) {
         expect(inst.status, equals('upcoming'));

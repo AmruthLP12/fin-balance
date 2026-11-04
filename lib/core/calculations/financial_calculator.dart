@@ -143,148 +143,72 @@ class FinancialCalculator {
     required List<Transaction> transactions,
     required int currentValuationPaise,
     DateTime? valuationDate,
+  }) =>
+      _xirrFor(transactions, currentValuationPaise, valuationDate,
+          skipLinkedSwitches: false);
+
+  /// Calculate portfolio-wide XIRR across multiple holdings and transactions.
+  ///
+  /// Switches that are linked to a paired transaction are internal to the portfolio and cancel out,
+  /// so only unlinked (external) switches count.
+  static double? calculatePortfolioXirr({
+    required List<Transaction> transactions,
+    required int totalValuationPaise,
+    DateTime? valuationDate,
+  }) =>
+      _xirrFor(transactions, totalValuationPaise, valuationDate,
+          skipLinkedSwitches: true);
+
+  static double? _xirrFor(
+    List<Transaction> transactions,
+    int valuationPaise,
+    DateTime? valuationDate, {
+    required bool skipLinkedSwitches,
   }) {
-    if (transactions.isEmpty || currentValuationPaise <= 0) return null;
+    if (transactions.isEmpty || valuationPaise <= 0) return null;
 
     final cashFlows = <DatedCashFlow>[];
 
     for (final tx in transactions) {
-      final charges = tx.chargesPaise;
       final type = tx.transactionType.toLowerCase();
+      final isSwitch = type == 'switch_in' || type == 'switch_out';
+      if (skipLinkedSwitches && isSwitch && tx.linkedTransactionId != null) {
+        continue;
+      }
 
+      final int paise;
       if (type == 'investment_purchase' ||
           type == 'sip_investment' ||
           type == 'switch_in') {
         // Outflow from investor: gross amount + charges
-        final totalOutflowPaise = tx.amountPaise + charges;
-        final amountRupees =
-            FinancialPrecision.paiseToRupees(totalOutflowPaise);
-        if (amountRupees > 0) {
-          cashFlows.add(DatedCashFlow(
-            date: tx.transactionDate,
-            amount: -amountRupees,
-          ));
-        }
+        paise = -(tx.amountPaise + tx.chargesPaise);
       } else if (type == 'redemption' ||
           type == 'swp_withdrawal' ||
           type == 'switch_out' ||
-          type == 'investment_sale') {
-        // Inflow to investor: gross amount - charges
-        final netInflowPaise = tx.amountPaise - charges;
-        final amountRupees = FinancialPrecision.paiseToRupees(
-            netInflowPaise > 0 ? netInflowPaise : tx.amountPaise);
-        if (amountRupees > 0) {
-          cashFlows.add(DatedCashFlow(
-            date: tx.transactionDate,
-            amount: amountRupees,
-          ));
-        }
-      } else if (type == 'dividend_payout') {
-        // Inflow to investor: gross dividend - charges
-        final netDividendPaise = tx.amountPaise - charges;
-        final amountRupees = FinancialPrecision.paiseToRupees(
-            netDividendPaise > 0 ? netDividendPaise : tx.amountPaise);
-        if (amountRupees > 0) {
-          cashFlows.add(DatedCashFlow(
-            date: tx.transactionDate,
-            amount: amountRupees,
-          ));
-        }
+          type == 'investment_sale' ||
+          type == 'dividend_payout') {
+        // Inflow to investor: gross amount - charges (gross if charges exceed it)
+        final net = tx.amountPaise - tx.chargesPaise;
+        paise = net > 0 ? net : tx.amountPaise;
+      } else {
+        // dividend_reinvestment converts internally to units: no external cash flow
+        continue;
       }
-      // Note: dividend_reinvestment generates no external cash flow (it converts internally to units)
+
+      if (paise != 0) {
+        cashFlows.add(DatedCashFlow(
+          date: tx.transactionDate,
+          amount: FinancialPrecision.paiseToRupees(paise),
+        ));
+      }
     }
 
     if (cashFlows.isEmpty) return null;
 
     // Terminal cash flow on valuation date
-    final termDate = valuationDate ?? DateTime.now();
-    final valuationRupees =
-        FinancialPrecision.paiseToRupees(currentValuationPaise);
     cashFlows.add(DatedCashFlow(
-      date: termDate,
-      amount: valuationRupees,
-    ));
-
-    return calculateXirr(cashFlows);
-  }
-
-  /// Calculate portfolio-wide XIRR across multiple holdings and transactions.
-  static double? calculatePortfolioXirr({
-    required List<Transaction> transactions,
-    required int totalValuationPaise,
-    DateTime? valuationDate,
-  }) {
-    if (transactions.isEmpty || totalValuationPaise <= 0) return null;
-
-    final cashFlows = <DatedCashFlow>[];
-
-    for (final tx in transactions) {
-      final charges = tx.chargesPaise;
-      final type = tx.transactionType.toLowerCase();
-
-      // For switches within the portfolio, internal switch-in and switch-out cancel out.
-      // If linkedTransactionId is null (external switch), we count it.
-      if (type == 'investment_purchase' || type == 'sip_investment') {
-        final totalOutflowPaise = tx.amountPaise + charges;
-        final amountRupees =
-            FinancialPrecision.paiseToRupees(totalOutflowPaise);
-        if (amountRupees > 0) {
-          cashFlows.add(DatedCashFlow(
-            date: tx.transactionDate,
-            amount: -amountRupees,
-          ));
-        }
-      } else if (type == 'switch_in' && tx.linkedTransactionId == null) {
-        final totalOutflowPaise = tx.amountPaise + charges;
-        final amountRupees =
-            FinancialPrecision.paiseToRupees(totalOutflowPaise);
-        if (amountRupees > 0) {
-          cashFlows.add(DatedCashFlow(
-            date: tx.transactionDate,
-            amount: -amountRupees,
-          ));
-        }
-      } else if (type == 'redemption' ||
-          type == 'swp_withdrawal' ||
-          type == 'investment_sale') {
-        final netInflowPaise = tx.amountPaise - charges;
-        final amountRupees = FinancialPrecision.paiseToRupees(
-            netInflowPaise > 0 ? netInflowPaise : tx.amountPaise);
-        if (amountRupees > 0) {
-          cashFlows.add(DatedCashFlow(
-            date: tx.transactionDate,
-            amount: amountRupees,
-          ));
-        }
-      } else if (type == 'switch_out' && tx.linkedTransactionId == null) {
-        final netInflowPaise = tx.amountPaise - charges;
-        final amountRupees = FinancialPrecision.paiseToRupees(
-            netInflowPaise > 0 ? netInflowPaise : tx.amountPaise);
-        if (amountRupees > 0) {
-          cashFlows.add(DatedCashFlow(
-            date: tx.transactionDate,
-            amount: amountRupees,
-          ));
-        }
-      } else if (type == 'dividend_payout') {
-        final netDividendPaise = tx.amountPaise - charges;
-        final amountRupees = FinancialPrecision.paiseToRupees(
-            netDividendPaise > 0 ? netDividendPaise : tx.amountPaise);
-        if (amountRupees > 0) {
-          cashFlows.add(DatedCashFlow(
-            date: tx.transactionDate,
-            amount: amountRupees,
-          ));
-        }
-      }
-    }
-
-    if (cashFlows.isEmpty) return null;
-
-    final termDate = valuationDate ?? DateTime.now();
-    cashFlows.add(DatedCashFlow(
-      date: termDate,
-      amount: FinancialPrecision.paiseToRupees(totalValuationPaise),
+      date: valuationDate ?? DateTime.now(),
+      amount: FinancialPrecision.paiseToRupees(valuationPaise),
     ));
 
     return calculateXirr(cashFlows);

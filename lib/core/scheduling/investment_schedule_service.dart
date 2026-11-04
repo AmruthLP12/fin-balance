@@ -198,6 +198,31 @@ class InvestmentScheduleService {
     );
   }
 
+  /// The [i]th occurrence (0-based) of a schedule starting at [start] (UTC date).
+  /// Month-based frequencies always derive from the original day, so there is no drift.
+  static DateTime _occurrenceAt(
+      DateTime start, ScheduleFrequency frequency, int i) {
+    final stepMonths = switch (frequency) {
+      ScheduleFrequency.monthly => 1,
+      ScheduleFrequency.quarterly => 3,
+      ScheduleFrequency.halfYearly => 6,
+      ScheduleFrequency.yearly => 12,
+      _ => 0,
+    };
+    if (stepMonths > 0) {
+      final totalMonths = start.year * 12 + (start.month - 1) + i * stepMonths;
+      return RecurringDateCalculator.calculateOccurrenceDate(
+          totalMonths ~/ 12, (totalMonths % 12) + 1, start.day);
+    }
+    final stepDays = switch (frequency) {
+      ScheduleFrequency.daily => 1,
+      ScheduleFrequency.weekly => 7,
+      ScheduleFrequency.fortnightly => 14,
+      _ => 0, // oneTime
+    };
+    return DateTime.utc(start.year, start.month, start.day + i * stepDays);
+  }
+
   /// Generates the exact sequence of calendar dates for the given configuration.
   static List<DateTime> generateScheduleDates({
     required DateTime startDate,
@@ -206,115 +231,19 @@ class InvestmentScheduleService {
   }) {
     if (installmentCount <= 0) return const [];
 
-    final normalizedStart = toUtcDate(startDate);
-    if (frequency == ScheduleFrequency.oneTime) {
-      return [normalizedStart];
-    }
+    final start = toUtcDate(startDate);
+    if (frequency == ScheduleFrequency.oneTime) return [start];
 
-    final dates = <DateTime>[];
-
-    switch (frequency) {
-      case ScheduleFrequency.daily:
-        for (int i = 0; i < installmentCount; i++) {
-          dates.add(DateTime.utc(
-            normalizedStart.year,
-            normalizedStart.month,
-            normalizedStart.day + i,
-          ));
-        }
-        break;
-
-      case ScheduleFrequency.weekly:
-        for (int i = 0; i < installmentCount; i++) {
-          dates.add(DateTime.utc(
-            normalizedStart.year,
-            normalizedStart.month,
-            normalizedStart.day + (i * 7),
-          ));
-        }
-        break;
-
-      case ScheduleFrequency.fortnightly:
-        for (int i = 0; i < installmentCount; i++) {
-          dates.add(DateTime.utc(
-            normalizedStart.year,
-            normalizedStart.month,
-            normalizedStart.day + (i * 14),
-          ));
-        }
-        break;
-
-      case ScheduleFrequency.monthly:
-        final originalDay = normalizedStart.day;
-        for (int i = 0; i < installmentCount; i++) {
-          final totalMonths =
-              (normalizedStart.year * 12 + (normalizedStart.month - 1)) + i;
-          final targetYear = totalMonths ~/ 12;
-          final targetMonth = (totalMonths % 12) + 1;
-          dates.add(RecurringDateCalculator.calculateOccurrenceDate(
-            targetYear,
-            targetMonth,
-            originalDay,
-          ));
-        }
-        break;
-
-      case ScheduleFrequency.quarterly:
-        final originalDay = normalizedStart.day;
-        for (int i = 0; i < installmentCount; i++) {
-          final totalMonths =
-              (normalizedStart.year * 12 + (normalizedStart.month - 1)) +
-                  (i * 3);
-          final targetYear = totalMonths ~/ 12;
-          final targetMonth = (totalMonths % 12) + 1;
-          dates.add(RecurringDateCalculator.calculateOccurrenceDate(
-            targetYear,
-            targetMonth,
-            originalDay,
-          ));
-        }
-        break;
-
-      case ScheduleFrequency.halfYearly:
-        final originalDay = normalizedStart.day;
-        for (int i = 0; i < installmentCount; i++) {
-          final totalMonths =
-              (normalizedStart.year * 12 + (normalizedStart.month - 1)) +
-                  (i * 6);
-          final targetYear = totalMonths ~/ 12;
-          final targetMonth = (totalMonths % 12) + 1;
-          dates.add(RecurringDateCalculator.calculateOccurrenceDate(
-            targetYear,
-            targetMonth,
-            originalDay,
-          ));
-        }
-        break;
-
-      case ScheduleFrequency.yearly:
-        final originalDay = normalizedStart.day;
-        final originalMonth = normalizedStart.month;
-        for (int i = 0; i < installmentCount; i++) {
-          final targetYear = normalizedStart.year + i;
-          dates.add(RecurringDateCalculator.calculateOccurrenceDate(
-            targetYear,
-            originalMonth,
-            originalDay,
-          ));
-        }
-        break;
-
-      case ScheduleFrequency.oneTime:
-        dates.add(normalizedStart);
-        break;
-    }
-
-    return dates;
+    return [
+      for (int i = 0; i < installmentCount; i++)
+        _occurrenceAt(start, frequency, i),
+    ];
   }
 
   /// Generates dates for a schedule given start date, optional end date, and optional installment count.
-  /// If [installmentCount] is specified, generates up to [installmentCount] occurrences.
-  /// If [endDate] is specified, generates occurrences not exceeding [endDate].
+  /// If [installmentCount] is specified, generates up to [installmentCount] occurrences
+  /// (also bounded by [endDate] when given).
+  /// If only [endDate] is specified, generates every occurrence up to and including it.
   /// If neither is specified, defaults to 12 occurrences (or 1 for One Time).
   static List<DateTime> generateScheduleDatesRange({
     required DateTime startDate,
@@ -322,25 +251,21 @@ class InvestmentScheduleService {
     int? installmentCount,
     required ScheduleFrequency frequency,
   }) {
-    final normalizedStart = toUtcDate(startDate);
-    if (frequency == ScheduleFrequency.oneTime) {
-      return [normalizedStart];
+    final start = toUtcDate(startDate);
+    if (frequency == ScheduleFrequency.oneTime) return [start];
+
+    final end = endDate != null ? toUtcDate(endDate) : null;
+    final hasCount = installmentCount != null && installmentCount > 0;
+    final maxCount = hasCount ? installmentCount : (end != null ? null : 12);
+
+    final dates = <DateTime>[];
+    for (int i = 0; maxCount == null || i < maxCount; i++) {
+      final date = _occurrenceAt(start, frequency, i);
+      if (end != null && date.isAfter(end)) break;
+      dates.add(date);
+      // ponytail: hard ceiling guards a runaway loop; raise if >100k installments is ever valid
+      if (i >= 100000) break;
     }
-
-    final normalizedEnd = endDate != null ? toUtcDate(endDate) : null;
-    final maxCount = installmentCount != null && installmentCount > 0
-        ? installmentCount
-        : (normalizedEnd != null ? 360 : 12);
-
-    final generated = generateScheduleDates(
-      startDate: normalizedStart,
-      installmentCount: maxCount,
-      frequency: frequency,
-    );
-
-    if (normalizedEnd != null) {
-      return generated.where((d) => !d.isAfter(normalizedEnd)).toList();
-    }
-    return generated;
+    return dates;
   }
 }

@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:drift/drift.dart';
 import '../../core/scheduling/investment_schedule_service.dart';
 import '../../core/scheduling/recurring_date_calculator.dart';
@@ -23,6 +25,39 @@ part 'sips_dao.g.dart';
 class SipsDao extends DatabaseAccessor<AppDatabase> with _$SipsDaoMixin {
   SipsDao(super.db);
 
+  /// Applies invested/unit deltas to a linked holding (floored at 0) and revalues it
+  /// at the scheme's latest NAV. With no known NAV the valuation falls back to cost
+  /// basis; a NAV is never invented.
+  Future<void> _applyToHolding(
+    int holdingId,
+    int schemeCode, {
+    int deltaInvested = 0,
+    int deltaUnits = 0,
+  }) async {
+    final holding = await db.financialItemsDao.getItemById(holdingId);
+    if (holding == null) return;
+
+    final newInvested = math.max(0, holding.initialValuePaise + deltaInvested);
+    final newUnits = math.max(0, holding.unitCountMicroUnits + deltaUnits);
+    final nav = (await db.mutualFundDao.getSchemeByCode(schemeCode))
+            ?.latestNavMicroPaise ??
+        0;
+
+    await db.financialItemsDao.updateItem(
+      holding.copyWith(
+        initialValuePaise: newInvested,
+        unitCountMicroUnits: newUnits,
+        currentValuationPaise: nav > 0
+            ? FinancialPrecision.calculateValuationPaise(
+                unitCountMicroUnits: newUnits,
+                navMicroPaise: nav,
+              )
+            : newInvested,
+        updatedAt: DateTime.now().toUtc(),
+      ),
+    );
+  }
+
   /// Watch all active SIP plans for a profile.
   Stream<List<SipPlan>> watchSipsByProfile(int profileId) {
     return (select(sipPlans)
@@ -37,14 +72,6 @@ class SipsDao extends DatabaseAccessor<AppDatabase> with _$SipsDaoMixin {
           ..where((tbl) => tbl.financialItemId.equals(financialItemId))
           ..orderBy([(t) => OrderingTerm.desc(t.startDate)]))
         .watch();
-  }
-
-  /// Get SIP plans linked to a specific holding/financial item.
-  Future<List<SipPlan>> getSipsByFinancialItem(int financialItemId) {
-    return (select(sipPlans)
-          ..where((tbl) => tbl.financialItemId.equals(financialItemId))
-          ..orderBy([(t) => OrderingTerm.desc(t.startDate)]))
-        .get();
   }
 
   /// Get SIP plan by ID.
@@ -88,21 +115,6 @@ class SipsDao extends DatabaseAccessor<AppDatabase> with _$SipsDaoMixin {
     return (select(sipInstallments)
           ..where((tbl) => tbl.sipPlanId.equals(sipPlanId))
           ..orderBy([(t) => OrderingTerm.asc(t.scheduledDate)]))
-        .get();
-  }
-
-  /// Get upcoming installments across all SIP plans for a profile.
-  Future<List<SipInstallment>> getUpcomingInstallmentsForProfile(
-    int profileId, {
-    int limit = 15,
-  }) {
-    return (select(sipInstallments)
-          ..where((tbl) =>
-              tbl.profileId.equals(profileId) &
-              tbl.status.equals('upcoming') &
-              tbl.scheduledDate.isBiggerOrEqualValue(DateTime.now().toUtc()))
-          ..orderBy([(t) => OrderingTerm.asc(t.scheduledDate)])
-          ..limit(limit))
         .get();
   }
 
@@ -539,32 +551,13 @@ class SipsDao extends DatabaseAccessor<AppDatabase> with _$SipsDaoMixin {
         ),
       );
 
-      // Update financial holding if linked
       if (sip.financialItemId != null) {
-        final holding =
-            await db.financialItemsDao.getItemById(sip.financialItemId!);
-        if (holding != null) {
-          final newInvested = holding.initialValuePaise + actualAmountPaise;
-          final newUnits = holding.unitCountMicroUnits + (calculatedUnits ?? 0);
-
-          // Get latest NAV
-          final scheme = await db.mutualFundDao.getSchemeByCode(sip.schemeCode);
-          final latestNav =
-              scheme?.latestNavMicroPaise ?? purchaseNavMicroPaise ?? 100000000;
-          final newValuation = FinancialPrecision.calculateValuationPaise(
-            unitCountMicroUnits: newUnits,
-            navMicroPaise: latestNav,
-          );
-
-          await db.financialItemsDao.updateItem(
-            holding.copyWith(
-              initialValuePaise: newInvested,
-              unitCountMicroUnits: newUnits,
-              currentValuationPaise: newValuation,
-              updatedAt: DateTime.now().toUtc(),
-            ),
-          );
-        }
+        await _applyToHolding(
+          sip.financialItemId!,
+          sip.schemeCode,
+          deltaInvested: actualAmountPaise,
+          deltaUnits: calculatedUnits ?? 0,
+        );
       }
 
       return true;
@@ -616,33 +609,12 @@ class SipsDao extends DatabaseAccessor<AppDatabase> with _$SipsDaoMixin {
       if (unitsToRemove > 0 || amountToRemove > 0) {
         final sip = await getSipById(inst.sipPlanId);
         if (sip != null && sip.financialItemId != null) {
-          final holding = await (select(financialItems)
-                ..where((tbl) => tbl.id.equals(sip.financialItemId!)))
-              .getSingleOrNull();
-          if (holding != null) {
-            final newUnits = (holding.unitCountMicroUnits - unitsToRemove)
-                .clamp(0, double.maxFinite.toInt());
-            final newInvested = (holding.initialValuePaise - amountToRemove)
-                .clamp(0, double.maxFinite.toInt());
-            final scheme =
-                await db.mutualFundDao.getSchemeByCode(sip.schemeCode);
-            final latestNav = scheme?.latestNavMicroPaise ?? 0;
-            final newValuation = FinancialPrecision.calculateValuationPaise(
-              unitCountMicroUnits: newUnits,
-              navMicroPaise: latestNav,
-            );
-
-            await (update(financialItems)
-                  ..where((tbl) => tbl.id.equals(holding.id)))
-                .write(
-              FinancialItemsCompanion(
-                initialValuePaise: Value(newInvested),
-                unitCountMicroUnits: Value(newUnits),
-                currentValuationPaise: Value(newValuation),
-                updatedAt: Value(DateTime.now().toUtc()),
-              ),
-            );
-          }
+          await _applyToHolding(
+            sip.financialItemId!,
+            sip.schemeCode,
+            deltaInvested: -amountToRemove,
+            deltaUnits: -unitsToRemove,
+          );
         }
       }
 
@@ -754,64 +726,23 @@ class SipsDao extends DatabaseAccessor<AppDatabase> with _$SipsDaoMixin {
               ..where((tbl) => tbl.financialItemId.equals(holdingId)))
             .get();
 
-        final holding = await (select(financialItems)
-              ..where((tbl) => tbl.id.equals(holdingId)))
-            .getSingleOrNull();
-
-        if (holding != null) {
-          if (otherSips.isEmpty && remainingTxs.isEmpty) {
-            // No remaining SIPs or transactions for this holding -> delete holding
-            await (delete(financialItems)
-                  ..where((tbl) => tbl.id.equals(holdingId)))
-                .go();
-          } else {
-            // Deduct units and invested capital
-            final newUnits = (holding.unitCountMicroUnits - unitsToRemove)
-                .clamp(0, double.maxFinite.toInt());
-            final newInvested = (holding.initialValuePaise - investedToRemove)
-                .clamp(0, double.maxFinite.toInt());
-
-            if (newUnits == 0 &&
-                newInvested == 0 &&
-                otherSips.isEmpty &&
-                remainingTxs.isEmpty) {
-              await (delete(financialItems)
-                    ..where((tbl) => tbl.id.equals(holdingId)))
-                  .go();
-            } else {
-              final scheme =
-                  await db.mutualFundDao.getSchemeByCode(sip.schemeCode);
-              final latestNav = scheme?.latestNavMicroPaise ?? 0;
-              final newValuation = FinancialPrecision.calculateValuationPaise(
-                unitCountMicroUnits: newUnits,
-                navMicroPaise: latestNav,
-              );
-
-              await (update(financialItems)
-                    ..where((tbl) => tbl.id.equals(holdingId)))
-                  .write(
-                FinancialItemsCompanion(
-                  initialValuePaise: Value(newInvested),
-                  unitCountMicroUnits: Value(newUnits),
-                  currentValuationPaise: Value(newValuation),
-                  updatedAt: Value(DateTime.now().toUtc()),
-                ),
-              );
-            }
-          }
+        if (otherSips.isEmpty && remainingTxs.isEmpty) {
+          // No remaining SIPs or transactions for this holding -> delete holding
+          await (delete(financialItems)
+                ..where((tbl) => tbl.id.equals(holdingId)))
+              .go();
+        } else {
+          await _applyToHolding(
+            holdingId,
+            sip.schemeCode,
+            deltaInvested: -investedToRemove,
+            deltaUnits: -unitsToRemove,
+          );
         }
       }
 
       return true;
     });
-  }
-
-  /// Fetch all installments for a specific SIP plan.
-  Future<List<SipInstallment>> getInstallmentsByPlan(int sipPlanId) {
-    return (select(sipInstallments)
-          ..where((tbl) => tbl.sipPlanId.equals(sipPlanId))
-          ..orderBy([(tbl) => OrderingTerm(expression: tbl.scheduledDate)]))
-        .get();
   }
 
   /// Create a complete investment schedule for a mutual fund asset.
@@ -1051,33 +982,12 @@ class SipsDao extends DatabaseAccessor<AppDatabase> with _$SipsDaoMixin {
 
       // 7. Update holding totals with confirmed past investments
       if (confirmedInvestedPaise > 0 || confirmedUnitsMicro > 0) {
-        final currentHolding =
-            await db.financialItemsDao.getItemById(holdingId);
-        if (currentHolding != null) {
-          final newInvested =
-              currentHolding.initialValuePaise + confirmedInvestedPaise;
-          final newUnits =
-              currentHolding.unitCountMicroUnits + confirmedUnitsMicro;
-
-          // Value holding using latest scheme NAV
-          final scheme = await db.mutualFundDao.getSchemeByCode(schemeCode);
-          final latestNav = scheme?.latestNavMicroPaise ?? 0;
-          final newValuation = latestNav > 0
-              ? FinancialPrecision.calculateValuationPaise(
-                  unitCountMicroUnits: newUnits,
-                  navMicroPaise: latestNav,
-                )
-              : newInvested;
-
-          await db.financialItemsDao.updateItem(
-            currentHolding.copyWith(
-              initialValuePaise: newInvested,
-              unitCountMicroUnits: newUnits,
-              currentValuationPaise: newValuation,
-              updatedAt: DateTime.now().toUtc(),
-            ),
-          );
-        }
+        await _applyToHolding(
+          holdingId,
+          schemeCode,
+          deltaInvested: confirmedInvestedPaise,
+          deltaUnits: confirmedUnitsMicro,
+        );
       }
 
       return InvestmentScheduleResult(
@@ -1154,31 +1064,12 @@ class SipsDao extends DatabaseAccessor<AppDatabase> with _$SipsDaoMixin {
 
             // Update holding
             if (sip.financialItemId != null) {
-              final holding =
-                  await db.financialItemsDao.getItemById(sip.financialItemId!);
-              if (holding != null) {
-                final newInvested =
-                    holding.initialValuePaise + inst.expectedAmountPaise;
-                final newUnits = holding.unitCountMicroUnits + units;
-                final latestNav =
-                    (await db.mutualFundDao.getSchemeByCode(schemeCode))
-                            ?.latestNavMicroPaise ??
-                        purchaseNav;
-
-                final newValuation = FinancialPrecision.calculateValuationPaise(
-                  unitCountMicroUnits: newUnits,
-                  navMicroPaise: latestNav,
-                );
-
-                await db.financialItemsDao.updateItem(
-                  holding.copyWith(
-                    initialValuePaise: newInvested,
-                    unitCountMicroUnits: newUnits,
-                    currentValuationPaise: newValuation,
-                    updatedAt: DateTime.now().toUtc(),
-                  ),
-                );
-              }
+              await _applyToHolding(
+                sip.financialItemId!,
+                schemeCode,
+                deltaInvested: inst.expectedAmountPaise,
+                deltaUnits: units,
+              );
             }
           }
 
