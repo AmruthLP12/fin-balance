@@ -564,6 +564,54 @@ class SipsDao extends DatabaseAccessor<AppDatabase> with _$SipsDaoMixin {
     });
   }
 
+  /// Marks the planned installment closest to [transactionDate] as recorded by an
+  /// already-saved transaction, so a SIP investment entered through the transaction
+  /// form no longer leaves its installment showing as upcoming.
+  ///
+  /// Only `upcoming` installments within [tolerance] are considered. The holding is
+  /// not touched: the transaction DAO has already applied the units and amount.
+  /// Returns false when nothing matched.
+  Future<bool> linkTransactionToInstallment({
+    required int sipPlanId,
+    required int transactionId,
+    required DateTime transactionDate,
+    required int amountPaise,
+    int? navMicroPaise,
+    int? unitsMicroUnits,
+    Duration tolerance = const Duration(days: 31),
+  }) async {
+    final candidates = await (select(sipInstallments)
+          ..where((tbl) =>
+              tbl.sipPlanId.equals(sipPlanId) & tbl.status.equals('upcoming')))
+        .get();
+
+    SipInstallment? best;
+    var bestGap = tolerance + const Duration(days: 1);
+    for (final c in candidates) {
+      final gap = c.scheduledDate.difference(transactionDate).abs();
+      if (gap <= tolerance && gap < bestGap) {
+        best = c;
+        bestGap = gap;
+      }
+    }
+    if (best == null) return false;
+
+    await (update(sipInstallments)..where((tbl) => tbl.id.equals(best!.id)))
+        .write(
+      SipInstallmentsCompanion(
+        status: const Value('recorded'),
+        isSimulated: const Value(false),
+        actualInvestmentDate: Value(transactionDate),
+        actualAmountPaise: Value(amountPaise),
+        purchaseNavMicroPaise: Value(navMicroPaise),
+        unitsMicroUnits: Value(unitsMicroUnits),
+        transactionId: Value(transactionId),
+        updatedAt: Value(DateTime.now().toUtc()),
+      ),
+    );
+    return true;
+  }
+
   /// Mark an installment as skipped.
   Future<int> skipInstallment(int installmentId) {
     return (update(sipInstallments)

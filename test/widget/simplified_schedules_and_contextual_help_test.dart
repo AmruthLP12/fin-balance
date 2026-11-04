@@ -155,7 +155,7 @@ void main() {
 
       // Verify section header
       expect(find.text('SIP Investment Schedules'), findsOneWidget);
-      expect(find.text('New Period'), findsOneWidget);
+      expect(find.byTooltip('SIP schedule actions'), findsOneWidget);
 
       // Verify minimal schedule format: SIP · ₹1,000.00 · ...
       expect(find.textContaining('SIP · ₹1,000.00'), findsOneWidget);
@@ -166,7 +166,7 @@ void main() {
 
       // Verify distinct Investment Lifecycle and My Remarks cards
       expect(find.text('Investment Lifecycle'), findsOneWidget);
-      expect(find.text('Chronological Events'), findsOneWidget);
+      expect(find.textContaining('SIP started'), findsWidgets);
       expect(find.text('My Remarks'), findsOneWidget);
 
       // Verify user remarks are displayed point-wise

@@ -468,9 +468,9 @@ void main() {
         transactions: transactions,
       );
 
-      expect(narrative, contains('Start on 01 Jan 2026 · ₹500.00'));
-      expect(narrative, contains('Period revised on 01 May 2026 · ₹1,000.00'));
-      expect(narrative, contains('Dividend payout on 01 Mar 2026 · ₹150.00'));
+      expect(narrative, contains('SIP started — ₹500.00'));
+      expect(narrative, contains('01 May 2026 · SIP revised — ₹1,000.00'));
+      expect(narrative, contains('Dividend received — ₹150.00'));
     });
 
     test(

@@ -52,7 +52,8 @@ lib/
 ├── main.dart                     # App entry point with ProviderScope
 ├── app.dart                      # Root MaterialApp & theme configuration
 ├── core/
-│   ├── calculations/             # FinancialCalculator (XIRR Newton-Raphson, P&L, returns) & InvestmentLifecycleSummary
+│   ├── calculations/             # FinancialCalculator (XIRR Newton-Raphson, P&L, returns) & InvestmentLifecycleSummary (timeline + overview)
+│   ├── scheduling/               # InvestmentScheduleService (8 frequencies, zero-drift dates) & RecurringDateCalculator
 │   ├── constants/                # AppConstants (INR, sync intervals, keys)
 │   ├── formatting/               # CurrencyFormatter & DateFormatter
 │   ├── providers/                # Global state providers (theme, database, DAOs, profiles)
@@ -67,11 +68,11 @@ lib/
 │       ├── amfi_provider.dart    # Tertiary AMFI text parser fallback
 │       └── nav_sync_service.dart # Failover, caching, and valuation propagation orchestrator
 ├── database/
-│   ├── app_database.dart         # Drift AppDatabase with schema version 4 & safe migrations
+│   ├── app_database.dart         # Drift AppDatabase with schema version 5 & safe migrations
 │   ├── connection/               # Multi-platform Drift connection (Native SQLite & Web WASM)
 │   ├── precision/                # FinancialPrecision (Paise, micro-units, micro-paise)
-│   ├── tables/                   # Drift table definitions (10 normalized tables)
-│   └── daos/                     # Data Access Objects (9 specialized DAOs)
+│   ├── tables/                   # Drift table definitions (17 normalized tables incl. SIP & SWP plans/periods/installments)
+│   └── daos/                     # Data Access Objects (11 specialized DAOs)
 ├── features/
 │   ├── navigation/               # Responsive MainScaffold (NavigationBar on mobile, NavigationRail on desktop)
 │   ├── profile/                  # Multi-profile management & switching
@@ -79,7 +80,7 @@ lib/
 │   │   └── screens/              # ProfileManagementScreen
 │   ├── overview/                 # Net Worth hero dashboard dynamically scoped to active profile
 │   ├── assets/                   # Profile holdings, mutual fund catalogue search, details, and full-screen forms
-│   │   ├── widgets/              # HoldingCard, MutualFundCard, SchemeDetailsSheet, HoldingDetailsSheet, AddToProfileDialog
+│   │   ├── widgets/              # HoldingCard, SipCard (minimal), MutualFundCard, SchemeDetailsSheet, HoldingDetailsSheet, AddToProfileDialog, AddSipDialog, InvestmentLifecycleCard
 │   │   └── screens/              # AssetsScreen, SipDetailsScreen (3 Tabs), EditHoldingScreen, EditSipScheduleScreen, AddSipSchedulePeriodScreen, AddInvestmentTransactionScreen, MutualFundSearchScreen
 │   ├── liabilities/              # Loans, credit card dues, and EMI tracking
 │   ├── activity/                 # Transaction ledger, simulated SIPs, EMI flows
@@ -183,6 +184,13 @@ make clean
   - **Standardized Financial Categories:** Integrated canonical asset and liability categories (`Mutual Funds / SIP`, `Stocks`, `ETFs`, `Fixed Deposits (FD)`, `Recurring Deposits (RD)`, `PPF`, `EPF`, `GPF`, `NPS`, `Gold`, `Bonds`, `Bank Balance`, `Cash`, `Other Assets`; and for liabilities: `Home Loan`, `Personal Loan`, `Vehicle Loan`, `Education Loan`, `Credit Card Dues`, `EMI / Other Loan Dues`, `Other Liabilities`). Zero-value slices are omitted from the pie chart while maintaining non-zero breakdown legends and ₹0 empty liability previews.
   - **Dedicated Support Section (`SettingsScreen`):** Added a dedicated Support section before About containing developer portfolio link (`https://amruthlp.vercel.app`), direct Privacy Policy navigation, and placeholder `"Contact details will be provided here."`.
   - **Revised Privacy Policy:** Removed Section 13 (Open Source) and standalone Section 14 (Contact Info); removed CHANGELOG.md point 3 under Section 11; added Financial Data Accuracy & Market Delays section; updated Advertising disclosures; renumbered cleanly (1 to 14 + Support); and ensured 100% word-for-word synchronization between `docs/privacy-policy.md` and `PrivacyPolicyScreen`.
+- [x] **SIP/SWP Details Polish, Lifecycle Timeline & Form Logic ([0.13.0]):**
+  - **Minimal SIP Schedules:** `SipCard` shows only name, scheme, status and `SIP · ₹ · Next: date`; edit and delete live on the details page.
+  - **SIP Details:** floating `+` for adding transactions on every tab; SIP/SWP sections use a single `⋯` menu instead of many buttons.
+  - **Investment Lifecycle:** status and totals overview plus a dated timeline (`InvestmentLifecycleCard`), with SIP installments rolled up per schedule period.
+  - **Form logic:** transaction NAV follows the transaction date and is never invented; SIP-type transactions tick off the matching installment; the Add SIP dialog now uses the start-date-based `createInvestmentSchedule` flow with historical-NAV valuation of past installments.
+  - **Privacy policy:** Section 4 wording updated (historical NAV rates used to value past installments) in both `docs/privacy-policy.md` and the in-app screen; no new data collected.
+  - **Fixes & cleanup:** daily end-date schedules no longer truncated at 360 dates; no ₹100 fallback NAV (holdings fall back to cost); shared holding-update helper and single XIRR implementation.
 - [ ] **Milestone 5 — Transaction & Valuation Engine:** Simulated installments, lump-sum purchases, redemptions, unit calculations.
 - [ ] **Milestone 6 — Dashboard & Overview:** Real-time net worth calculation, active SIPs, upcoming EMIs.
 - [ ] **Milestone 7 — Financial Analytics:** Dated-cashflow XIRR (Newton-Raphson), asset allocation, historical charts.

@@ -5,6 +5,40 @@ All notable changes to the FinBalance application will be documented in this fil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.13.0] - 2026-11-04
+
+### Added
+- **Investment Lifecycle Overview & Timeline (`InvestmentLifecycleCard`):**
+  - Overview strip with status (`SIP running`, `SWP running`, `SIP + SWP running`, `Holding`, `Fully redeemed`), held-for duration, and key totals (invested, value, units; SIP installments, withdrawn and dividends when present).
+  - Dated timeline with icons and clearer wording: `SIP started`, `SIP revised`, `SIP stopped / completed`, `SWP started`, `Redemption`, `Dividend received`, `Switched in / out`.
+  - SIP installments roll up into one line per schedule period (count, amount, units) instead of being listed as "One-time investment". A period revised the next day no longer shows a separate "stopped" event.
+  - New `InvestmentLifecycleSummary.buildTimeline` and `buildOverview`; `generateLifecycleEvents` and `generateSummary` now build on them.
+- **SIP Transactions Update the Schedule (`SipsDao.linkTransactionToInstallment`):** recording a SIP Investment in the transaction form marks the nearest upcoming installment (within 31 days) of the chosen SIP as recorded, in the same database transaction.
+- **Historical NAV Prefill on the Transaction Form:** NAV follows the transaction date (NAV on or before that date, falling back to the latest cached NAV) with an "NAV as of …" note. A NAV the user typed is never overwritten.
+- **Privacy Policy wording (`docs/privacy-policy.md` and `PrivacyPolicyScreen`, kept word-for-word identical):** Section 4 now states that historical NAV rates are downloaded to value past investment dates. No new data is collected or transmitted; requests still carry only public scheme codes.
+- **Regression tests:** `schedule_range_cap_test.dart` and `sip_transaction_link_test.dart`.
+
+### Changed
+- **Minimal SIP Schedule Cards (`SipCard`):** name, scheme, status and one line `SIP · ₹1,000.00 · Next: 05 Dec 2026`. Edit, Delete, Details buttons and installment/valuation metrics removed; tapping opens the details page.
+- **Floating `+` on SIP Details:** the Add Transaction button (Transactions tab and app-bar menu) is replaced by a floating `+` available on all three tabs, with bottom padding so it never covers content.
+- **Less Imposing Overview:** SIP and SWP sections each use a single `⋯` menu (New/Set up, Edit, Close period) instead of several buttons; large "Set Up…" buttons removed; the app-bar menu keeps only Edit Holding and Delete. Retry for installments awaiting a historical NAV moved into the SIP section.
+- **Add SIP Dialog (`AddSipDialog`) Rebuilt:** one form (scheme, amount, frequency, start date, installments) on the same `createInvestmentSchedule` flow as "Add to profile". The start date is the first deduction date; past installments are valued from the historical NAV and added to the holding; NAV history is fetched first and anything without a NAV stays `pending_valuation`. Replaces the Ongoing / Bulk Historical tabs, which created SIPs with no holding link and no units.
+- **Transaction Form:** no invented defaults (amount, NAV and units start empty); single Save button.
+
+### Fixed
+- **Daily schedules with only an end date** were truncated at 360 dates; they now run to the end date.
+- **Invented NAV:** the ₹100 fallback in `TransactionsDao` and the ₹0 / mixed fallbacks in `SipsDao` are gone. With no known NAV a holding is valued at cost.
+- **`deleteSwpCascade`** relied on redundant manual steps (and relabelled skipped/cancelled installments as recorded); it now deletes the plan and lets foreign keys cascade.
+
+### Refactored
+- One `_applyToHolding` helper replaces five copies of the holding units/invested/valuation update in `SipsDao`.
+- `calculateHoldingXirr` and `calculatePortfolioXirr` share one implementation (portfolio skips linked switches).
+- `InvestmentScheduleService` uses a single step-based occurrence helper for all frequencies.
+- Removed unused `getSipsByFinancialItem`, `getUpcomingInstallmentsForProfile`, `getInstallmentsByPlan` (tests use `getInstallments`) and an unreachable branch in `deleteSip`.
+
+### Testing
+- Updated widget and lifecycle tests for the new UI and wording. Full suite: **180 tests passing**, `flutter analyze` clean.
+
 ## [0.12.0] - 2026-11-03
 
 ### Added

@@ -317,9 +317,9 @@ void main() {
 
       // 2. Tab 1: Overview Metrics
       expect(find.text('CURRENT VALUATION'), findsOneWidget);
-      expect(find.text('₹54,320.00'), findsOneWidget);
+      expect(find.text('₹54,320.00'), findsWidgets);
       expect(find.text('TOTAL INVESTED'), findsOneWidget);
-      expect(find.text('₹50,000.00'), findsOneWidget);
+      expect(find.text('₹50,000.00'), findsWidgets);
       expect(find.text('PROFIT / LOSS'), findsOneWidget);
       expect(find.text('+₹4,320.00'), findsOneWidget);
       expect(find.text('ABSOLUTE RETURN'), findsOneWidget);

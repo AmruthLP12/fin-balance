@@ -506,11 +506,14 @@ void main() {
         transactions: [],
       );
 
-      expect(events.length, 4);
-      expect(events[0], contains('Start on 01 Jan 2024 · ₹1,000'));
-      expect(events[1], contains('Previous SIP period closed on 31 Dec 2024'));
-      expect(events[2], contains('Period revised on 01 Jan 2025 · ₹2,000'));
-      expect(events[3], contains('SWP started on 01 Jun 2025 · ₹500'));
+      // Period 2 starts the day after period 1 ends, so no separate "stopped" event.
+      expect(events.length, 3);
+      expect(events[0], contains('01 Jan 2024 · SIP started'));
+      expect(events[0], contains('₹1,000'));
+      expect(events[1], contains('01 Jan 2025 · SIP revised'));
+      expect(events[1], contains('₹2,000'));
+      expect(events[2], contains('01 Jun 2025 · SWP started'));
+      expect(events[2], contains('₹500'));
     });
   });
 }

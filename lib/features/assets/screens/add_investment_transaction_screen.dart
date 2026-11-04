@@ -67,6 +67,8 @@ class _AddInvestmentTransactionScreenState
   String? _switchSchemeFundHouse;
   bool _isSaving = false;
   bool _isSyncing = false;
+  bool _navEdited = false;
+  String? _navNote;
 
   final Map<String, String> _typeLabels = {
     'investment_purchase': 'One-time Investment / Purchase',
@@ -83,9 +85,9 @@ class _AddInvestmentTransactionScreenState
   void initState() {
     super.initState();
     _transactionDate = DateTime.now();
-    _amountController = TextEditingController(text: '1000');
-    _navController = TextEditingController(text: '100.0000');
-    _unitsController = TextEditingController(text: '10.0000');
+    _amountController = TextEditingController();
+    _navController = TextEditingController();
+    _unitsController = TextEditingController();
     _chargesController = TextEditingController(text: '0.00');
     _notesController = TextEditingController();
 
@@ -93,26 +95,40 @@ class _AddInvestmentTransactionScreenState
       _selectedSipId = widget.sips.first.id;
     }
 
-    _loadInitialNav();
+    _loadNavForDate();
   }
 
-  Future<void> _loadInitialNav() async {
+  /// Prefills NAV from the NAV on (or before) the transaction date, falling back to
+  /// the latest cached NAV. Never overwrites a NAV the user typed, and never invents one.
+  Future<void> _loadNavForDate() async {
+    if (_navEdited) return;
     final schemeCode = int.tryParse(widget.holding.externalCode ?? '');
-    if (schemeCode != null && schemeCode > 0) {
-      final db = ref.read(databaseProvider);
-      final scheme = await db.mutualFundDao.getSchemeByCode(schemeCode);
-      if (scheme != null &&
-          scheme.latestNavMicroPaise != null &&
-          scheme.latestNavMicroPaise! > 0 &&
-          mounted) {
-        final nav =
-            FinancialPrecision.microPaiseToNav(scheme.latestNavMicroPaise!);
-        setState(() {
-          _navController.text = nav.toStringAsFixed(4);
-          _syncUnitsFromAmount();
-        });
-      }
+    if (schemeCode == null || schemeCode <= 0) return;
+
+    final dao = ref.read(databaseProvider).mutualFundDao;
+    final onDate = await dao.getNavOnOrBefore(schemeCode, _transactionDate);
+    int? navMicro = onDate?.navMicroPaise;
+    DateTime? navDate = onDate?.navDate;
+    if (navMicro == null || navMicro <= 0) {
+      final scheme = await dao.getSchemeByCode(schemeCode);
+      navMicro = scheme?.latestNavMicroPaise;
+      navDate = scheme?.latestNavDate;
     }
+    if (!mounted || _navEdited) return;
+
+    setState(() {
+      if (navMicro != null && navMicro > 0) {
+        _navController.text =
+            FinancialPrecision.microPaiseToNav(navMicro).toStringAsFixed(4);
+        _navNote = navDate != null
+            ? 'NAV as of ${DateFormatter.formatDate(navDate)}'
+            : null;
+        if (_amountController.text.trim().isNotEmpty) _syncUnitsFromAmount();
+      } else {
+        _navController.clear();
+        _navNote = 'No NAV found for this date. Enter it manually.';
+      }
+    });
   }
 
   @override
@@ -158,6 +174,7 @@ class _AddInvestmentTransactionScreenState
     );
     if (picked != null && mounted) {
       setState(() => _transactionDate = picked);
+      await _loadNavForDate();
     }
   }
 
@@ -533,19 +550,33 @@ class _AddInvestmentTransactionScreenState
         ref.invalidate(activeProfileAssetsProvider);
       } else {
         // Standard single investment transaction
-        await txDao.recordInvestmentTransaction(
-          profileId: widget.holding.profileId,
-          financialItemId: widget.holding.id,
-          categoryId: widget.holding.categoryId,
-          transactionType: _selectedType,
-          transactionDate: _transactionDate,
-          amountPaise: grossAmountPaise,
-          chargesPaise: chargesPaise,
-          unitsMicroUnits: unitsMicro,
-          unitPriceMicroPaise: navMicroPaise,
-          sipPlanId: _selectedType == 'sip_investment' ? _selectedSipId : null,
-          notes: notes,
-        );
+        final sipId = _selectedType == 'sip_investment' ? _selectedSipId : null;
+        await db.transaction(() async {
+          final txId = await txDao.recordInvestmentTransaction(
+            profileId: widget.holding.profileId,
+            financialItemId: widget.holding.id,
+            categoryId: widget.holding.categoryId,
+            transactionType: _selectedType,
+            transactionDate: _transactionDate,
+            amountPaise: grossAmountPaise,
+            chargesPaise: chargesPaise,
+            unitsMicroUnits: unitsMicro,
+            unitPriceMicroPaise: navMicroPaise,
+            sipPlanId: sipId,
+            notes: notes,
+          );
+          // Tick off the matching planned installment of the chosen SIP.
+          if (sipId != null) {
+            await ref.read(sipsDaoProvider).linkTransactionToInstallment(
+                  sipPlanId: sipId,
+                  transactionId: txId,
+                  transactionDate: _transactionDate,
+                  amountPaise: grossAmountPaise,
+                  navMicroPaise: navMicroPaise,
+                  unitsMicroUnits: unitsMicro,
+                );
+          }
+        });
       }
 
       if (mounted) {
@@ -590,24 +621,6 @@ class _AddInvestmentTransactionScreenState
     return Scaffold(
       appBar: AppBar(
         title: const Text('Add Investment Transaction'),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            child: FilledButton(
-              onPressed: _isSaving ? null : _save,
-              child: _isSaving
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    )
-                  : const Text('Save'),
-            ),
-          ),
-        ],
       ),
       body: SafeArea(
         child: Form(
@@ -924,11 +937,15 @@ class _AddInvestmentTransactionScreenState
                         controller: _navController,
                         keyboardType: const TextInputType.numberWithOptions(
                             decimal: true),
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           prefixText: '₹ ',
-                          border: OutlineInputBorder(),
+                          border: const OutlineInputBorder(),
+                          helperText: _navNote,
                         ),
-                        onChanged: (_) => _syncUnitsFromAmount(),
+                        onChanged: (_) {
+                          _navEdited = true;
+                          _syncUnitsFromAmount();
+                        },
                         validator: (value) {
                           if (value == null || value.trim().isEmpty) {
                             return 'Enter NAV';

@@ -47,7 +47,7 @@ All data entered into FinBalance is stored in a private, sandboxed **on-device l
 FinBalance requires an active internet connection **exclusively** to fetch publicly available mutual fund market data.
 
 To provide up-to-date valuations and scheme details:
-- **Public Market Rates:** The application connects to public, AMFI-compliant mutual fund market data services to download daily Net Asset Value (NAV) updates and scheme master catalogs.
+- **Public Market Rates:** The application connects to public, AMFI-compliant mutual fund market data services to download daily Net Asset Value (NAV) updates, historical NAV rates (used to value past investment dates), and scheme master catalogs.
 - **No Personal Data Sent:** When fetching market data, the application only requests public scheme identifiers (such as AMFI scheme codes). **Zero personal data, portfolio amounts, transaction histories, unit balances, or profile information are ever transmitted over the network.**
 - **Local Offline Caching:** Fetched NAV rates and historical mutual fund data are cached in your local on-device database so that your portfolio valuation remains accessible offline.
 

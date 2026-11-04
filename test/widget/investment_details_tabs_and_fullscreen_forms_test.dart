@@ -153,7 +153,7 @@ void main() {
       await tester.tap(find.text('Transactions'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Add Transaction'), findsOneWidget);
+      expect(find.byTooltip('Add transaction'), findsOneWidget);
       expect(find.text('All (1)'), findsOneWidget);
       expect(find.text('Purchases'), findsOneWidget);
       expect(find.text('One-time Purchase'), findsOneWidget);
@@ -234,11 +234,13 @@ void main() {
       // Enter amount: ₹2,000, charges: ₹15
       final amountFields = find.byType(TextFormField);
       await tester.enterText(amountFields.at(0), '2000');
+      await tester.enterText(amountFields.at(1), '100'); // NAV (no cached NAV)
       await tester.enterText(amountFields.at(3), '15.00'); // charges
       await tester.pumpAndSettle();
 
-      // Tap Save
-      await tester.tap(find.text('Save'));
+      // Tap Record Transaction
+      await tester.ensureVisible(find.text('Record Transaction'));
+      await tester.tap(find.text('Record Transaction'));
       await tester.pumpAndSettle();
 
       // Verify transaction added to DB

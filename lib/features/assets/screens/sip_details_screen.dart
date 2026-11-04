@@ -16,6 +16,7 @@ import '../../../core/widgets/fin_card.dart';
 import '../../../core/widgets/status_badge.dart';
 import '../../../database/app_database.dart';
 import '../../../database/precision/financial_precision.dart';
+import '../widgets/investment_lifecycle_card.dart';
 import 'add_investment_transaction_screen.dart';
 import 'add_sip_schedule_period_screen.dart';
 import 'add_swp_schedule_period_screen.dart';
@@ -219,12 +220,6 @@ class _SipDetailsScreenState extends ConsumerState<SipDetailsScreen>
             onSelected: (val) {
               if (val == 'edit_holding' && currentHolding != null) {
                 _openEditHolding(context, currentHolding);
-              } else if (val == 'add_transaction' && currentHolding != null) {
-                _openAddTransaction(context, currentHolding, linkedSip);
-              } else if (val == 'add_sip_schedule' && currentHolding != null) {
-                _openAddSipSchedule(context, currentHolding, linkedSip);
-              } else if (val == 'edit_sip' && linkedSip != null) {
-                _openEditSipSchedule(context, linkedSip);
               } else if (val == 'delete_holding' && currentHolding != null) {
                 _confirmDeleteHolding(context, currentHolding);
               } else if (val == 'delete_sip' && linkedSip != null) {
@@ -240,39 +235,6 @@ class _SipDetailsScreenState extends ConsumerState<SipDetailsScreen>
                       Icon(Icons.edit_note_rounded, size: 20),
                       SizedBox(width: 8),
                       Text('Edit Holding'),
-                    ],
-                  ),
-                ),
-              if (currentHolding != null)
-                const PopupMenuItem(
-                  value: 'add_transaction',
-                  child: Row(
-                    children: [
-                      Icon(Icons.add_card_rounded, size: 20),
-                      SizedBox(width: 8),
-                      Text('Add Transaction'),
-                    ],
-                  ),
-                ),
-              if (currentHolding != null)
-                const PopupMenuItem(
-                  value: 'add_sip_schedule',
-                  child: Row(
-                    children: [
-                      Icon(Icons.add_alarm_rounded, size: 20),
-                      SizedBox(width: 8),
-                      Text('Add New SIP Schedule'),
-                    ],
-                  ),
-                ),
-              if (linkedSip != null)
-                const PopupMenuItem(
-                  value: 'edit_sip',
-                  child: Row(
-                    children: [
-                      Icon(Icons.edit_calendar_rounded, size: 20),
-                      SizedBox(width: 8),
-                      Text('Edit SIP Schedule'),
                     ],
                   ),
                 ),
@@ -321,6 +283,14 @@ class _SipDetailsScreenState extends ConsumerState<SipDetailsScreen>
           ],
         ),
       ),
+      floatingActionButton: currentHolding == null
+          ? null
+          : FloatingActionButton(
+              tooltip: 'Add transaction',
+              onPressed: () =>
+                  _openAddTransaction(context, currentHolding!, linkedSip),
+              child: const Icon(Icons.add_rounded),
+            ),
       body: TabBarView(
         controller: _tabController,
         children: [
@@ -401,7 +371,8 @@ class _SipDetailsScreenState extends ConsumerState<SipDetailsScreen>
     final isProfit = pnlPaise >= 0;
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(AppSpacing.md),
+      padding: const EdgeInsets.fromLTRB(
+          AppSpacing.md, AppSpacing.md, AppSpacing.md, 88),
       child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 700),
@@ -642,44 +613,37 @@ class _SipDetailsScreenState extends ConsumerState<SipDetailsScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Wrap(
-          alignment: WrapAlignment.spaceBetween,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          runSpacing: AppSpacing.xs,
+        Row(
           children: [
-            Text(
-              'SIP Investment Schedules',
-              style: AppTypography.titleMedium.copyWith(
-                fontWeight: FontWeight.bold,
+            Expanded(
+              child: Text(
+                'SIP Investment Schedules',
+                style: AppTypography.titleMedium.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (sip != null) ...[
-                  IconButton(
-                    icon: const Icon(Icons.edit_calendar_rounded, size: 20),
-                    tooltip: 'Edit Period',
-                    visualDensity: VisualDensity.compact,
-                    onPressed: () => _openEditSipSchedule(context, sip),
-                  ),
-                  if (hasActivePeriod)
-                    IconButton(
-                      icon: const Icon(Icons.cancel_outlined,
-                          size: 20, color: AppColors.liability),
-                      tooltip: 'Close Period',
-                      visualDensity: VisualDensity.compact,
-                      onPressed: () => _confirmCloseSipPeriod(context, sip),
-                    ),
-                ],
-                FilledButton.tonalIcon(
-                  icon: const Icon(Icons.add_rounded, size: 16),
-                  label: const Text('New Period'),
-                  style: FilledButton.styleFrom(
-                    visualDensity: VisualDensity.compact,
-                  ),
-                  onPressed: () => _openAddSipSchedule(context, holding, sip),
-                ),
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.more_horiz_rounded),
+              tooltip: 'SIP schedule actions',
+              onSelected: (v) {
+                if (v == 'new') {
+                  _openAddSipSchedule(context, holding, sip);
+                } else if (v == 'edit' && sip != null) {
+                  _openEditSipSchedule(context, sip);
+                } else if (v == 'close' && sip != null) {
+                  _confirmCloseSipPeriod(context, sip);
+                }
+              },
+              itemBuilder: (_) => [
+                PopupMenuItem(
+                    value: 'new',
+                    child: Text(sip == null ? 'Set up SIP' : 'New period')),
+                if (sip != null)
+                  const PopupMenuItem(value: 'edit', child: Text('Edit period')),
+                if (sip != null && hasActivePeriod)
+                  const PopupMenuItem(
+                      value: 'close', child: Text('Close period')),
               ],
             ),
           ],
@@ -702,12 +666,6 @@ class _SipDetailsScreenState extends ConsumerState<SipDetailsScreen>
                             ? AppColors.darkTextMuted
                             : AppColors.lightTextMuted,
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    FilledButton.tonal(
-                      onPressed: () =>
-                          _openAddSipSchedule(context, holding, sip),
-                      child: const Text('Set Up SIP Schedule'),
                     ),
                   ],
                 ),
@@ -829,6 +787,32 @@ class _SipDetailsScreenState extends ConsumerState<SipDetailsScreen>
                     ),
                   ),
                 ],
+                if (installments.any((i) => i.status == 'pending_valuation'))
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.warning_amber_rounded,
+                            size: 14, color: AppColors.warning),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            'Some installments are awaiting a historical NAV',
+                            style: AppTypography.labelSmall
+                                .copyWith(color: AppColors.warning),
+                          ),
+                        ),
+                        TextButton(
+                          style: TextButton.styleFrom(
+                            visualDensity: VisualDensity.compact,
+                          ),
+                          onPressed: () =>
+                              _retryValuation(context, holding, sip),
+                          child: const Text('Retry'),
+                        ),
+                      ],
+                    ),
+                  ),
               ],
             ),
           ),
@@ -854,37 +838,34 @@ class _SipDetailsScreenState extends ConsumerState<SipDetailsScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Wrap(
-          alignment: WrapAlignment.spaceBetween,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          runSpacing: AppSpacing.xs,
+        Row(
           children: [
-            Text(
-              'SWP Withdrawal Schedules',
-              style: AppTypography.titleMedium.copyWith(
-                fontWeight: FontWeight.bold,
+            Expanded(
+              child: Text(
+                'SWP Withdrawal Schedules',
+                style: AppTypography.titleMedium.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.more_horiz_rounded),
+              tooltip: 'SWP schedule actions',
+              onSelected: (v) {
+                if (v == 'new') {
+                  _openAddSwpSchedule(context, holding, activeSwp);
+                } else if (v == 'close' && activeSwp != null) {
+                  _confirmCloseSwpPeriod(context, activeSwp);
+                }
+              },
+              itemBuilder: (_) => [
+                PopupMenuItem(
+                    value: 'new',
+                    child:
+                        Text(activeSwp == null ? 'Set up SWP' : 'New period')),
                 if (activeSwp != null && hasActivePeriod)
-                  IconButton(
-                    icon: const Icon(Icons.cancel_outlined,
-                        size: 20, color: AppColors.liability),
-                    tooltip: 'Close SWP Period',
-                    visualDensity: VisualDensity.compact,
-                    onPressed: () => _confirmCloseSwpPeriod(context, activeSwp),
-                  ),
-                FilledButton.tonalIcon(
-                  icon: const Icon(Icons.add_rounded, size: 16),
-                  label: const Text('New SWP Period'),
-                  style: FilledButton.styleFrom(
-                    visualDensity: VisualDensity.compact,
-                  ),
-                  onPressed: () =>
-                      _openAddSwpSchedule(context, holding, activeSwp),
-                ),
+                  const PopupMenuItem(
+                      value: 'close', child: Text('Close period')),
               ],
             ),
           ],
@@ -907,12 +888,6 @@ class _SipDetailsScreenState extends ConsumerState<SipDetailsScreen>
                             ? AppColors.darkTextMuted
                             : AppColors.lightTextMuted,
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    FilledButton.tonal(
-                      onPressed: () =>
-                          _openAddSwpSchedule(context, holding, activeSwp),
-                      child: const Text('Set Up SWP Schedule'),
                     ),
                   ],
                 ),
@@ -1022,16 +997,7 @@ class _SipDetailsScreenState extends ConsumerState<SipDetailsScreen>
     required List<SwpSchedulePeriod> swpPeriods,
     required List<Transaction> transactions,
   }) {
-    final events = holding != null
-        ? InvestmentLifecycleSummary.generateLifecycleEvents(
-            holding: holding,
-            sips: sips,
-            schedulePeriods: schedulePeriods,
-            swps: swps,
-            swpPeriods: swpPeriods,
-            transactions: transactions,
-          )
-        : <String>[];
+    if (holding == null) return const SizedBox.shrink();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1043,62 +1009,20 @@ class _SipDetailsScreenState extends ConsumerState<SipDetailsScreen>
           ),
         ),
         const SizedBox(height: AppSpacing.xs),
-        FinCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  const Icon(Icons.history_rounded,
-                      size: 16, color: AppColors.brandPrimary),
-                  const SizedBox(width: 6),
-                  Text(
-                    'Chronological Events',
-                    style: AppTypography.labelSmall.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.brandPrimary,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              if (events.isEmpty)
-                Text(
-                  'No lifecycle events recorded yet.',
-                  style: AppTypography.bodySmall.copyWith(
-                    color: isDark
-                        ? AppColors.darkTextMuted
-                        : AppColors.lightTextMuted,
-                  ),
-                )
-              else
-                ...events.map((event) {
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 6.0),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Padding(
-                          padding: EdgeInsets.only(top: 6, right: 8),
-                          child: Icon(Icons.circle,
-                              size: 5, color: AppColors.brandPrimary),
-                        ),
-                        Expanded(
-                          child: Text(
-                            event,
-                            style: AppTypography.bodySmall.copyWith(
-                              height: 1.4,
-                              color: isDark
-                                  ? AppColors.darkTextPrimary
-                                  : AppColors.lightTextPrimary,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }),
-            ],
+        InvestmentLifecycleCard(
+          overview: InvestmentLifecycleSummary.buildOverview(
+            holding: holding,
+            schedulePeriods: schedulePeriods,
+            swpPeriods: swpPeriods,
+            transactions: transactions,
+          ),
+          events: InvestmentLifecycleSummary.buildTimeline(
+            holding: holding,
+            sips: sips,
+            schedulePeriods: schedulePeriods,
+            swps: swps,
+            swpPeriods: swpPeriods,
+            transactions: transactions,
           ),
         ),
       ],
@@ -1274,11 +1198,6 @@ class _SipDetailsScreenState extends ConsumerState<SipDetailsScreen>
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              FilledButton.icon(
-                icon: const Icon(Icons.add_rounded, size: 18),
-                label: const Text('Add Transaction'),
-                onPressed: () => _openAddTransaction(context, holding, sip),
-              ),
             ],
           ),
         ),
@@ -1311,12 +1230,11 @@ class _SipDetailsScreenState extends ConsumerState<SipDetailsScreen>
                     description: _selectedTxFilter == 'ALL'
                         ? 'No transactions recorded yet for this investment.'
                         : 'No transactions found matching the selected filter.',
-                    actionLabel: 'Record Transaction',
-                    onAction: () => _openAddTransaction(context, holding, sip),
                   ),
                 )
               : ListView.builder(
-                  padding: const EdgeInsets.all(AppSpacing.md),
+                  padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.md, AppSpacing.md, AppSpacing.md, 88),
                   itemCount: filteredTxs.length,
                   itemBuilder: (context, idx) {
                     final tx = filteredTxs[idx];
@@ -1538,7 +1456,8 @@ class _SipDetailsScreenState extends ConsumerState<SipDetailsScreen>
     );
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(AppSpacing.md),
+      padding: const EdgeInsets.fromLTRB(
+          AppSpacing.md, AppSpacing.md, AppSpacing.md, 88),
       child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 700),
@@ -1867,6 +1786,27 @@ class _SipDetailsScreenState extends ConsumerState<SipDetailsScreen>
       ref.invalidate(sipPeriodsProvider(sip.id));
       ref.invalidate(sipInstallmentsProvider(sip.id));
     }
+  }
+
+  Future<void> _retryValuation(
+    BuildContext context,
+    FinancialItem? holding,
+    SipPlan? sip,
+  ) async {
+    final code = sip?.schemeCode ?? _schemeCode;
+    if (code == null) return;
+    final count =
+        await ref.read(sipsDaoProvider).revaluePendingInstallments(code);
+    if (!context.mounted) return;
+    ref.invalidate(activeProfileAssetsProvider);
+    if (sip != null) ref.invalidate(sipInstallmentsProvider(sip.id));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(count > 0
+            ? 'Valued $count installment(s).'
+            : 'Historical NAV is still unavailable for some dates.'),
+      ),
+    );
   }
 
   Future<void> _openAddSipSchedule(
