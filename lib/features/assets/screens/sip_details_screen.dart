@@ -640,7 +640,8 @@ class _SipDetailsScreenState extends ConsumerState<SipDetailsScreen>
                     value: 'new',
                     child: Text(sip == null ? 'Set up SIP' : 'New period')),
                 if (sip != null)
-                  const PopupMenuItem(value: 'edit', child: Text('Edit period')),
+                  const PopupMenuItem(
+                      value: 'edit', child: Text('Edit period')),
                 if (sip != null && hasActivePeriod)
                   const PopupMenuItem(
                       value: 'close', child: Text('Close period')),
@@ -1795,6 +1796,11 @@ class _SipDetailsScreenState extends ConsumerState<SipDetailsScreen>
   ) async {
     final code = sip?.schemeCode ?? _schemeCode;
     if (code == null) return;
+    try {
+      await ref
+          .read(navSyncServiceProvider)
+          .getOrFetchSchemeDetails(code, includeHistoricalNav: true);
+    } catch (_) {}
     final count =
         await ref.read(sipsDaoProvider).revaluePendingInstallments(code);
     if (!context.mounted) return;

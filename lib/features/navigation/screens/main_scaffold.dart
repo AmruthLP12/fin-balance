@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/providers/database_provider.dart';
+import '../../../core/providers/nav_providers.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/finbalance_logo.dart';
@@ -30,7 +31,22 @@ class MainScaffold extends ConsumerStatefulWidget {
 }
 
 class _MainScaffoldState extends ConsumerState<MainScaffold> {
-  int _currentIndex = 0;
+  int get _currentIndex => ref.read(mainTabProvider);
+  set _currentIndex(int v) => ref.read(mainTabProvider.notifier).state = v;
+
+  @override
+  void initState() {
+    super.initState();
+    // Refresh NAVs once per launch when due under the user's refresh policy.
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      try {
+        await ref.read(navSyncServiceProvider).syncAllPortfolioSchemes(
+              force: false,
+              frequency: ref.read(navRefreshFrequencyProvider),
+            );
+      } catch (_) {}
+    });
+  }
 
   static const List<Widget> _screens = <Widget>[
     OverviewScreen(),
@@ -42,6 +58,7 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(mainTabProvider);
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
@@ -50,7 +67,7 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
       onPopInvokedWithResult: (didPop, _) {
         if (didPop) return;
         if (_currentIndex != 0) {
-          setState(() => _currentIndex = 0);
+          _currentIndex = 0;
         } else {
           ref.read(hasSelectedInitialProfileProvider.notifier).state = false;
         }
@@ -111,7 +128,7 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
                       ),
                     ),
                     onDestinationSelected: (index) {
-                      setState(() => _currentIndex = index);
+                      _currentIndex = index;
                     },
                     destinations: const [
                       NavigationRailDestination(
@@ -169,7 +186,7 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
             bottomNavigationBar: NavigationBar(
               selectedIndex: _currentIndex,
               onDestinationSelected: (index) {
-                setState(() => _currentIndex = index);
+                _currentIndex = index;
               },
               destinations: const [
                 NavigationDestination(

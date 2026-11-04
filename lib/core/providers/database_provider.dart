@@ -65,6 +65,9 @@ final swpsDaoProvider = Provider<SwpsDao>((ref) {
 });
 
 /// Tracks whether the user has picked a profile during this session's startup flow.
+/// Selected main tab (0 Overview, 1 Assets, 2 Liabilities, 3 Activity, 4 Settings).
+final mainTabProvider = StateProvider<int>((ref) => 0);
+
 final hasSelectedInitialProfileProvider = StateProvider<bool>((ref) => false);
 
 /// StateNotifier to manage active profile selection and persistence.

@@ -130,9 +130,14 @@ class NavSyncService {
       }).toList();
 
       await _mutualFundDao.upsertSchemes(companions);
-      _searchCache[cacheKey] =
-          (timestamp: DateTime.now(), results: remoteResults);
-      return remoteResults;
+      // Keep locally known schemes (e.g. old or closed funds the provider no longer lists).
+      final remoteCodes = remoteResults.map((r) => r.schemeCode).toSet();
+      final merged = [
+        ...remoteResults,
+        ...localResults.where((r) => !remoteCodes.contains(r.schemeCode)),
+      ];
+      _searchCache[cacheKey] = (timestamp: DateTime.now(), results: merged);
+      return merged;
     }
 
     if (localResults.isNotEmpty) {
@@ -140,6 +145,40 @@ class NavSyncService {
           (timestamp: DateTime.now(), results: localResults);
     }
     return localResults;
+  }
+
+  static String _historyKey(int schemeCode) => 'nav_history_full_$schemeCode';
+
+  Future<MutualFundSchemeDetail> _detailFromCache(
+    MutualFundScheme scheme,
+    bool includeHistoricalNav,
+  ) async {
+    final history = includeHistoricalNav
+        ? await _mutualFundDao.getNavHistory(scheme.schemeCode, limit: 100)
+        : <NavHistoryData>[];
+    return MutualFundSchemeDetail(
+      schemeCode: scheme.schemeCode,
+      schemeName: scheme.schemeName,
+      fundHouse: scheme.fundHouse,
+      schemeType: scheme.schemeType,
+      schemeCategory: scheme.schemeCategory,
+      isin: scheme.isin,
+      planType: scheme.planType ??
+          MutualFundSearchResult.detectPlanType(scheme.schemeName),
+      optionType: scheme.optionType ??
+          MutualFundSearchResult.detectOptionType(scheme.schemeName),
+      latestNav:
+          scheme.latestNavDate != null && scheme.latestNavMicroPaise != null
+              ? NavRecord(
+                  date: scheme.latestNavDate!,
+                  navMicroPaise: scheme.latestNavMicroPaise!,
+                )
+              : null,
+      navHistory: history
+          .map(
+              (h) => NavRecord(date: h.navDate, navMicroPaise: h.navMicroPaise))
+          .toList(),
+    );
   }
 
   /// Get scheme details from local cache or remote provider.
@@ -150,46 +189,28 @@ class NavSyncService {
     String refreshFrequency = 'daily',
   }) async {
     final cachedScheme = await _mutualFundDao.getSchemeByCode(schemeCode);
+    final historyKey = _historyKey(schemeCode);
+    final hasFullHistory =
+        await _mutualFundDao.db.appSettingsDao.getSetting(historyKey) != null;
+    final needFullHistory = includeHistoricalNav && !hasFullHistory;
 
-    // 1. Return from local cache if available and not forced to refresh
+    // 1. Serve from the local cache while it is fresh under the refresh policy and
+    // already holds the history the caller needs; otherwise go online.
     if (!forceRefresh &&
+        !needFullHistory &&
         cachedScheme != null &&
-        cachedScheme.latestNavMicroPaise != null) {
-      final history = includeHistoricalNav
-          ? await _mutualFundDao.getNavHistory(schemeCode, limit: 100)
-          : <NavHistoryData>[];
-      return MutualFundSchemeDetail(
-        schemeCode: cachedScheme.schemeCode,
-        schemeName: cachedScheme.schemeName,
-        fundHouse: cachedScheme.fundHouse,
-        schemeType: cachedScheme.schemeType,
-        schemeCategory: cachedScheme.schemeCategory,
-        isin: cachedScheme.isin,
-        planType: cachedScheme.planType ??
-            MutualFundSearchResult.detectPlanType(cachedScheme.schemeName),
-        optionType: cachedScheme.optionType ??
-            MutualFundSearchResult.detectOptionType(cachedScheme.schemeName),
-        latestNav: cachedScheme.latestNavDate != null
-            ? NavRecord(
-                date: cachedScheme.latestNavDate!,
-                navMicroPaise: cachedScheme.latestNavMicroPaise!,
-              )
-            : null,
-        navHistory: history
-            .map((h) => NavRecord(
-                  date: h.navDate,
-                  navMicroPaise: h.navMicroPaise,
-                ))
-            .toList(),
-      );
+        cachedScheme.latestNavMicroPaise != null &&
+        !isSyncDue(cachedScheme.lastSyncedAt, refreshFrequency)) {
+      return _detailFromCache(cachedScheme, includeHistoricalNav);
     }
 
     // 2. Query remote providers in priority order (MFapi -> Tigzig -> AMFI)
     for (final provider in _providers) {
       try {
+        // Full history is downloaded once per scheme; later refreshes fetch only the latest NAV.
         final details = await provider.getSchemeDetails(
           schemeCode,
-          includeHistoricalNav: includeHistoricalNav,
+          includeHistoricalNav: needFullHistory,
         );
         if (details != null) {
           // Check if remote NAV is older than cached NAV (prevent regression)
@@ -276,6 +297,15 @@ class NavSyncService {
             );
           }
 
+          if (details.navHistory.length > 1) {
+            await _mutualFundDao.db.appSettingsDao.setSetting(
+                historyKey, DateTime.now().toUtc().toIso8601String());
+          }
+
+          if (includeHistoricalNav && !needFullHistory) {
+            final fresh = await _mutualFundDao.getSchemeByCode(schemeCode);
+            if (fresh != null) return await _detailFromCache(fresh, true);
+          }
           return details;
         }
       } catch (_) {
@@ -283,36 +313,9 @@ class NavSyncService {
       }
     }
 
-    // 6. If all remote providers failed, fallback to local cached scheme if present
+    // 6. If all remote providers failed, fall back to the local cache if present
     if (cachedScheme != null) {
-      final history = includeHistoricalNav
-          ? await _mutualFundDao.getNavHistory(schemeCode, limit: 100)
-          : <NavHistoryData>[];
-      return MutualFundSchemeDetail(
-        schemeCode: cachedScheme.schemeCode,
-        schemeName: cachedScheme.schemeName,
-        fundHouse: cachedScheme.fundHouse,
-        schemeType: cachedScheme.schemeType,
-        schemeCategory: cachedScheme.schemeCategory,
-        isin: cachedScheme.isin,
-        planType: cachedScheme.planType ??
-            MutualFundSearchResult.detectPlanType(cachedScheme.schemeName),
-        optionType: cachedScheme.optionType ??
-            MutualFundSearchResult.detectOptionType(cachedScheme.schemeName),
-        latestNav: cachedScheme.latestNavDate != null &&
-                cachedScheme.latestNavMicroPaise != null
-            ? NavRecord(
-                date: cachedScheme.latestNavDate!,
-                navMicroPaise: cachedScheme.latestNavMicroPaise!,
-              )
-            : null,
-        navHistory: history
-            .map((h) => NavRecord(
-                  date: h.navDate,
-                  navMicroPaise: h.navMicroPaise,
-                ))
-            .toList(),
-      );
+      return _detailFromCache(cachedScheme, includeHistoricalNav);
     }
 
     return null;

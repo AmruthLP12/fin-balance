@@ -15,7 +15,9 @@ import '../../../core/widgets/status_badge.dart';
 import '../../../database/app_database.dart';
 import '../../assets/screens/mutual_fund_search_screen.dart';
 import '../../profile/widgets/profile_menu_button.dart';
+import '../widgets/holdings_list_card.dart';
 import '../widgets/portfolio_summary_card.dart';
+import '../../assets/screens/sip_details_screen.dart';
 
 /// FinBalance Overview / Net Worth Dashboard dynamically scoped to active financial profile.
 class OverviewScreen extends ConsumerStatefulWidget {
@@ -332,6 +334,21 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
             categoriesMap: categoriesMap,
             totalAssetsPaise: totalAssetsPaise,
             totalLiabilitiesPaise: totalLiabilitiesPaise,
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          HoldingsListCard(
+            assets: activeAssets,
+            liabilities: activeLiabilities,
+            onTap: (item) {
+              if (item.itemType == 'liability') {
+                ref.read(mainTabProvider.notifier).state = 2;
+              } else if (item.subType == 'mutual_fund') {
+                Navigator.of(context).push(MaterialPageRoute<void>(
+                    builder: (_) => SipDetailsScreen(holding: item)));
+              } else {
+                ref.read(mainTabProvider.notifier).state = 1;
+              }
+            },
           ),
           const SizedBox(height: AppSpacing.lg),
         ],

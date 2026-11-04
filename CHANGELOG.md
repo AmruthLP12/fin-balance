@@ -5,6 +5,19 @@ All notable changes to the FinBalance application will be documented in this fil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.16.0] - 2026-11-04
+
+### Added
+- **Holdings list on the profile Overview:** below the charts, every active asset and liability of the profile is listed with its current amount and a section total. Tapping a mutual fund opens its details page; other assets open the Assets tab; liabilities open the Liabilities tab (tab selection is now the shared `mainTabProvider`).
+- **Automatic NAV refresh once per launch** when due under the NAV refresh setting (daily / weekly / manual). Previously the setting only controlled the manual button and no automatic refresh ran.
+- **Tests:** `nav_cache_test.dart` (history downloaded once, fresh cache never hits the network, manual policy).
+
+### Fixed
+- **Developer Portfolio and Hosted Policy links** (Settings and Privacy Policy screens) now open in the browser via `url_launcher` instead of only showing a toast; a toast is shown only if the link cannot be opened. Added the Android `https` `<queries>` entry.
+- **Missing NAV for old SIPs / back-dated transactions:** the scheme cache was returned whenever a latest NAV existed, so full history was never downloaded for a scheme first cached through search, the transaction form or a refresh. Full history is now downloaded once per scheme (tracked in app settings) whenever a caller needs it, including the transaction form and the "Retry" valuation button on SIP details.
+- **Stale detail cache:** scheme details were served from cache forever; they now respect the refresh policy (fresh cache is served without any network call, a due cache is refreshed with the latest NAV only, and a failed refresh falls back to the cache).
+- **Scheme search** now keeps locally known schemes (e.g. old or closed funds) that the online provider does not list, instead of dropping them whenever the provider returns any result.
+
 ## [0.15.0] - 2026-11-04
 
 ### Added

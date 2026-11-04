@@ -158,10 +158,12 @@ class InvestmentLifecycleSummary {
     if (sortedSipPeriods.isNotEmpty) {
       for (int i = 0; i < sortedSipPeriods.length; i++) {
         final p = sortedSipPeriods[i];
-        final plan = ScheduleFrequency.fromString(p.frequency).label.toLowerCase();
-        final until = p.effectiveTo != null && _day(p.effectiveTo!).isAfter(today)
-            ? ' · until ${DateFormatter.formatDate(p.effectiveTo!)}'
-            : '';
+        final plan =
+            ScheduleFrequency.fromString(p.frequency).label.toLowerCase();
+        final until =
+            p.effectiveTo != null && _day(p.effectiveTo!).isAfter(today)
+                ? ' · until ${DateFormatter.formatDate(p.effectiveTo!)}'
+                : '';
         events.add(LifecycleEvent(
           date: p.effectiveFrom,
           kind: i == 0 ? LifecycleKind.sipStart : LifecycleKind.sipRevised,
@@ -171,9 +173,13 @@ class InvestmentLifecycleSummary {
         ));
 
         final end = p.effectiveTo;
-        final next = i + 1 < sortedSipPeriods.length ? sortedSipPeriods[i + 1] : null;
+        final next =
+            i + 1 < sortedSipPeriods.length ? sortedSipPeriods[i + 1] : null;
         final replaced = next != null &&
-            _day(next.effectiveFrom).difference(_day(end ?? next.effectiveFrom)).inDays <= 1;
+            _day(next.effectiveFrom)
+                    .difference(_day(end ?? next.effectiveFrom))
+                    .inDays <=
+                1;
         if (end != null && !_day(end).isAfter(today) && !replaced) {
           final stopped = p.status == 'closed' || p.status == 'superseded';
           events.add(LifecycleEvent(
@@ -211,7 +217,8 @@ class InvestmentLifecycleSummary {
           : (p.unitsMicroUnits != null
               ? '${_units(p.unitsMicroUnits!)} units'
               : 'configured amount');
-      final freq = ScheduleFrequency.fromString(p.frequency).label.toLowerCase();
+      final freq =
+          ScheduleFrequency.fromString(p.frequency).label.toLowerCase();
       events.add(LifecycleEvent(
         date: p.effectiveFrom,
         kind: i == 0 ? LifecycleKind.swpStart : LifecycleKind.swpRevised,
@@ -222,7 +229,10 @@ class InvestmentLifecycleSummary {
       final end = p.effectiveTo;
       final next = i + 1 < sortedSwp.length ? sortedSwp[i + 1] : null;
       final replaced = next != null &&
-          _day(next.effectiveFrom).difference(_day(end ?? next.effectiveFrom)).inDays <= 1;
+          _day(next.effectiveFrom)
+                  .difference(_day(end ?? next.effectiveFrom))
+                  .inDays <=
+              1;
       if (end != null && !_day(end).isAfter(today) && !replaced) {
         final stopped = p.status == 'closed' || p.status == 'superseded';
         events.add(LifecycleEvent(
@@ -316,7 +326,9 @@ class InvestmentLifecycleSummary {
       final type = t.transactionType.toLowerCase();
       if (_isSipTx(t)) sipCount++;
       if (_isRedemptionLike(type)) withdrawn += t.amountPaise - t.chargesPaise;
-      if (type == 'dividend_payout') dividends += t.amountPaise - t.chargesPaise;
+      if (type == 'dividend_payout') {
+        dividends += t.amountPaise - t.chargesPaise;
+      }
     }
 
     bool running(DateTime from, DateTime? to, String status) =>
@@ -325,8 +337,8 @@ class InvestmentLifecycleSummary {
         (to == null || _day(to).isAfter(today));
     final sipRunning = schedulePeriods
         .any((p) => running(p.effectiveFrom, p.effectiveTo, p.status));
-    final swpRunning =
-        swpPeriods.any((p) => running(p.effectiveFrom, p.effectiveTo, p.status));
+    final swpRunning = swpPeriods
+        .any((p) => running(p.effectiveFrom, p.effectiveTo, p.status));
 
     final String status;
     if (holding.unitCountMicroUnits <= 0 && transactions.isNotEmpty) {

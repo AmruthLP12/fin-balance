@@ -35,7 +35,8 @@ class SipCard extends ConsumerWidget {
     final now = DateTime.now();
     final today = DateTime.utc(now.year, now.month, now.day);
     final next = installments
-        .where((i) => i.status == 'upcoming' && !i.scheduledDate.isBefore(today))
+        .where(
+            (i) => i.status == 'upcoming' && !i.scheduledDate.isBefore(today))
         .firstOrNull;
 
     final parts = <String>['SIP'];

@@ -21,26 +21,34 @@ class InvestmentLifecycleCard extends StatelessWidget {
 
   static (IconData, Color) _style(LifecycleKind kind) => switch (kind) {
         LifecycleKind.created => (Icons.flag_rounded, AppColors.brandPrimary),
-        LifecycleKind.oneTime =>
-          (Icons.add_shopping_cart_rounded, AppColors.brandPrimary),
-        LifecycleKind.sipStart ||
-        LifecycleKind.sipRevised =>
-          (Icons.autorenew_rounded, AppColors.brandPrimary),
-        LifecycleKind.swpStart ||
-        LifecycleKind.swpRevised =>
-          (Icons.outbox_rounded, AppColors.scheduled),
-        LifecycleKind.sipEnd ||
-        LifecycleKind.swpEnd =>
-          (Icons.stop_circle_outlined, AppColors.warning),
-        LifecycleKind.redemption ||
-        LifecycleKind.swpWithdrawal =>
-          (Icons.south_east_rounded, AppColors.liability),
-        LifecycleKind.dividendReinvested ||
-        LifecycleKind.dividendReceived =>
-          (Icons.savings_outlined, AppColors.asset),
-        LifecycleKind.switchIn ||
-        LifecycleKind.switchOut =>
-          (Icons.swap_horiz_rounded, AppColors.scheduled),
+        LifecycleKind.oneTime => (
+            Icons.add_shopping_cart_rounded,
+            AppColors.brandPrimary
+          ),
+        LifecycleKind.sipStart || LifecycleKind.sipRevised => (
+            Icons.autorenew_rounded,
+            AppColors.brandPrimary
+          ),
+        LifecycleKind.swpStart || LifecycleKind.swpRevised => (
+            Icons.outbox_rounded,
+            AppColors.scheduled
+          ),
+        LifecycleKind.sipEnd || LifecycleKind.swpEnd => (
+            Icons.stop_circle_outlined,
+            AppColors.warning
+          ),
+        LifecycleKind.redemption || LifecycleKind.swpWithdrawal => (
+            Icons.south_east_rounded,
+            AppColors.liability
+          ),
+        LifecycleKind.dividendReinvested || LifecycleKind.dividendReceived => (
+            Icons.savings_outlined,
+            AppColors.asset
+          ),
+        LifecycleKind.switchIn || LifecycleKind.switchOut => (
+            Icons.swap_horiz_rounded,
+            AppColors.scheduled
+          ),
       };
 
   @override
@@ -156,9 +164,8 @@ class _TimelineRow extends StatelessWidget {
                     child: Container(
                       width: 2,
                       margin: const EdgeInsets.symmetric(vertical: 2),
-                      color: isDark
-                          ? AppColors.darkBorder
-                          : AppColors.lightBorder,
+                      color:
+                          isDark ? AppColors.darkBorder : AppColors.lightBorder,
                     ),
                   ),
               ],

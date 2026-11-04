@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/widgets/open_link.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
@@ -222,13 +223,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
                   subtitle: const Text('https://amruthlp.vercel.app',
                       style: AppTypography.labelSmall),
                   trailing: const Icon(Icons.open_in_new_rounded, size: 18),
-                  onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Portfolio: https://amruthlp.vercel.app'),
-                      ),
-                    );
-                  },
+                  onTap: () => openLink(context, 'https://amruthlp.vercel.app'),
                 ),
                 ListTile(
                   contentPadding: EdgeInsets.zero,
@@ -239,14 +234,8 @@ class PrivacyPolicyScreen extends StatelessWidget {
                       'https://amruthlp.vercel.app/finbalance_policy',
                       style: AppTypography.labelSmall),
                   trailing: const Icon(Icons.open_in_new_rounded, size: 18),
-                  onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                            'Policy: https://amruthlp.vercel.app/finbalance_policy'),
-                      ),
-                    );
-                  },
+                  onTap: () => openLink(
+                      context, 'https://amruthlp.vercel.app/finbalance_policy'),
                 ),
                 const ListTile(
                   contentPadding: EdgeInsets.zero,

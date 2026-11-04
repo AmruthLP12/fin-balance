@@ -109,6 +109,14 @@ class _AddInvestmentTransactionScreenState
     final schemeCode = int.tryParse(widget.holding.externalCode ?? '');
     if (schemeCode == null || schemeCode <= 0) return;
 
+    // One-time full history download (cached afterwards); offline just uses what is stored.
+    try {
+      await ref
+          .read(navSyncServiceProvider)
+          .getOrFetchSchemeDetails(schemeCode, includeHistoricalNav: true);
+    } catch (_) {}
+    if (!mounted || _navEdited) return;
+
     final dao = ref.read(databaseProvider).mutualFundDao;
     final onDate = await dao.getNavOnOrBefore(schemeCode, _transactionDate);
     int? navMicro = onDate?.navMicroPaise;

@@ -64,4 +64,3 @@ class SwpInstallments extends Table {
         {swpPlanId, scheduledDate},
       ];
 }
-

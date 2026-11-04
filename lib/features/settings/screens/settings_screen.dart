@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/widgets/open_link.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/formatting/date_formatter.dart';
@@ -356,13 +357,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   subtitle: const Text('https://amruthlp.vercel.app',
                       style: AppTypography.bodySmall),
                   trailing: const Icon(Icons.open_in_new_rounded, size: 18),
-                  onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Portfolio: https://amruthlp.vercel.app'),
-                      ),
-                    );
-                  },
+                  onTap: () => openLink(context, 'https://amruthlp.vercel.app'),
                 ),
                 const Divider(height: 1),
                 ListTile(

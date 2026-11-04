@@ -133,7 +133,8 @@ class _AddSipDialogState extends ConsumerState<AddSipDialog> {
                       if (f != ScheduleFrequency.oneTime)
                         DropdownMenuItem(value: f, child: Text(f.label)),
                   ],
-                  onChanged: (f) => setState(() => _frequency = f ?? _frequency),
+                  onChanged: (f) =>
+                      setState(() => _frequency = f ?? _frequency),
                 ),
                 const SizedBox(height: AppSpacing.md),
                 ListTile(
