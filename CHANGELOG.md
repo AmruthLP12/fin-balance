@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Developer Portfolio and Hosted Policy links** (Settings and Privacy Policy screens) now open in the browser via `url_launcher` instead of only showing a toast; a toast is shown only if the link cannot be opened. Added the Android `https` `<queries>` entry.
 - **Missing NAV for old SIPs / back-dated transactions:** the scheme cache was returned whenever a latest NAV existed, so full history was never downloaded for a scheme first cached through search, the transaction form or a refresh. Full history is now downloaded once per scheme (tracked in app settings) whenever a caller needs it, including the transaction form and the "Retry" valuation button on SIP details.
 - **Stale detail cache:** scheme details were served from cache forever; they now respect the refresh policy (fresh cache is served without any network call, a due cache is refreshed with the latest NAV only, and a failed refresh falls back to the cache).
+- **Android build warning:** `compileSdk` raised from 35 to 36 (required by `url_launcher_android`); `targetSdk` stays 35.
 - **Scheme search** now keeps locally known schemes (e.g. old or closed funds) that the online provider does not list, instead of dropping them whenever the provider returns any result.
 
 ## [0.15.0] - 2026-11-04
