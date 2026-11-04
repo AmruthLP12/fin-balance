@@ -38,6 +38,7 @@ $$\text{Net Worth} = \text{Total Assets} - \text{Total Liabilities}$$
 | **Visualizations** | FL Chart (`fl_chart: ^0.70.2`) |
 | **Reminders** | Flutter Local Notifications (`flutter_local_notifications: ^18.0.1`) |
 | **Formatting** | Intl (`intl: ^0.20.2`) |
+| **Android build** | Gradle 9.3.1, Android Gradle Plugin 9.1.0, Kotlin 2.4.0 (built-in Kotlin), JDK 17 |
 
 ### Database Platform Strategies
 - **Android:** Uses `DriftNativeOptions(shareAcrossIsolates: true)` with database stored in the local application documents directory (`finbalance.sqlite`).
@@ -191,6 +192,7 @@ make clean
   - **Form logic:** transaction NAV follows the transaction date and is never invented; SIP-type transactions tick off the matching installment; the Add SIP dialog now uses the start-date-based `createInvestmentSchedule` flow with historical-NAV valuation of past installments.
   - **Privacy policy:** Section 4 wording updated (historical NAV rates used to value past installments) in both `docs/privacy-policy.md` and the in-app screen; no new data collected.
   - **Fixes & cleanup:** daily end-date schedules no longer truncated at 360 dates; no ₹100 fallback NAV (holdings fall back to cost); shared holding-update helper and single XIRR implementation.
+- [x] **Android Toolchain Upgrade ([0.13.1]):** removed ignored duplicate `*.gradle.kts` files under `android/`; upgraded to Gradle 9.3.1, AGP 9.1.0 and Kotlin 2.4.0 (built-in Kotlin); debug and release APKs verified.
 - [ ] **Milestone 5 — Transaction & Valuation Engine:** Simulated installments, lump-sum purchases, redemptions, unit calculations.
 - [ ] **Milestone 6 — Dashboard & Overview:** Real-time net worth calculation, active SIPs, upcoming EMIs.
 - [ ] **Milestone 7 — Financial Analytics:** Dated-cashflow XIRR (Newton-Raphson), asset allocation, historical charts.

@@ -5,6 +5,18 @@ All notable changes to the FinBalance application will be documented in this fil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.13.1] - 2026-11-04
+
+### Changed
+- **Android toolchain upgrade:** Gradle 8.14 -> 9.3.1, Android Gradle Plugin 8.11.1 -> 9.1.0, Kotlin 2.2.20 -> 2.4.0 (the versions shipped by the installed Flutter 3.47 template). This clears Flutter's "support will soon be dropped" warnings.
+- **Built-in Kotlin:** `android/app/build.gradle` no longer applies `kotlin-android`; `kotlinOptions` replaced by `kotlin { compilerOptions { jvmTarget = JVM_17 } }`; the `android.builtInKotlin=false` opt-out was removed from `android/gradle.properties`.
+
+### Removed
+- Unused Kotlin-DSL duplicates `android/build.gradle.kts`, `android/settings.gradle.kts` and `android/app/build.gradle.kts` (Gradle already ignored them in favour of the Groovy files, which carry the real config: `com.finbalance.app`, desugaring). This clears the "Both build.gradle and build.gradle.kts exist" warning.
+
+### Testing
+- Verified with a clean `make build-debug` (no warnings) and `make build-release`. `android.newDsl=false` and `android.enableJetifier=true` are still set in `gradle.properties`; revisit when AGP drops them. No app code changed in this version.
+
 ## [0.13.0] - 2026-11-04
 
 ### Added
