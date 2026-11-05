@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/constants/asset_categories.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/calculations/financial_calculator.dart';
 import '../../../core/formatting/currency_formatter.dart';
@@ -35,7 +36,7 @@ class _AssetsScreenState extends ConsumerState<AssetsScreen> {
   Widget build(BuildContext context) {
     ref.listen<String?>(assetsCategoryRequestProvider, (_, category) {
       if (category == null) return;
-      setState(() => _selectedCategoryFilter = category);
+      _select(category);
       ref.read(assetsCategoryRequestProvider.notifier).state = null;
     });
     final theme = Theme.of(context);
@@ -79,13 +80,8 @@ class _AssetsScreenState extends ConsumerState<AssetsScreen> {
       ),
       body: assetsAsync.when(
         data: (items) {
-          // Counts per supported category
-          final mfCount = items.where((i) => i.subType == 'mutual_fund').length;
-          final stockCount = items.where((i) => i.subType == 'stock').length;
-          final fdCount =
-              items.where((i) => i.subType == 'fixed_deposit').length;
-          final goldCount = items.where((i) => i.subType == 'gold').length;
           final totalCount = items.length;
+          int countOf(String v) => items.where((i) => i.subType == v).length;
 
           final filteredItems = _filterItems(items, _selectedCategoryFilter);
 
@@ -123,45 +119,23 @@ class _AssetsScreenState extends ConsumerState<AssetsScreen> {
             child: ListView(
               padding: AppSpacing.screenPadding,
               children: [
-                // 1. Category Navigation Row (Responsive scrollable pills)
+                // 1. Category Navigation Row (scrollable pills; the selected one is kept in view)
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: Row(
                     children: [
-                      _buildCategoryPill(
-                        label: 'Mutual Funds',
-                        categoryValue: 'mutual_fund',
-                        count: mfCount,
-                        isDark: isDark,
-                      ),
-                      const SizedBox(width: AppSpacing.xs),
-                      _buildCategoryPill(
-                        label: 'Stocks & ETFs',
-                        categoryValue: 'stock',
-                        count: stockCount,
-                        isDark: isDark,
-                      ),
-                      const SizedBox(width: AppSpacing.xs),
-                      _buildCategoryPill(
-                        label: 'Fixed Deposits',
-                        categoryValue: 'fixed_deposit',
-                        count: fdCount,
-                        isDark: isDark,
-                      ),
-                      const SizedBox(width: AppSpacing.xs),
-                      _buildCategoryPill(
-                        label: 'Gold',
-                        categoryValue: 'gold',
-                        count: goldCount,
-                        isDark: isDark,
-                      ),
-                      const SizedBox(width: AppSpacing.xs),
-                      _buildCategoryPill(
-                        label: 'All Assets',
-                        categoryValue: 'all',
-                        count: totalCount,
-                        isDark: isDark,
-                      ),
+                      for (final (value, label) in [
+                        ('all', 'All Assets'),
+                        ...assetCategories,
+                      ]) ...[
+                        _buildCategoryPill(
+                          label: label,
+                          categoryValue: value,
+                          count: value == 'all' ? totalCount : countOf(value),
+                          isDark: isDark,
+                        ),
+                        const SizedBox(width: AppSpacing.xs),
+                      ],
                     ],
                   ),
                 ),
@@ -417,13 +391,19 @@ class _AssetsScreenState extends ConsumerState<AssetsScreen> {
     );
   }
 
-  static const _tabOrder = [
-    'mutual_fund',
-    'stock',
-    'fixed_deposit',
-    'gold',
-    'all'
-  ];
+  static final _tabOrder = ['all', for (final c in assetCategories) c.$1];
+  final _pillKeys = {for (final v in _tabOrder) v: GlobalKey()};
+
+  void _select(String category) {
+    setState(() => _selectedCategoryFilter = category);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final ctx = _pillKeys[category]?.currentContext;
+      if (ctx != null) {
+        Scrollable.ensureVisible(ctx,
+            duration: const Duration(milliseconds: 200), alignment: 0.5);
+      }
+    });
+  }
 
   /// Swipe left/right to move between category tabs.
   void _onSwipe(DragEndDetails d) {
@@ -432,7 +412,7 @@ class _AssetsScreenState extends ConsumerState<AssetsScreen> {
     final i = _tabOrder.indexOf(_selectedCategoryFilter);
     final next = i + (v < 0 ? 1 : -1);
     if (next >= 0 && next < _tabOrder.length) {
-      setState(() => _selectedCategoryFilter = _tabOrder[next]);
+      _select(_tabOrder[next]);
     }
   }
 
@@ -449,7 +429,8 @@ class _AssetsScreenState extends ConsumerState<AssetsScreen> {
   }) {
     final isSelected = _selectedCategoryFilter == categoryValue;
     return InkWell(
-      onTap: () => setState(() => _selectedCategoryFilter = categoryValue),
+      key: _pillKeys[categoryValue],
+      onTap: () => _select(categoryValue),
       borderRadius: BorderRadius.circular(20),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
@@ -538,7 +519,6 @@ class _AssetsScreenState extends ConsumerState<AssetsScreen> {
               'Digital gold, Sovereign Gold Bonds (SGB), and gold ETFs will be tracked here.',
         );
       case 'mutual_fund':
-      default:
         return EmptyStateView(
           icon: Icons.pie_chart_outline_rounded,
           title: 'No Mutual Funds in $profileName’s Portfolio',
@@ -547,25 +527,19 @@ class _AssetsScreenState extends ConsumerState<AssetsScreen> {
           actionLabel: 'Search Mutual Funds',
           onAction: () => _openSearchScreen(context),
         );
+      default:
+        final label = categoryLabel(category);
+        return EmptyStateView(
+          icon: Icons.inventory_2_outlined,
+          title: 'No $label Added',
+          description:
+              '$label for $profileName will be tracked here. Support for this category is planned for upcoming milestones.',
+        );
     }
   }
 
-  String _categoryDisplayName(String category) {
-    switch (category) {
-      case 'mutual_fund':
-        return 'Mutual Funds';
-      case 'stock':
-        return 'Stocks & ETFs';
-      case 'fixed_deposit':
-        return 'Fixed Deposits';
-      case 'gold':
-        return 'Gold';
-      case 'all':
-        return 'All Investments';
-      default:
-        return 'Investments';
-    }
-  }
+  String _categoryDisplayName(String category) =>
+      category == 'all' ? 'All Investments' : categoryLabel(category);
 
   void _openSearchScreen(BuildContext context) {
     Navigator.of(context).push(

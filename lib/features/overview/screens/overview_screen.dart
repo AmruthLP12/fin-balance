@@ -257,16 +257,62 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
                         ],
                       ),
                     ),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                width: 8,
+                                height: 8,
+                                decoration: const BoxDecoration(
+                                  color: AppColors.liability,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Flexible(
+                                child: Text(
+                                  'Total Liabilities',
+                                  style: AppTypography.labelSmall.copyWith(
+                                    color: isDark
+                                        ? AppColors.darkTextSecondary
+                                        : AppColors.lightTextSecondary,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            CurrencyFormatter.formatPaise(
+                                totalLiabilitiesPaise),
+                            style: AppTypography.amountMedium.copyWith(
+                              color: AppColors.liability,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
+                if (activeAssets.isNotEmpty) ...[
+                  const SizedBox(height: AppSpacing.md),
+                  const Divider(),
+                  const SizedBox(height: AppSpacing.md),
+                  PortfolioSummaryCard(
+                    activeAssets: activeAssets,
+                    transactions: transactions,
+                    embedded: true,
+                  ),
+                ],
               ],
             ),
           ),
-          const SizedBox(height: AppSpacing.md),
-          PortfolioSummaryCard(
-            activeAssets: activeAssets,
-            transactions: transactions,
-          ),
+          const SizedBox(height: AppSpacing.lg),
 
           // Distribution & Analytics Section (Three switchable charts)
           _buildDistributionSection(

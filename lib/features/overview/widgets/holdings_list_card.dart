@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/constants/asset_categories.dart';
 import '../../../core/formatting/currency_formatter.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
@@ -19,43 +20,6 @@ class HoldingsListCard extends StatelessWidget {
     required this.liabilities,
     required this.onTap,
   });
-
-  static const _labels = {
-    'mutual_fund': 'Mutual Funds',
-    'stock': 'Stocks & ETFs',
-    'fixed_deposit': 'Fixed Deposits',
-    'recurring_deposit': 'Recurring Deposits',
-    'gold': 'Gold',
-    'home_loan': 'Home Loan',
-    'vehicle_loan': 'Vehicle / Auto Loan',
-    'personal_loan': 'Personal Loan',
-    'education_loan': 'Education Loan',
-    'credit_card': 'Credit Card Due',
-    'other_liability': 'Other Borrowing',
-  };
-
-  static const _assetOrder = [
-    'mutual_fund',
-    'stock',
-    'fixed_deposit',
-    'recurring_deposit',
-    'gold',
-  ];
-  static const _liabilityOrder = [
-    'home_loan',
-    'vehicle_loan',
-    'personal_loan',
-    'education_loan',
-    'credit_card',
-    'other_liability',
-  ];
-
-  static String _label(String subType) =>
-      _labels[subType] ??
-      subType
-          .split('_')
-          .map((w) => w.isEmpty ? w : '${w[0].toUpperCase()}${w.substring(1)}')
-          .join(' ');
 
   @override
   Widget build(BuildContext context) {
@@ -94,7 +58,7 @@ class HoldingsListCard extends StatelessWidget {
                   if (i > 0) const Divider(height: 1),
                   ListTile(
                     dense: true,
-                    title: Text(_label(entries[i].key),
+                    title: Text(categoryLabel(entries[i].key),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: AppTypography.bodyMedium
@@ -130,10 +94,11 @@ class HoldingsListCard extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        section('Assets', assets, AppColors.asset, false, _assetOrder),
+        section('Assets', assets, AppColors.asset, false,
+            [for (final c in assetCategories) c.$1]),
         const SizedBox(height: 16),
         section('Liabilities', liabilities, AppColors.liability, true,
-            _liabilityOrder),
+            [for (final c in liabilityCategories) c.$1]),
       ],
     );
   }

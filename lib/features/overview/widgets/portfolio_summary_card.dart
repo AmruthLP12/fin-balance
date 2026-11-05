@@ -12,8 +12,12 @@ class PortfolioSummaryCard extends StatelessWidget {
   final List<FinancialItem> activeAssets;
   final List<Transaction> transactions;
 
+  /// When true, renders just the figures so it can sit inside another card.
+  final bool embedded;
+
   const PortfolioSummaryCard({
     super.key,
+    this.embedded = false,
     required this.activeAssets,
     required this.transactions,
   });
@@ -62,30 +66,30 @@ class PortfolioSummaryCard extends StatelessWidget {
           ),
         );
 
+    final content = Column(
+      children: [
+        Row(children: [
+          stat('Invested', CurrencyFormatter.formatPaise(invested)),
+          stat('Current value', CurrencyFormatter.formatPaise(current)),
+        ]),
+        const SizedBox(height: AppSpacing.md),
+        Row(children: [
+          stat('Profit / Loss',
+              '$sign${CurrencyFormatter.formatPaise(pnl.abs())}',
+              valueColor: color),
+          stat('Return', '$sign${returnPct.abs().toStringAsFixed(2)}%',
+              valueColor: color),
+          stat('XIRR', xirr == null ? '—' : '${xirr.toStringAsFixed(2)}%',
+              valueColor: xirr == null
+                  ? null
+                  : (xirr >= 0 ? AppColors.asset : AppColors.liability)),
+        ]),
+      ],
+    );
+    if (embedded) return content;
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.lg),
-      child: FinCard(
-        child: Column(
-          children: [
-            Row(children: [
-              stat('Invested', CurrencyFormatter.formatPaise(invested)),
-              stat('Current value', CurrencyFormatter.formatPaise(current)),
-            ]),
-            const SizedBox(height: AppSpacing.md),
-            Row(children: [
-              stat('Profit / Loss',
-                  '$sign${CurrencyFormatter.formatPaise(pnl.abs())}',
-                  valueColor: color),
-              stat('Return', '$sign${returnPct.abs().toStringAsFixed(2)}%',
-                  valueColor: color),
-              stat('XIRR', xirr == null ? '—' : '${xirr.toStringAsFixed(2)}%',
-                  valueColor: xirr == null
-                      ? null
-                      : (xirr >= 0 ? AppColors.asset : AppColors.liability)),
-            ]),
-          ],
-        ),
-      ),
+      child: FinCard(child: content),
     );
   }
 }

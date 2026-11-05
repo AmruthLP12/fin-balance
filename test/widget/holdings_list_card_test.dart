@@ -24,6 +24,11 @@ void main() {
       'Stocks & ETFs',
       'Fixed Deposits',
       'Recurring Deposits',
+      'PPF',
+      'EPF',
+      'NPS',
+      'PLI / Insurance',
+      'Bonds',
       'Gold',
       'Home Loan',
       'Credit Card Due',
@@ -32,6 +37,7 @@ void main() {
     }
     expect(find.text('Nothing added yet'), findsWidgets);
 
+    await tester.ensureVisible(find.text('Home Loan'));
     await tester.tap(find.text('Home Loan'));
     expect(tapped, 'home_loan/true');
   });

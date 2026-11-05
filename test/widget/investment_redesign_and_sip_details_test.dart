@@ -128,7 +128,8 @@ void main() {
       expect(find.text('IRR'), findsWidgets);
 
       // 4. Test Switching Categories: Switch to 'Stocks & ETFs'
-      await tester.tap(find.text('Stocks & ETFs'));
+      await tester.ensureVisible(find.text('Stocks & ETFs').first);
+      await tester.tap(find.text('Stocks & ETFs').first);
       await tester.pumpAndSettle();
 
       // Expect intentional empty state for Stocks without crashes
@@ -136,6 +137,7 @@ void main() {
       expect(find.byType(HoldingCard), findsNothing);
 
       // Switch back to 'Mutual Funds'
+      await tester.ensureVisible(find.text('Mutual Funds').first);
       await tester.tap(find.text('Mutual Funds').first);
       await tester.pumpAndSettle();
       expect(find.byType(HoldingCard), findsOneWidget);

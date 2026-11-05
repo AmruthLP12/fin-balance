@@ -5,6 +5,15 @@ All notable changes to the FinBalance application will be documented in this fil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.18.0] - 2026-11-04
+
+### Added
+- **More asset categories:** PPF, EPF, NPS, PLI / Insurance, Bonds, Recurring Deposits and Other Assets join Mutual Funds, Stocks & ETFs, Fixed Deposits and Gold. They appear as tabs on the Assets screen and as rows in the Overview category list (single shared list in `asset_categories.dart`). Only mutual funds can be added today; the others show a "planned" empty state.
+
+### Changed
+- **Assets tabs:** "All Assets" is now the first tab, and the tab row scrolls so the selected tab (by tap, swipe or an Overview shortcut) is always in view.
+- **Overview net worth card merged with the portfolio summary:** one card now shows Net Worth, Total Assets and Total Liabilities side by side (real liabilities total, no "Upcoming" label), then Invested, Current value, Profit / Loss, Return and XIRR beneath. Nothing was dropped; the separate summary card is gone.
+
 ## [0.17.0] - 2026-11-04
 
 ### Added
