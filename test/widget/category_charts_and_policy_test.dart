@@ -12,6 +12,7 @@ import 'package:finbalance/features/settings/screens/privacy_policy_screen.dart'
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 void main() {
   late AppDatabase db;
@@ -205,6 +206,12 @@ void main() {
         (tester) async {
       await tester.binding.setSurfaceSize(const Size(500, 1000));
       addTearDown(() => tester.binding.setSurfaceSize(null));
+      PackageInfo.setMockInitialValues(
+          appName: 'FinBalance',
+          packageName: 'com.finbalance.app',
+          version: '0.20.0',
+          buildNumber: '20',
+          buildSignature: '');
 
       await tester.pumpWidget(
         ProviderScope(
@@ -238,7 +245,8 @@ void main() {
 
       // Check Built by Amruth L P & Portfolio
       expect(find.text('Built by Amruth L P'), findsOneWidget);
-      expect(find.text('v1.0.0'), findsOneWidget);
+      expect(find.text('v0.20.0'), findsOneWidget);
+      expect(find.text('Check for Updates'), findsOneWidget);
 
       // Tap Privacy Policy tile
       await tester.scrollUntilVisible(find.text('Privacy Policy'), 300);

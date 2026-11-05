@@ -5,6 +5,21 @@ All notable changes to the FinBalance application will be documented in this fil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.20.0] - 2026-11-05
+
+### Added
+- **In-app updates for testers.** On launch (silently) and from **Settings > Support > Check for Updates**, the app asks the GitHub Releases API of `AmruthLP12/fin-balance` for the latest release. If its tag is newer than the installed version, a dialog shows the version, size and release notes with **Remind me later** and **Download & install**. The first `.apk` asset is downloaded with a progress bar, its size is checked, and Android's installer is opened. "Last checked" is shown in Settings.
+- Android permission `REQUEST_INSTALL_PACKAGES` (Android asks the user to allow installs from FinBalance once).
+- Dependencies: `package_info_plus`, `open_filex`.
+- Test: version comparison.
+
+### Changed
+- `pubspec.yaml` version is now `0.20.0+20` and matches the release tag; the Settings version label reads the installed version instead of a hard-coded `1.0.0`.
+- Privacy policy (docs and in-app, identical): states the GitHub update check and download.
+
+### Notes
+- Releases must keep an `.apk` asset and a `vX.Y.Z` tag, and must be signed with the same key as the installed app or Android refuses the update. The release build currently uses the debug key, so build every release on the same machine (or set up a release keystore).
+
 ## [0.19.0] - 2026-11-05
 
 ### Added

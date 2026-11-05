@@ -12,6 +12,7 @@ import '../../liabilities/screens/liabilities_screen.dart';
 import '../../overview/screens/overview_screen.dart';
 import '../../profile/widgets/profile_menu_button.dart';
 import '../../settings/screens/settings_screen.dart';
+import '../../settings/widgets/update_dialog.dart';
 
 /// Responsive main navigation scaffold adapting cleanly between mobile, tablet, and desktop layouts.
 ///
@@ -45,6 +46,7 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
               frequency: ref.read(navRefreshFrequencyProvider),
             );
       } catch (_) {}
+      if (mounted) await checkForUpdates(context, ref, silent: true);
     });
   }
 

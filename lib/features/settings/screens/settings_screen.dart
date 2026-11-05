@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import '../widgets/update_dialog.dart';
 import '../../../core/widgets/open_link.dart';
 import '../widgets/support_developer_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -32,6 +34,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _isSyncing = false;
   PortfolioSyncSummary? _lastSyncSummary;
   String? _lastSyncError;
+  String? _version;
+  String? _lastChecked;
+
+  @override
+  void initState() {
+    super.initState();
+    PackageInfo.fromPlatform().then((p) {
+      if (mounted) setState(() => _version = p.version);
+    }).catchError((_) {});
+    ref.read(appSettingsDaoProvider).getSetting(updateLastCheckedKey).then((v) {
+      if (mounted && v != null) setState(() => _lastChecked = v);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -366,6 +381,24 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
                 const Divider(height: 1),
                 ListTile(
+                  leading: const Icon(Icons.system_update_rounded),
+                  title: const Text('Check for Updates',
+                      style: AppTypography.titleMedium),
+                  subtitle: Text(
+                      _lastChecked == null
+                          ? 'Never checked'
+                          : 'Last checked ${_lastChecked!.substring(0, 16).replaceFirst('T', ' ')}',
+                      style: AppTypography.bodySmall),
+                  onTap: () async {
+                    await checkForUpdates(context, ref);
+                    final v = await ref
+                        .read(appSettingsDaoProvider)
+                        .getSetting(updateLastCheckedKey);
+                    if (mounted) setState(() => _lastChecked = v);
+                  },
+                ),
+                const Divider(height: 1),
+                ListTile(
                   leading: const Icon(Icons.privacy_tip_outlined),
                   title: const Text('Privacy Policy',
                       style: AppTypography.titleMedium),
@@ -410,7 +443,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       showTagline: false,
                     ),
                     Text(
-                      'v${AppConstants.appVersion}',
+                      'v${_version ?? ''}',
                       style: AppTypography.labelSmall.copyWith(
                         color: isDark
                             ? AppColors.darkTextMuted

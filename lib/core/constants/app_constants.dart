@@ -3,7 +3,6 @@ class AppConstants {
 
   static const String appName = 'FinBalance';
   static const String appTagline = 'Personal Wealth & Net Worth Tracker';
-  static const String appVersion = '1.0.0';
 
   // Currency
   static const String defaultCurrencySymbol = '₹';
