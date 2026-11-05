@@ -81,7 +81,9 @@ class _AssetsScreenState extends ConsumerState<AssetsScreen> {
       body: assetsAsync.when(
         data: (items) {
           final totalCount = items.length;
-          int countOf(String v) => items.where((i) => i.subType == v).length;
+          int countOf(String v) => items
+              .where((i) => groupOf(i.subType, assetGroups).value == v)
+              .length;
 
           final filteredItems = _filterItems(items, _selectedCategoryFilter);
 
@@ -126,7 +128,7 @@ class _AssetsScreenState extends ConsumerState<AssetsScreen> {
                     children: [
                       for (final (value, label) in [
                         ('all', 'All Assets'),
-                        ...assetCategories,
+                        for (final g in assetGroups) (g.value, g.label),
                       ]) ...[
                         _buildCategoryPill(
                           label: label,
@@ -391,7 +393,7 @@ class _AssetsScreenState extends ConsumerState<AssetsScreen> {
     );
   }
 
-  static final _tabOrder = ['all', for (final c in assetCategories) c.$1];
+  static final _tabOrder = ['all', for (final g in assetGroups) g.value];
   final _pillKeys = {for (final v in _tabOrder) v: GlobalKey()};
 
   void _select(String category) {
@@ -418,7 +420,9 @@ class _AssetsScreenState extends ConsumerState<AssetsScreen> {
 
   List<FinancialItem> _filterItems(List<FinancialItem> items, String filter) {
     if (filter == 'all') return items;
-    return items.where((i) => i.subType == filter).toList();
+    return items
+        .where((i) => groupOf(i.subType, assetGroups).value == filter)
+        .toList();
   }
 
   Widget _buildCategoryPill({
@@ -504,12 +508,12 @@ class _AssetsScreenState extends ConsumerState<AssetsScreen> {
           description:
               'Equity holdings for $profileName will be tracked here. Stock portfolio management is planned for upcoming milestones.',
         );
-      case 'fixed_deposit':
+      case 'fixed_income':
         return EmptyStateView(
           icon: Icons.account_balance_rounded,
-          title: 'No Fixed Deposits Added',
+          title: 'No Fixed Income Added',
           description:
-              'Term deposits, maturity dates, and accrued interest for $profileName will appear here.',
+              'PPF, NSC, KVP, SSS, POSS, FD, FRD and RD for $profileName will appear here.',
         );
       case 'gold':
         return const EmptyStateView(

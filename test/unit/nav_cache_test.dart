@@ -36,8 +36,8 @@ void main() {
   tearDown(() => db.close());
 
   test('full history is downloaded once, then served from cache', () async {
-    final first = await service.getOrFetchSchemeDetails(1,
-        includeHistoricalNav: true);
+    final first =
+        await service.getOrFetchSchemeDetails(1, includeHistoricalNav: true);
     expect(first!.navHistory, hasLength(2));
     expect(paths, ['/mf/1']);
 

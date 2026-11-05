@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_typography.dart';
+import 'waving_flag.dart';
 
 /// Dedicated FinBalance vector branding logo widget.
 /// Represents:
@@ -82,6 +83,8 @@ class FinBalanceLogo extends StatelessWidget {
                 letterSpacing: -0.5,
               ),
             ),
+            SizedBox(width: size * 0.2),
+            WavingFlag(width: (size * 0.7).clamp(18.0, 40.0)),
           ],
         ),
         if (showTagline) ...[

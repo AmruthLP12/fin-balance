@@ -329,18 +329,12 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
           HoldingsListCard(
             assets: activeAssets,
             liabilities: activeLiabilities,
-            onTap: (subType, {required isLiability}) {
+            onTap: (groupValue, {required isLiability}) {
               if (isLiability) {
                 ref.read(mainTabProvider.notifier).state = 2;
               } else {
-                const filters = {
-                  'mutual_fund',
-                  'stock',
-                  'fixed_deposit',
-                  'gold'
-                };
                 ref.read(assetsCategoryRequestProvider.notifier).state =
-                    filters.contains(subType) ? subType : 'all';
+                    groupValue;
                 ref.read(mainTabProvider.notifier).state = 1;
               }
             },

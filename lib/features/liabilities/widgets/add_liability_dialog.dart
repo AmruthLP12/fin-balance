@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart' as drift;
 import 'package:flutter/material.dart';
+import '../../../core/constants/asset_categories.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/formatting/date_formatter.dart';
 import '../../../core/providers/database_provider.dart';
@@ -42,15 +43,6 @@ class _AddLiabilityDialogState extends ConsumerState<AddLiabilityDialog> {
   late DateTime _startDate;
   int? _selectedProfileId;
   bool _isSaving = false;
-
-  final Map<String, String> _subTypeLabels = {
-    'home_loan': 'Home Loan',
-    'vehicle_loan': 'Vehicle / Auto Loan',
-    'personal_loan': 'Personal Loan',
-    'education_loan': 'Education Loan',
-    'credit_card': 'Credit Card Due',
-    'other_liability': 'Other Borrowing',
-  };
 
   @override
   void initState() {
@@ -170,11 +162,11 @@ class _AddLiabilityDialogState extends ConsumerState<AddLiabilityDialog> {
                       contentPadding:
                           EdgeInsets.symmetric(horizontal: 10, vertical: 12),
                     ),
-                    items: _subTypeLabels.entries
+                    items: liabilityTypeOptions
                         .map((e) => DropdownMenuItem(
-                              value: e.key,
-                              child: Text(e.value,
-                                  overflow: TextOverflow.ellipsis),
+                              value: e.$1,
+                              child:
+                                  Text(e.$2, overflow: TextOverflow.ellipsis),
                             ))
                         .toList(),
                     onChanged: (val) {

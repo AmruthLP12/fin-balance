@@ -198,6 +198,7 @@ make clean
 - [x] **Holdings List, Working Links & NAV Cache Fixes ([0.16.0]):** Overview shows assets/liabilities grouped by category (MF, stocks, FD, loans...) with totals and opens that section; portfolio/policy links open in the browser; NAV history is downloaded once per scheme and cached per the refresh policy; NAVs auto-refresh once per launch when due; search keeps locally known (old/closed) schemes.
 - [x] **Support, Swipe Tabs & Full Category List ([0.17.0]):** optional Ko-fi/PayPal/UPI (with on-device QR) support card, Settings shortcut on the start page, swipe between Assets categories, Overview lists all categories (empty ones included), privacy policy updated for voluntary support and the ad-free/free intent.
 - [x] **More Categories & Merged Overview Card ([0.18.0]):** PPF/EPF/NPS/PLI/Bonds/RD/Other tabs; All Assets first and tabs auto-scroll into view; net worth card now holds assets, liabilities and the invested/current/P&L/XIRR figures.
+- [x] **Karnataka Flag, Fixed Income & Loan Types ([0.19.0]):** waving Karnataka flag beside the app name; Fixed Income group (PPF, NSC, KVP, SSS, POSS, FD, FRD, RD); loan types Home/Car/Business/LAP/Term/Education/Other plus Other Borrowings.
 - [ ] **Milestone 5 — Transaction & Valuation Engine:** Simulated installments, lump-sum purchases, redemptions, unit calculations.
 - [ ] **Milestone 6 — Dashboard & Overview:** Real-time net worth calculation, active SIPs, upcoming EMIs.
 - [ ] **Milestone 7 — Financial Analytics:** Dated-cashflow XIRR (Newton-Raphson), asset allocation, historical charts.

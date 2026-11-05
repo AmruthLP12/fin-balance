@@ -7,12 +7,13 @@ import '../../../core/widgets/fin_card.dart';
 import '../../../core/widgets/section_header.dart';
 import '../../../database/app_database.dart';
 
-/// Category-level breakdown (Mutual Funds, Stocks, Home Loan, ...) of the profile's
-/// active assets and liabilities, with count and total per category; rows are tappable.
+/// Category breakdown of the profile's active assets and liabilities. Every category (and
+/// every instrument inside a group such as Fixed Income or Loans) is listed, even when
+/// empty, so gaps are visible. Rows are tappable and report their group value.
 class HoldingsListCard extends StatelessWidget {
   final List<FinancialItem> assets;
   final List<FinancialItem> liabilities;
-  final void Function(String subType, {required bool isLiability}) onTap;
+  final void Function(String groupValue, {required bool isLiability}) onTap;
 
   const HoldingsListCard({
     super.key,
@@ -26,21 +27,65 @@ class HoldingsListCard extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final muted = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
 
-    Widget section(String title, List<FinancialItem> items, Color color,
-        bool isLiability, List<String> order) {
-      final groups = <String, List<FinancialItem>>{};
-      for (final i in items) {
-        groups.putIfAbsent(i.subType, () => []).add(i);
-      }
-      int total(List<FinancialItem> l) =>
-          l.fold(0, (s, i) => s + i.currentValuationPaise);
-      // Every known category is listed (even when empty) so gaps are visible.
-      final keys = [
-        ...order,
-        ...groups.keys.where((k) => !order.contains(k)),
-      ];
-      final entries = [for (final k in keys) MapEntry(k, groups[k] ?? [])];
+    int total(Iterable<FinancialItem> l) =>
+        l.fold(0, (s, i) => s + i.currentValuationPaise);
 
+    Widget row({
+      required String title,
+      required List<FinancialItem> items,
+      required VoidCallback onTap,
+      bool child = false,
+    }) {
+      return ListTile(
+        dense: true,
+        contentPadding: EdgeInsets.only(left: child ? 36 : 16, right: 16),
+        visualDensity: child ? VisualDensity.compact : null,
+        title: Text(title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: (child ? AppTypography.bodySmall : AppTypography.bodyMedium)
+                .copyWith(
+                    fontWeight: child ? FontWeight.w500 : FontWeight.w600)),
+        subtitle: Text(
+            items.isEmpty
+                ? 'Nothing added yet'
+                : '${items.length} ${items.length == 1 ? 'item' : 'items'}',
+            style: AppTypography.labelSmall.copyWith(color: muted)),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (items.isNotEmpty)
+              Text(CurrencyFormatter.formatPaise(total(items)),
+                  style: AppTypography.labelMedium
+                      .copyWith(fontWeight: FontWeight.w700)),
+            Icon(Icons.chevron_right_rounded, size: 18, color: muted),
+          ],
+        ),
+        onTap: onTap,
+      );
+    }
+
+    Widget section(String title, List<FinancialItem> items, Color color,
+        bool isLiability, List<CategoryGroup> groups) {
+      final byGroup = <String, List<FinancialItem>>{};
+      for (final i in items) {
+        byGroup.putIfAbsent(groupOf(i.subType, groups).value, () => []).add(i);
+      }
+      final rows = <Widget>[];
+      for (final g in groups) {
+        final groupItems = byGroup[g.value] ?? [];
+        void open() => onTap(g.value, isLiability: isLiability);
+        if (rows.isNotEmpty) rows.add(const Divider(height: 1));
+        rows.add(row(title: g.label, items: groupItems, onTap: open));
+        for (final (value, label) in g.children) {
+          rows.add(row(
+            title: label,
+            items: groupItems.where((i) => i.subType == value).toList(),
+            onTap: open,
+            child: true,
+          ));
+        }
+      }
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -50,43 +95,7 @@ class HoldingsListCard extends StatelessWidget {
                 style: AppTypography.labelMedium
                     .copyWith(color: color, fontWeight: FontWeight.w700)),
           ),
-          FinCard(
-            padding: EdgeInsets.zero,
-            child: Column(
-              children: [
-                for (var i = 0; i < entries.length; i++) ...[
-                  if (i > 0) const Divider(height: 1),
-                  ListTile(
-                    dense: true,
-                    title: Text(categoryLabel(entries[i].key),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppTypography.bodyMedium
-                            .copyWith(fontWeight: FontWeight.w600)),
-                    subtitle: Text(
-                        entries[i].value.isEmpty
-                            ? 'Nothing added yet'
-                            : '${entries[i].value.length} ${entries[i].value.length == 1 ? 'item' : 'items'}',
-                        style: AppTypography.labelSmall.copyWith(color: muted)),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                            CurrencyFormatter.formatPaise(
-                                total(entries[i].value)),
-                            style: AppTypography.labelMedium
-                                .copyWith(fontWeight: FontWeight.w700)),
-                        Icon(Icons.chevron_right_rounded,
-                            size: 18, color: muted),
-                      ],
-                    ),
-                    onTap: () =>
-                        onTap(entries[i].key, isLiability: isLiability),
-                  ),
-                ],
-              ],
-            ),
-          ),
+          FinCard(padding: EdgeInsets.zero, child: Column(children: rows)),
         ],
       );
     }
@@ -94,11 +103,10 @@ class HoldingsListCard extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        section('Assets', assets, AppColors.asset, false,
-            [for (final c in assetCategories) c.$1]),
+        section('Assets', assets, AppColors.asset, false, assetGroups),
         const SizedBox(height: 16),
         section('Liabilities', liabilities, AppColors.liability, true,
-            [for (final c in liabilityCategories) c.$1]),
+            liabilityGroups),
       ],
     );
   }

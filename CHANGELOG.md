@@ -5,6 +5,17 @@ All notable changes to the FinBalance application will be documented in this fil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.19.0] - 2026-11-05
+
+### Added
+- **Waving Karnataka flag** (yellow over red) next to the FinBalance name wherever the full logo is shown (app bars, profile selection page, Settings > About). It is drawn with a lightweight painter (about 20 strips, one repaint boundary) and stands still when the system "remove animations" setting is on.
+- **Fixed Income category** grouping PPF, NSC, KVP, SSS (Sukanya Samriddhi), POSS (Post Office Savings), FD, FRD (Flexi Recurring Deposit) and RD. It is one tab on the Assets screen and one expandable-style block on the Overview (the group row plus a row for each instrument, empty ones included). Existing `fixed_deposit` and `recurring_deposit` holdings are included automatically.
+- **Loan types:** Home, Car, Business, Loan Against Property, Term, Education and Other loans grouped under **Loans**, plus a separate **Other Borrowings** entry. The add-liability form offers the same options. Older liabilities with other types (e.g. credit card) are shown under Other Borrowings.
+- Tests: a `flutter_test_config.dart` that turns the flag animation off so `pumpAndSettle` still settles.
+
+### Changed
+- Category definitions now live in `asset_categories.dart` as groups (`assetGroups`, `liabilityGroups`, `groupOf`); standalone Fixed Deposits, Recurring Deposits and PPF tabs are replaced by Fixed Income.
+
 ## [0.18.0] - 2026-11-04
 
 ### Added
