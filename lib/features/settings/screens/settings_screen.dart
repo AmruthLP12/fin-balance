@@ -19,6 +19,7 @@ import '../../../core/widgets/status_badge.dart';
 import '../../../data/nav/models/nav_models.dart';
 import '../../profile/screens/profile_management_screen.dart';
 import '../../profile/widgets/profile_menu_button.dart';
+import 'cas_import_screen.dart';
 import 'privacy_policy_screen.dart';
 
 /// Settings screen for managing application preferences, backup, and sync.
@@ -356,6 +357,26 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   },
                 ),
               ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+
+          const SectionHeader(title: 'Import'),
+          FinCard(
+            padding: EdgeInsets.zero,
+            child: ListTile(
+              leading: const Icon(Icons.picture_as_pdf_outlined),
+              title: const Text('Import from CAS PDF',
+                  style: AppTypography.titleMedium),
+              subtitle: const Text(
+                  'Mutual fund history from a CAMS + KFintech statement',
+                  style: AppTypography.bodySmall),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute<void>(
+                    builder: (_) => const CasImportScreen()),
+              ),
             ),
           ),
           const SizedBox(height: AppSpacing.lg),

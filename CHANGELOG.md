@@ -5,6 +5,21 @@ All notable changes to the FinBalance application will be documented in this fil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.21.0] - 2026-11-06
+
+### Added
+- **Import from CAS PDF** (Settings > Import). Pick a CAMS + KFintech Consolidated Account Statement; it is opened and parsed on the device (password prompt for protected files, never stored). Each folio is parsed into its transactions, matched to an AMFI scheme by ISIN, and shown in a preview with opening/closing units and cost. A folio is imported only when opening units plus the statement's movements equal its printed closing balance and its scheme is found.
+- Mapping: SIP/systematic lines to `sip_investment`, purchases to `investment_purchase`, redemptions, switch in/out, SWP, dividend payout/reinvestment accordingly; stamp duty and STT lines are added to the charges of the line above, so amounts match what you paid.
+- Units held before the statement period are added as one opening lot, costed from the statement's printed total cost.
+- Re-importing is safe: rows with the same date and units on a holding are skipped.
+- Dependencies: `syncfusion_flutter_pdf`, `file_picker`. Tests: parser, merge across folios, repeat import.
+
+### Notes
+- FinBalance keeps one holding per scheme, so several folios of the same fund (for example demat and non-demat) are combined into one holding; the folio is kept in each transaction's note.
+- If the statement contains redemptions, the cost of the opening lot cannot be derived and is imported as 0; edit the holding if you know it.
+- SIP schedules are not created; only the history is imported.
+- Privacy policy (docs and in-app, identical): states that the CAS file stays on the device.
+
 ## [0.20.0] - 2026-11-05
 
 ### Added

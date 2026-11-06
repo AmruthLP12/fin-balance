@@ -1,7 +1,7 @@
 name: finbalance
 description: "FinBalance — Offline-first personal finance tracker for assets, liabilities, and net worth."
 publish_to: "none"
-version: 0.20.0+20
+version: 0.21.0+21
 
 environment:
   sdk: ">=3.3.0 <4.0.0"
@@ -24,6 +24,8 @@ dependencies:
   qr_flutter: ^4.1.0
   package_info_plus: ^10.2.2
   open_filex: ^5.0.0
+  syncfusion_flutter_pdf: ^35.1.43
+  file_picker: ^13.3.2
 
 dev_dependencies:
   flutter_test:

@@ -200,6 +200,7 @@ make clean
 - [x] **More Categories & Merged Overview Card ([0.18.0]):** PPF/EPF/NPS/PLI/Bonds/RD/Other tabs; All Assets first and tabs auto-scroll into view; net worth card now holds assets, liabilities and the invested/current/P&L/XIRR figures.
 - [x] **Karnataka Flag, Fixed Income & Loan Types ([0.19.0]):** waving Karnataka flag beside the app name; Fixed Income group (PPF, NSC, KVP, SSS, POSS, FD, FRD, RD); loan types Home/Car/Business/LAP/Term/Education/Other plus Other Borrowings.
 - [x] **In-App Updates ([0.20.0]):** checks GitHub Releases on launch and from Settings, shows release notes, downloads the APK with progress and opens the Android installer.
+- [x] **CAS PDF Import ([0.21.0]):** import mutual fund history from a CAMS + KFintech statement, matched by ISIN and reconciled against closing units, all parsed on-device.
 - [ ] **Milestone 5 — Transaction & Valuation Engine:** Simulated installments, lump-sum purchases, redemptions, unit calculations.
 - [ ] **Milestone 6 — Dashboard & Overview:** Real-time net worth calculation, active SIPs, upcoming EMIs.
 - [ ] **Milestone 7 — Financial Analytics:** Dated-cashflow XIRR (Newton-Raphson), asset allocation, historical charts.
