@@ -111,7 +111,6 @@ void main() {
 
     test('isSyncDue respects daily, weekly, and manual frequency policies', () {
       final now = DateTime.now().toUtc();
-      final twoHoursAgo = now.subtract(const Duration(hours: 2));
       final twentyFiveHoursAgo = now.subtract(const Duration(hours: 25));
       final eightDaysAgo = now.subtract(const Duration(days: 8));
 
@@ -120,9 +119,8 @@ void main() {
       expect(syncService.isSyncDue(twentyFiveHoursAgo, 'manual'), isFalse);
       expect(syncService.isSyncDue(eightDaysAgo, 'manual'), isFalse);
 
-      // 2. Daily policy: due after 24 hours
+      // 2. Daily policy: due at the next 3:00 AM
       expect(syncService.isSyncDue(null, 'daily'), isTrue);
-      expect(syncService.isSyncDue(twoHoursAgo, 'daily'), isFalse);
       expect(syncService.isSyncDue(twentyFiveHoursAgo, 'daily'), isTrue);
 
       // 3. Weekly policy: due after 7 days
@@ -137,10 +135,11 @@ void main() {
       // Manual: null
       expect(syncService.getNextEligibleSync(now, 'manual'), isNull);
 
-      // Daily: +24 hours
+      // Daily: next 3:00 AM after the last sync
       final nextDaily = syncService.getNextEligibleSync(now, 'daily');
       expect(nextDaily, isNotNull);
-      expect(nextDaily!.difference(now).inHours, equals(24));
+      expect(nextDaily!.hour, equals(3));
+      expect(nextDaily.isAfter(now), isTrue);
 
       // Weekly: +7 days
       final nextWeekly = syncService.getNextEligibleSync(now, 'weekly');

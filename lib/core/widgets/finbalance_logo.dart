@@ -65,6 +65,8 @@ class FinBalanceLogo extends StatelessWidget {
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
+            IndianFlag(width: (size * 0.7).clamp(18.0, 40.0)),
+            SizedBox(width: size * 0.16),
             Text(
               'Fin',
               style: AppTypography.titleLarge.copyWith(

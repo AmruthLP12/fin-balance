@@ -200,7 +200,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ),
                   subtitle: Text(
                     ref.watch(navRefreshFrequencyProvider) == 'daily'
-                        ? 'Daily (every 24 hours)'
+                        ? 'Daily (3:00 AM)'
                         : ref.watch(navRefreshFrequencyProvider) == 'weekly'
                             ? 'Weekly (every 7 days)'
                             : 'Manual only (on demand)',
@@ -654,7 +654,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               const SizedBox(height: AppSpacing.sm),
               ListTile(
                 leading: const Icon(Icons.today_rounded),
-                title: const Text('Daily (24 Hours)'),
+                title: const Text('Daily (3:00 AM)'),
                 subtitle: const Text(
                     'Default for active investors tracking daily market moves'),
                 trailing: current == 'daily' ? const Icon(Icons.check) : null,

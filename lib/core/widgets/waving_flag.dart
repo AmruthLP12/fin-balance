@@ -16,6 +16,85 @@ class WavingFlag extends StatefulWidget {
   State<WavingFlag> createState() => _WavingFlagState();
 }
 
+/// Indian tricolor flag displayed beside the FinBalance wordmark.
+class IndianFlag extends StatelessWidget {
+  final double width;
+
+  const IndianFlag({super.key, this.width = 24});
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: 'Indian flag',
+      child: CustomPaint(
+        size: Size(width, width * 0.68),
+        painter: const _IndianFlagPainter(),
+      ),
+    );
+  }
+}
+
+class _IndianFlagPainter extends CustomPainter {
+  const _IndianFlagPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final poleW = size.width * 0.07;
+    final cloth = Rect.fromLTWH(
+      poleW,
+      0,
+      size.width - poleW,
+      size.height,
+    );
+    final bandH = cloth.height / 3;
+    final paint = Paint();
+
+    paint.color = const Color(0xFFFF9933);
+    canvas.drawRect(
+        Rect.fromLTWH(cloth.left, cloth.top, cloth.width, bandH), paint);
+    paint.color = Colors.white;
+    canvas.drawRect(
+        Rect.fromLTWH(cloth.left, cloth.top + bandH, cloth.width, bandH),
+        paint);
+    paint.color = const Color(0xFF138808);
+    canvas.drawRect(
+        Rect.fromLTWH(cloth.left, cloth.top + bandH * 2, cloth.width, bandH),
+        paint);
+
+    final center = Offset(
+      cloth.left + cloth.width / 2,
+      cloth.top + cloth.height / 2,
+    );
+    paint
+      ..color = const Color(0xFF000080)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = size.width * 0.045;
+    canvas.drawCircle(center, size.height * 0.14, paint);
+    for (var i = 0; i < 24; i++) {
+      final angle = i * math.pi / 12;
+      canvas.drawLine(
+        center,
+        center + Offset(math.cos(angle), math.sin(angle)) * size.height * 0.14,
+        paint,
+      );
+    }
+
+    paint
+      ..style = PaintingStyle.fill
+      ..color = const Color(0xFF9CA3AF);
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(0, 0, poleW, size.height),
+        Radius.circular(poleW),
+      ),
+      paint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_IndianFlagPainter oldDelegate) => false;
+}
+
 class _WavingFlagState extends State<WavingFlag>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller = AnimationController(

@@ -41,12 +41,11 @@ class NavSyncService {
   bool isSyncDue(DateTime? lastSyncedAt, String frequency) {
     if (frequency == 'manual') return false;
     if (lastSyncedAt == null) return true;
-    final now = DateTime.now().toUtc();
+    final now = DateTime.now();
     if (frequency == 'weekly') {
       return now.difference(lastSyncedAt).inDays >= 7;
     }
-    // Default 'daily' (24 hours)
-    return now.difference(lastSyncedAt).inHours >= 24;
+    return !now.isBefore(_nextDailySync(lastSyncedAt));
   }
 
   /// Returns the next eligible sync timestamp, or null if sync is set to 'manual'.
@@ -56,8 +55,21 @@ class NavSyncService {
     if (frequency == 'weekly') {
       return lastSyncedAt.add(const Duration(days: 7));
     }
-    // Default 'daily'
-    return lastSyncedAt.add(const Duration(hours: 24));
+    return _nextDailySync(lastSyncedAt);
+  }
+
+  DateTime _nextDailySync(DateTime lastSyncedAt) {
+    final localLastSync = lastSyncedAt.toLocal();
+    var next = DateTime(
+      localLastSync.year,
+      localLastSync.month,
+      localLastSync.day,
+      3,
+    );
+    if (!next.isAfter(localLastSync)) {
+      next = next.add(const Duration(days: 1));
+    }
+    return next;
   }
 
   /// Returns the latest successful sync timestamp recorded across any mutual fund scheme.

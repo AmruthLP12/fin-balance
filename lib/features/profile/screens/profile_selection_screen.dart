@@ -234,27 +234,6 @@ class ProfileSelectionScreen extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: AppSpacing.md),
-          Text(
-            'Family Net Worth',
-            style: AppTypography.bodySmall.copyWith(
-              color: isDark
-                  ? AppColors.darkTextSecondary
-                  : AppColors.lightTextSecondary,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            CurrencyFormatter.formatPaise(netWorthPaise),
-            style: AppTypography.headlineLarge.copyWith(
-              fontWeight: FontWeight.w800,
-              color:
-                  isDark ? AppColors.brandPrimaryLight : AppColors.brandPrimary,
-              letterSpacing: -0.5,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          const Divider(height: 1),
-          const SizedBox(height: AppSpacing.md),
           Row(
             children: [
               Expanded(
@@ -285,7 +264,7 @@ class ProfileSelectionScreen extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Total Liabilities',
+                      'Total Family Liabilities',
                       style: AppTypography.labelSmall.copyWith(
                         color: isDark
                             ? AppColors.darkTextMuted
@@ -301,9 +280,7 @@ class ProfileSelectionScreen extends ConsumerWidget {
                           '₹0',
                           style: AppTypography.titleMedium.copyWith(
                             fontWeight: FontWeight.bold,
-                            color: isDark
-                                ? AppColors.darkTextSecondary
-                                : AppColors.lightTextSecondary,
+                            color: AppColors.liability,
                           ),
                         ),
                         Text(
@@ -321,6 +298,27 @@ class ProfileSelectionScreen extends ConsumerWidget {
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          const Divider(height: 1),
+          const SizedBox(height: AppSpacing.md),
+          Text(
+            'Family Net Worth',
+            style: AppTypography.bodySmall.copyWith(
+              color: isDark
+                  ? AppColors.darkTextSecondary
+                  : AppColors.lightTextSecondary,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            CurrencyFormatter.formatPaise(netWorthPaise),
+            style: AppTypography.headlineLarge.copyWith(
+              fontWeight: FontWeight.w800,
+              color:
+                  isDark ? AppColors.brandPrimaryLight : AppColors.brandPrimary,
+              letterSpacing: -0.5,
+            ),
           ),
         ],
       ),

@@ -5,9 +5,28 @@ All notable changes to the FinBalance application will be documented in this fil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.22.0] - 2026-11-07
+
+### Added
+
+- **Indian flag branding:** Added a static Indian tricolor to the left of the FinBalance name while retaining the waving Karnataka flag on the right.
+
+### Changed
+
+- **Family overview layout:** Family assets and liabilities now appear above Family Net Worth on the profile selection screen.
+- **Liability styling:** Family liabilities use the application liability red color for clearer balance-sheet grouping.
+- **Daily NAV refresh timing:** Daily refreshes are now eligible at the next local 3:00 AM after the previous sync. The existing sync-on-launch behavior remains, and weekly/manual policies are unchanged.
+- **Settings copy:** Daily NAV policy labels now show `3:00 AM` instead of `24 Hours`.
+
+### Testing
+
+- Updated NAV policy coverage for the 3:00 AM schedule.
+- Branding widget tests and `flutter analyze` pass.
+
 ## [0.21.0] - 2026-11-06
 
 ### Added
+
 - **Import from CAS PDF** (Settings > Import). Pick a CAMS + KFintech Consolidated Account Statement; it is opened and parsed on the device (password prompt for protected files, never stored). Each folio is parsed into its transactions, matched to an AMFI scheme by ISIN, and shown in a preview with opening/closing units and cost. A folio is imported only when opening units plus the statement's movements equal its printed closing balance and its scheme is found.
 - Mapping: SIP/systematic lines to `sip_investment`, purchases to `investment_purchase`, redemptions, switch in/out, SWP, dividend payout/reinvestment accordingly; stamp duty and STT lines are added to the charges of the line above, so amounts match what you paid.
 - Units held before the statement period are added as one opening lot, costed from the statement's printed total cost.
@@ -15,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dependencies: `syncfusion_flutter_pdf`, `file_picker`. Tests: parser, merge across folios, repeat import.
 
 ### Notes
+
 - FinBalance keeps one holding per scheme, so several folios of the same fund (for example demat and non-demat) are combined into one holding; the folio is kept in each transaction's note.
 - If the statement contains redemptions, the cost of the opening lot cannot be derived and is imported as 0; edit the holding if you know it.
 - SIP schedules are not created; only the history is imported.
@@ -23,47 +43,56 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.20.0] - 2026-11-05
 
 ### Added
+
 - **In-app updates for testers.** On launch (silently) and from **Settings > Support > Check for Updates**, the app asks the GitHub Releases API of `AmruthLP12/fin-balance` for the latest release. If its tag is newer than the installed version, a dialog shows the version, size and release notes with **Remind me later** and **Download & install**. The first `.apk` asset is downloaded with a progress bar, its size is checked, and Android's installer is opened. "Last checked" is shown in Settings.
 - Android permission `REQUEST_INSTALL_PACKAGES` (Android asks the user to allow installs from FinBalance once).
 - Dependencies: `package_info_plus`, `open_filex`.
 - Test: version comparison.
 
 ### Changed
+
 - `pubspec.yaml` version is now `0.20.0+20` and matches the release tag; the Settings version label reads the installed version instead of a hard-coded `1.0.0`.
 - Privacy policy (docs and in-app, identical): states the GitHub update check and download.
 
 ### Notes
+
 - Releases must keep an `.apk` asset and a `vX.Y.Z` tag, and must be signed with the same key as the installed app or Android refuses the update. The release build currently uses the debug key, so build every release on the same machine (or set up a release keystore).
 
 ## [0.19.0] - 2026-11-05
 
 ### Added
+
 - **Waving Karnataka flag** (yellow over red) next to the FinBalance name wherever the full logo is shown (app bars, profile selection page, Settings > About). It is drawn with a lightweight painter (about 20 strips, one repaint boundary) and stands still when the system "remove animations" setting is on.
 - **Fixed Income category** grouping PPF, NSC, KVP, SSS (Sukanya Samriddhi), POSS (Post Office Savings), FD, FRD (Flexi Recurring Deposit) and RD. It is one tab on the Assets screen and one expandable-style block on the Overview (the group row plus a row for each instrument, empty ones included). Existing `fixed_deposit` and `recurring_deposit` holdings are included automatically.
 - **Loan types:** Home, Car, Business, Loan Against Property, Term, Education and Other loans grouped under **Loans**, plus a separate **Other Borrowings** entry. The add-liability form offers the same options. Older liabilities with other types (e.g. credit card) are shown under Other Borrowings.
 - Tests: a `flutter_test_config.dart` that turns the flag animation off so `pumpAndSettle` still settles.
 
 ### Changed
+
 - Category definitions now live in `asset_categories.dart` as groups (`assetGroups`, `liabilityGroups`, `groupOf`); standalone Fixed Deposits, Recurring Deposits and PPF tabs are replaced by Fixed Income.
 
 ## [0.18.0] - 2026-11-04
 
 ### Added
+
 - **More asset categories:** PPF, EPF, NPS, PLI / Insurance, Bonds, Recurring Deposits and Other Assets join Mutual Funds, Stocks & ETFs, Fixed Deposits and Gold. They appear as tabs on the Assets screen and as rows in the Overview category list (single shared list in `asset_categories.dart`). Only mutual funds can be added today; the others show a "planned" empty state.
 
 ### Changed
+
 - **Assets tabs:** "All Assets" is now the first tab, and the tab row scrolls so the selected tab (by tap, swipe or an Overview shortcut) is always in view.
 - **Overview net worth card merged with the portfolio summary:** one card now shows Net Worth, Total Assets and Total Liabilities side by side (real liabilities total, no "Upcoming" label), then Invested, Current value, Profit / Loss, Return and XIRR beneath. Nothing was dropped; the separate summary card is gone.
 
 ## [0.17.0] - 2026-11-04
 
 ### Added
+
 - **Support the Developer (Settings):** optional Ko-fi, PayPal and UPI support. UPI opens a sheet with an on-device generated QR code (`qr_flutter`), the UPI ID with a copy button, and an "Open UPI app" button. The card states that FinBalance is free with no ads or paid features and that we will try to keep it that way for as long as community support allows. Nothing is unlocked by supporting.
 - **Settings button on the profile selection (start) page.** The Settings screen shows a back button when opened this way.
 - **Swipe between Assets categories:** swipe left/right on the Assets tab to move between Mutual Funds, Stocks & ETFs, Fixed Deposits, Gold and All Assets.
 - **Tests:** `holdings_list_card_test.dart`.
 
 ### Changed
+
 - **Overview category list now shows every category, including empty ones** ("Nothing added yet", no amount), in a fixed order: Mutual Funds, Stocks & ETFs, Fixed Deposits, Recurring Deposits, Gold; Home Loan, Vehicle / Auto Loan, Personal Loan, Education Loan, Credit Card Due, Other Borrowing.
 - **Removed the "Total Liabilities ₹0 • Upcoming" block** from the Overview net worth card.
 - **Privacy policy (docs and in-app, identical):** Section 7 is now "Third-Party Services, Advertising & Voluntary Support". It states there are no ads, paid features or in-app purchases, the intent to stay ad-free and free as long as support allows (not a guarantee), that support links open externally, that no payment data is seen or stored, and that the UPI QR is generated on-device.
@@ -72,11 +101,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.16.0] - 2026-11-04
 
 ### Added
+
 - **Category breakdown on the profile Overview:** below the charts, active assets and liabilities are grouped by category (Mutual Funds, Stocks & ETFs, Fixed Deposits, Gold, Home Loan, Personal Loan, ...) with item count and total per category, plus a total for Assets and for Liabilities. Tapping an asset category opens the Assets tab on that category; a liability category opens the Liabilities tab (shared `mainTabProvider` / `assetsCategoryRequestProvider`).
 - **Automatic NAV refresh once per launch** when due under the NAV refresh setting (daily / weekly / manual). Previously the setting only controlled the manual button and no automatic refresh ran.
 - **Tests:** `nav_cache_test.dart` (history downloaded once, fresh cache never hits the network, manual policy).
 
 ### Fixed
+
 - **Developer Portfolio and Hosted Policy links** (Settings and Privacy Policy screens) now open in the browser via `url_launcher` instead of only showing a toast; a toast is shown only if the link cannot be opened. Added the Android `https` `<queries>` entry.
 - **Missing NAV for old SIPs / back-dated transactions:** the scheme cache was returned whenever a latest NAV existed, so full history was never downloaded for a scheme first cached through search, the transaction form or a refresh. Full history is now downloaded once per scheme (tracked in app settings) whenever a caller needs it, including the transaction form and the "Retry" valuation button on SIP details.
 - **Stale detail cache:** scheme details were served from cache forever; they now respect the refresh policy (fresh cache is served without any network call, a due cache is refreshed with the latest NAV only, and a failed refresh falls back to the cache).
@@ -86,12 +117,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.15.0] - 2026-11-04
 
 ### Added
+
 - **Portfolio summary card on the profile Overview:** a card above the charts shows, for all active assets of the selected profile, Invested, Current value, Profit / Loss, Return % and XIRR, so the profile can be read at a glance without opening each asset. Computed on-device from existing holdings and transactions (no new data or network use).
 
 ## [0.14.0] - 2026-11-04
 
 ### Added
-- **Frequency & Number of Installments on the Transaction Form (`AddInvestmentTransactionScreen`):** choosing *SIP Investment* or *SWP Withdrawal* now shows Frequency (all frequencies except One Time) and Number of Installments, with a live summary such as "Records this installment now and plans 11 more monthly SIP installments, the last on 04 Oct 2027".
+
+- **Frequency & Number of Installments on the Transaction Form (`AddInvestmentTransactionScreen`):** choosing _SIP Investment_ or _SWP Withdrawal_ now shows Frequency (all frequencies except One Time) and Number of Installments, with a live summary such as "Records this installment now and plans 11 more monthly SIP installments, the last on 04 Oct 2027".
   - 1 installment records just this entry.
   - More than 1 records the entry as installment #1 and plans the rest: it adds a schedule period to the linked SIP (or the holding's active SWP), or creates a new SIP / SWP for the holding when none exists. Everything is saved in one database transaction.
 - **SWP withdrawals update the schedule (`SwpsDao.linkTransactionToInstallment`):** a recorded SWP withdrawal ticks off the nearest upcoming SWP installment (within 31 days) and the transaction carries the SWP plan id, mirroring the SIP behaviour from 0.13.0.
@@ -103,28 +136,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Tests:** `sip_swp_transaction_form_test.dart` (frequency/installment fields, long SIP name, 3-installment SIP, 2-installment SWP).
 
 ### Fixed
+
 - **Long SIP names overflowed** the "Linked SIP" dropdown; it now expands to the field width with an ellipsis. The dropdown label is shortened to "Linked SIP".
 - **"Transaction Type" row overflowed** on narrow phones (about 360 px wide).
 - Help text for SIP and SWP types now describes frequency and installments.
 
 ### Notes
+
 - Not added: STP (systematic transfer between schemes), bonus units and capital-gains tax reporting. STP would need its own schedule model; see the README roadmap.
 
 ## [0.13.1] - 2026-11-04
 
 ### Changed
+
 - **Android toolchain upgrade:** Gradle 8.14 -> 9.3.1, Android Gradle Plugin 8.11.1 -> 9.1.0, Kotlin 2.2.20 -> 2.4.0 (the versions shipped by the installed Flutter 3.47 template). This clears Flutter's "support will soon be dropped" warnings.
 - **Built-in Kotlin:** `android/app/build.gradle` no longer applies `kotlin-android`; `kotlinOptions` replaced by `kotlin { compilerOptions { jvmTarget = JVM_17 } }`; the `android.builtInKotlin=false` opt-out was removed from `android/gradle.properties`.
 
 ### Removed
+
 - Unused Kotlin-DSL duplicates `android/build.gradle.kts`, `android/settings.gradle.kts` and `android/app/build.gradle.kts` (Gradle already ignored them in favour of the Groovy files, which carry the real config: `com.finbalance.app`, desugaring). This clears the "Both build.gradle and build.gradle.kts exist" warning.
 
 ### Testing
+
 - Verified with a clean `make build-debug` (no warnings) and `make build-release`. `android.newDsl=false` and `android.enableJetifier=true` are still set in `gradle.properties`; revisit when AGP drops them. No app code changed in this version.
 
 ## [0.13.0] - 2026-11-04
 
 ### Added
+
 - **Investment Lifecycle Overview & Timeline (`InvestmentLifecycleCard`):**
   - Overview strip with status (`SIP running`, `SWP running`, `SIP + SWP running`, `Holding`, `Fully redeemed`), held-for duration, and key totals (invested, value, units; SIP installments, withdrawn and dividends when present).
   - Dated timeline with icons and clearer wording: `SIP started`, `SIP revised`, `SIP stopped / completed`, `SWP started`, `Redemption`, `Dividend received`, `Switched in / out`.
@@ -136,6 +175,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Regression tests:** `schedule_range_cap_test.dart` and `sip_transaction_link_test.dart`.
 
 ### Changed
+
 - **Minimal SIP Schedule Cards (`SipCard`):** name, scheme, status and one line `SIP · ₹1,000.00 · Next: 05 Dec 2026`. Edit, Delete, Details buttons and installment/valuation metrics removed; tapping opens the details page.
 - **Floating `+` on SIP Details:** the Add Transaction button (Transactions tab and app-bar menu) is replaced by a floating `+` available on all three tabs, with bottom padding so it never covers content.
 - **Less Imposing Overview:** SIP and SWP sections each use a single `⋯` menu (New/Set up, Edit, Close period) instead of several buttons; large "Set Up…" buttons removed; the app-bar menu keeps only Edit Holding and Delete. Retry for installments awaiting a historical NAV moved into the SIP section.
@@ -143,22 +183,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Transaction Form:** no invented defaults (amount, NAV and units start empty); single Save button.
 
 ### Fixed
+
 - **Daily schedules with only an end date** were truncated at 360 dates; they now run to the end date.
 - **Invented NAV:** the ₹100 fallback in `TransactionsDao` and the ₹0 / mixed fallbacks in `SipsDao` are gone. With no known NAV a holding is valued at cost.
 - **`deleteSwpCascade`** relied on redundant manual steps (and relabelled skipped/cancelled installments as recorded); it now deletes the plan and lets foreign keys cascade.
 
 ### Refactored
+
 - One `_applyToHolding` helper replaces five copies of the holding units/invested/valuation update in `SipsDao`.
 - `calculateHoldingXirr` and `calculatePortfolioXirr` share one implementation (portfolio skips linked switches).
 - `InvestmentScheduleService` uses a single step-based occurrence helper for all frequencies.
 - Removed unused `getSipsByFinancialItem`, `getUpcomingInstallmentsForProfile`, `getInstallmentsByPlan` (tests use `getInstallments`) and an unreachable branch in `deleteSip`.
 
 ### Testing
+
 - Updated widget and lifecycle tests for the new UI and wording. Full suite: **180 tests passing**, `flutter analyze` clean.
 
 ## [0.12.0] - 2026-11-03
 
 ### Added
+
 - **Standardized 8 Frequency Options Across SIP and SWP (`ScheduleFrequency`):**
   - Unified enum: One Time (`oneTime`), Daily (`daily`), Weekly (`weekly`), Fortnightly (`fortnightly`), Monthly (`monthly`), Quarterly (`quarterly`), Half-Yearly (`halfYearly`), and Yearly (`yearly`).
   - High-precision date range calculation in `InvestmentScheduleService.generateScheduleDatesRange` with month-end clamping (Jan 31 $\to$ Feb 28 $\to$ Mar 31) and leap-year preservation (Feb 29 $\to$ Feb 28 $\to$ Feb 29) eliminating progressive date drift.
@@ -193,6 +237,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.11.0] - 2026-11-03
 
 ### Added
+
 - **Dedicated Investment Details Page with 3 Separate Tabs (`SipDetailsScreen`):**
   - **Tab 1: Overview:**
     - Live financial summary: Total Invested, Current Valuation, Profit/Loss, Absolute Return (%), and annualized XIRR/IRR.
@@ -233,6 +278,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.10.0] - 2026-11-03
 
 ### Added
+
 - **Investment List Redesign & Category Navigation (`AssetsScreen`):**
   - Added clean investment category filter navigation row (`Mutual Funds`, `Stocks & ETFs`, `Fixed Deposits`, `Gold`, `All Assets`) with dynamic item count badges and selected category highlighting.
   - Added compact portfolio summary card with live aggregate valuation, total invested cost, overall P&L (+/-%), and portfolio-wide IRR.
@@ -279,6 +325,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Fixed reactive NAV history fetching by introducing Riverpod's `schemeNavHistoryRangeProvider`, preventing infinite rebuild loops during chart rendering.
 
 ### Testing
+
 - Added `test/unit/financial_calculator_test.dart` verifying lump sum growth, SIP cash flows, zero-invested edge cases, and invalid cash flow handling.
 - Added `test/widget/investment_redesign_and_sip_details_test.dart` testing the category navigation, portfolio summary, compact holding cards, and full-screen `SipDetailsScreen` with all 4 sections.
 - Verified all 150 automated tests passing with 0 errors.
@@ -288,6 +335,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.9.1] - 2026-11-03
 
 ### Added
+
 - **Unified Financial Category Chart & Switcher (`OverviewScreen`):**
   - Added a third, unified financial category distribution chart (`Assets & Liabilities by Category`) combining assets and liabilities into one comprehensive chart view.
   - Made `Assets & Liabilities by Category` the default chart shown when opening the dashboard.
@@ -318,6 +366,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Resolved horizontal RenderFlex overflow issues across `OverviewScreen` headers and metric rows on narrow screens with `SingleChildScrollView` and `Wrap` layouts.
 
 ### Testing
+
 - Updated `test/widget/category_charts_and_policy_test.dart` to verify the 3 switchable chart modes, default unified category chart, canonical category labels, revised 14-section Privacy Policy structure, and Settings Support section.
 - Updated `test/widget/profile_overview_and_cashflow_test.dart` to verify default `Assets & Liabilities by Category` chart and mode switching to `Portfolio Assets`.
 - Total automated test suite passing with **143 tests** (0 failures).
@@ -327,6 +376,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.9.0] - 2026-11-03
 
 ### Added
+
 - **Asset & Liability Distribution Dashboard (`OverviewScreen`):**
   - Added dedicated "Asset & Liability Distribution" section on the individual profile dashboard with an interactive segmented switch (`[Assets | Liabilities]`).
   - Donut chart visualization powered by `fl_chart` for profile assets grouped by category (Mutual Funds, Stocks, Gold, Fixed Deposits, NPS, PPF, EPF, GPF, Bonds, Cash & Bank, Other Assets).
@@ -363,6 +413,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.8.0] - 2026-11-02
 
 ### Added
+
 - **Family-Wide Financial Overview on Profile Selection (`ProfileSelectionScreen`):**
   - Redesigned opening startup/profile switching screen with a top family-wide financial overview card aggregating Total Family Assets, Liabilities (`₹0 • Upcoming`), and Family Net Worth ($Assets - Liabilities$) across all member profiles.
   - Replaced redundant "Quick Continue as" card and "Last Used" / "Default" badges with clean, scannable profile cards showing initials avatar, display name, relationship label, profile assets, liabilities, and profile net worth.
@@ -395,6 +446,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Auto-switches active profile and pops back to the primary workspace root (`Navigator.popUntil((route) => route.isFirst)`) after saving an investment schedule with success SnackBar.
 
 ### Testing
+
 - Added `test/widget/profile_overview_and_cashflow_test.dart` (4 tests verifying family overview calculation, category allocation chart, SIP cash flow integration, and asset category migration).
 - Updated `test/widget/app_smoke_test.dart`, `test/widget/contextual_fab_and_navigation_test.dart`, `test/widget/profile_selection_startup_test.dart`, and `test/widget_test.dart`.
 - Total automated test suite expanded to **138 passing tests** (0 failures).
@@ -402,6 +454,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.7.0] - 2026-11-02
 
 ### Added
+
 - **SIP Cascade Deletion & Financial Consistency Engine (`SipsDao`):**
   - Atomic `deleteSip(int sipPlanId)` executed inside a Drift database transaction (`transaction(() async { ... })`).
   - Completely cascades across SIP schedule periods, generated installments (historical, upcoming, simulated, and pending valuation), and exclusively linked investment transactions.
@@ -425,6 +478,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Connected Settings theme picker to switch between System, Light, and Dark modes with instant reactive update and persistent cold-start restoration.
 
 ### Testing
+
 - Added `test/unit/sip_cascade_deletion_test.dart` (3 tests verifying atomic SIP deletion, multi-SIP holding retention, and profile isolation).
 - Added `test/unit/installment_lifecycle_test.dart` (4 tests verifying individual installment deletion, upcoming deletion, skip/cancel status, and future installment cancellation).
 - Added `test/unit/scope_control_and_theme_test.dart` (3 tests verifying theme persistence via `AppSettingsDao`, milestone net worth calculation, and holding cascade deletion).
@@ -434,6 +488,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.6.0] - 2026-11-02
 
 ### Added
+
 - **Mobile UX Overhaul for Investment Addition Forms (`AddToProfileDialog`):**
   - Converted dialog to edge-to-edge mobile page (`Scaffold` with persistent top AppBar).
   - Placed Save action in persistent top-right AppBar header, maintaining accessibility when the soft keyboard is open or during long scrolls.
@@ -470,6 +525,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Strict exclusion: Internal transfers between user accounts are strictly excluded from income and expense calculations.
 
 ### Testing
+
 - Added `test/unit/mobile_form_ux_test.dart` (3 tests verifying persistent top Save buttons, field order, mobile scrollability, and form validation).
 - Added `test/unit/activity_and_cash_flow_test.dart` (4 tests verifying income/expense calculations, savings rate, transfer exclusion, transaction deletion, and category grouping).
 - Added `test/widget/contextual_fab_and_navigation_test.dart` (3 tests verifying contextual circular FAB, ReturnToProfilesButton navigation, and Settings-only NAV refresh).
@@ -478,6 +534,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.5.0] - 2026-11-02
 
 ### Added
+
 - **Redesigned Mutual Fund Investment Schedule Form (`AddToProfileDialog`):**
   - Replaced manual single lumpsum entry with automated investment schedule generator.
   - Configurable fields: Mutual Fund Scheme header with latest NAV and date, Financial Profile selector, Amount per installment, Start Date picker, Frequency selector (Daily, Weekly, Monthly, Quarterly, Yearly, One-time), Number of Installments (automatically locked to 1 for One-time), Description/notes, and Confirmed vs Estimated toggle.
@@ -504,6 +561,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Integrated `FinBalanceLogo` across `ProfileSelectionScreen`, `SettingsScreen`, and `MainScaffold`.
 
 ### Testing
+
 - Added `test/unit/investment_schedule_calculator_test.dart` (9 tests for schedule rules, frequencies, month-end clamping, leap years, and past/future partitioning).
 - Added `test/unit/historical_nav_unit_calculation_test.dart` (6 tests for exact NAV lookup, weekend fallback, holiday fallback, missing NAV graceful handling, future NAV isolation, and integer micro-precision units).
 - Added `test/unit/investment_financial_accuracy_test.dart` (3 tests for past/future financial isolation, multi-schedule holding accumulation, and simulated vs confirmed status).
@@ -514,6 +572,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.4.0] - 2026-11-02
 
 ### Added
+
 - **Flexible SIP Scheduling & Schedule Periods:**
   - Implemented flexible SIP model separating master plans (`SipPlans`) from schedule periods (`SipSchedulePeriods`), supporting multiple periods with varying amounts and deduction dates across an investment's lifetime.
   - Enabled step-up and step-down adjustments (`EditSipScheduleDialog`): archives the prior schedule period and activates a new period on the effective date without manual installment recreation.
@@ -539,12 +598,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added profile-scoped favourite methods in `MutualFundDao` with atomic toggling and immediate visual feedback via reactive Drift streams.
 
 ### Fixed
+
 - **Duplicate Resource Merger Collision:**
   - Resolved Android debug APK build failure caused by duplicate `ic_launcher` in `res/mipmap-hdpi/`.
 - **Foreign Key & Conflict Resolution in SipsDao:**
   - Added targeted conflict resolution `onConflict: DoNothing(target: [sipPlanId, scheduledDate])` guaranteeing zero duplicate installments during schedule generation or overlapping periods.
 
 ### Testing
+
 - Added `test/unit/sip_scheduling_test.dart` (9 tests covering leap-year clamping, drift prevention, multiple periods, bulk historical generation, simulated vs actual flags, duplicate prevention, and skipping).
 - Added `test/unit/favourites_test.dart` (4 tests covering toggle persistence, cross-profile isolation, unique key duplicate prevention, and reactive stream emission).
 - Added `test/unit/caching_policy_test.dart` (4 tests covering search query caching, daily/weekly/manual policies, eligible sync calculation, and cache-first network avoidance).
@@ -554,6 +615,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.3.2] - 2026-10-30
 
 ### Fixed
+
 - **Mutual Fund Scheme Details Loading:**
   - Resolved loading failure when tapping mutual fund schemes by eliminating silent failure suppression in `MFapiProvider` and `NavSyncService`.
   - Added fallback from `/mf/{schemeCode}` (full history) to `/mf/{schemeCode}/latest` when history requests time out or fail.
@@ -569,6 +631,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Persisted `last_nav_sync_time` in `AppSettings` table and reported sync results with scheme counts and provider attribution.
 
 ### Added
+
 - **Full Mutual Fund Holding Management:**
   - `HoldingDetailsSheet`: Tap any `HoldingCard` in `AssetsScreen` to open comprehensive investment metrics: current estimated valuation, net invested capital, absolute return (₹ and %), total units, latest NAV, transaction log, and scheme metadata.
   - `EditHoldingDialog`: Allows editing investment amount, units, purchase NAV, purchase date, and notes on existing holdings without creating duplicates.
@@ -577,6 +640,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Manual sync button directly in `AssetsScreen` AppBar for rapid on-demand portfolio valuation refresh.
 
 ### Testing
+
 - Added `test/unit/scheme_details_test.dart` (5 tests for parsing, missing metadata, malformed response handling, offline fallback, and endpoint fallback).
 - Added `test/unit/nav_sync_test.dart` (5 tests for individual scheme sync, portfolio-wide sync, duplicate prevention, non-regression date protection, and offline reporting).
 - Added `test/unit/holding_management_test.dart` (5 tests for adding with purchase NAV/date, editing without duplicates, two-way calculations, multiple purchase aggregation, and cross-profile isolation).
@@ -584,6 +648,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Total test suite expanded to 71 passing tests.
 
 ### Added
+
 - **Multi-Profile Management & Family Finance UI:**
   - `ProfileFormDialog`: Create and edit family members with name, relationship picker (Self, Spouse, Father, Mother, Child, Other), color avatar palette, optional description, and default profile toggle.
   - `ProfileSelectorButton`: Interactive, accessible header button in AppBar showing active profile avatar, name, and relationship badge.
@@ -609,6 +674,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.3.0] - 2026-10-30
 
 ### Added
+
 - **Provider-Independent NAV Integration Layer:**
   - `NavProvider` abstract interface allowing pluggable provider switching without modifying application logic.
   - `MFapiProvider`: Primary REST adapter for `api.mfapi.in` with debounced search (`/mf/search`) and metadata/NAV retrieval (`/mf/{schemeCode}/latest`).
@@ -633,6 +699,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.2.0] - 2026-10-30
 
 ### Added
+
 - **Multi-Profile & Family Finance Architecture:**
   - Implemented `FinancialProfiles` table and `ProfilesDao` enabling unlimited individual profiles (Self, Spouse, Father, Mother, Children) within a single installation.
   - Strict data separation: `FinancialAccounts`, `FinancialItems`, `Transactions`, and `RecurringTransactions` carry non-null `profile_id` foreign keys with cascading integrity.
@@ -671,6 +738,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1.0] - 2026-10-30
 
 ### Added
+
 - **Project Scaffolding:** Initialized Flutter Android project for **FinBalance** (`com.finbalance.app`).
 - **Comprehensive Personal Finance Architecture:**
   - Designed around three pillars: Assets (+), Liabilities (−), and Cash Flow / Activity.

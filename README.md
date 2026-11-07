@@ -2,6 +2,12 @@
 
 > **FinBalance** is an offline-first, multi-profile personal finance and net worth management application for Android and Web, built with Flutter and SQLite (Drift).
 
+### Current Release Focus (0.22.0)
+
+- FinBalance branding now places the Indian flag to the left of the app name and keeps the waving Karnataka flag on the right.
+- The family profile picker presents assets and liabilities before the family net worth figure, with liabilities shown in red.
+- Daily NAV refreshes become eligible at 3:00 AM local time after the last sync. NAV refresh is still checked on app launch; weekly and manual policies remain available.
+
 ---
 
 ## 1. Product Overview & Architecture
@@ -13,34 +19,38 @@ FinBalance models the entire balance sheet of an individual or multi-member hous
 3. **Cash Flow & Activity:** Scheduled SIP installments, loan EMI payments, income, expenses, deposits, withdrawals, and adjustments.
 
 ### Unified Wealth Overview
+
 $$\text{Net Worth} = \text{Total Assets} - \text{Total Liabilities}$$
 
 ### Core Tenets
+
 - **100% Offline-First:** All financial balances, liabilities, and records reside locally in SQLite storage via Drift.
 - **Multi-Profile Family Finance:** Full data isolation for multiple people (Self, Spouse, Father, Mother, Children) within a single installation. Switching profiles instantly updates all dashboards.
 - **Privacy by Design:** Zero bank credentials, broker accounts, or cloud logins required.
 - **High-Precision Financial Arithmetic:** Absolute zero floating-point error using integer paise ($10^{-2}$ INR), micro-units ($10^{-6}$ units), and micro-paise ($10^{-6}$ INR).
 - **Dual-Platform SQLite (Android & Web):** Native SQLite with isolate sharing on Android; SQLite3 WebAssembly (`sqlite3.wasm`) with dedicated web worker (`drift_worker.js`) on Flutter Web.
 - **Replaceable NAV Providers:** Fetches public mutual fund NAVs (MFapi.in, TIGZIG, AMFI) with local SQLite caching and automatic holdings valuation updates.
+- **Scheduled NAV Refresh:** Daily refreshes are eligible at 3:00 AM local time after the previous sync; the existing launch-time check, weekly policy, and manual Sync Now action remain available.
 
 ---
 
 ## 2. Technology Stack & Platform Strategies
 
-| Layer | Technology |
-|---|---|
-| **Framework** | Flutter 3.47+ (Android & Web) |
-| **Language** | Dart 3.13+ (Strict typing & null safety) |
-| **State Management** | Riverpod (`flutter_riverpod: ^2.6.1`) |
+| Layer                     | Technology                                                                             |
+| ------------------------- | -------------------------------------------------------------------------------------- |
+| **Framework**             | Flutter 3.47+ (Android & Web)                                                          |
+| **Language**              | Dart 3.13+ (Strict typing & null safety)                                               |
+| **State Management**      | Riverpod (`flutter_riverpod: ^2.6.1`)                                                  |
 | **Persistence (Android)** | Local SQLite via `drift`, `drift_flutter`, `sqlite3_flutter_libs` with isolate sharing |
-| **Persistence (Web)** | SQLite Wasm via `drift/wasm.dart`, `sqlite3.wasm`, `drift_worker.js` |
-| **Networking** | Dio (`dio: ^5.7.0`) |
-| **Visualizations** | FL Chart (`fl_chart: ^0.70.2`) |
-| **Reminders** | Flutter Local Notifications (`flutter_local_notifications: ^18.0.1`) |
-| **Formatting** | Intl (`intl: ^0.20.2`) |
-| **Android build** | Gradle 9.3.1, Android Gradle Plugin 9.1.0, Kotlin 2.4.0 (built-in Kotlin), JDK 17 |
+| **Persistence (Web)**     | SQLite Wasm via `drift/wasm.dart`, `sqlite3.wasm`, `drift_worker.js`                   |
+| **Networking**            | Dio (`dio: ^5.7.0`)                                                                    |
+| **Visualizations**        | FL Chart (`fl_chart: ^0.70.2`)                                                         |
+| **Reminders**             | Flutter Local Notifications (`flutter_local_notifications: ^18.0.1`)                   |
+| **Formatting**            | Intl (`intl: ^0.20.2`)                                                                 |
+| **Android build**         | Gradle 9.3.1, Android Gradle Plugin 9.1.0, Kotlin 2.4.0 (built-in Kotlin), JDK 17      |
 
 ### Database Platform Strategies
+
 - **Android:** Uses `DriftNativeOptions(shareAcrossIsolates: true)` with database stored in the local application documents directory (`finbalance.sqlite`).
 - **Web:** Uses `DriftWebOptions(sqlite3Wasm: Uri.parse('sqlite3.wasm'), driftWorker: Uri.parse('drift_worker.js'))` utilizing browser Origin Private File System (OPFS) and IndexedDB fallbacks.
 
@@ -59,7 +69,7 @@ lib/
 │   ├── formatting/               # CurrencyFormatter & DateFormatter
 │   ├── providers/                # Global state providers (theme, database, DAOs, profiles)
 │   ├── theme/                    # AppColors, AppTypography, AppSpacing, AppTheme
-│   └── widgets/                  # FinCard, StatCard, StatusBadge, SectionHeader, EmptyStateView
+│   └── widgets/                  # FinCard, StatCard, StatusBadge, SectionHeader, EmptyStateView, FinBalanceLogo, IndianFlag, WavingFlag
 ├── data/
 │   └── nav/                      # NAV provider layer (MFapi, TIGZIG, AMFI) & sync coordinator
 │       ├── models/               # MutualFundSearchResult, NavRecord, MutualFundSchemeDetail
@@ -149,6 +159,7 @@ make clean
   - Startup `ProfileSelectionScreen` providing cold-boot profile picking, "Quick Continue", and on-demand lazy loading.
   - Configurable NAV synchronization policy (`Daily`, `Weekly`, `Manual Only`) with next-eligible sync timestamp calculation and cache-first scheme viewing.
   - Profile-isolated favourite schemes with atomic toggle and reactive Drift streams.
+- [x] **Release 0.22.0 — Branding, Family Overview & NAV Timing:** Added the Indian flag beside the FinBalance name, retained the Karnataka flag, reordered the family overview metrics, applied red liability styling, and moved daily NAV eligibility to 3:00 AM local time while preserving launch, weekly, and manual sync behavior.
 - [x] **Mobile UX, Navigation, Activity Ledger & Cash Flow Analysis:**
   - Redesigned mobile form layout for adding mutual funds and liabilities with persistent top AppBar Save buttons and keyboard-friendly scroll views.
   - Top-left return to profile picker (`ReturnToProfilesButton`) across all primary sections.
@@ -220,7 +231,9 @@ make clean
 - **Public Privacy Policy URL:** Hosted at [https://amruthlp.vercel.app/finbalance_policy](https://amruthlp.vercel.app/finbalance_policy).
 
 ### Privacy Policy Hosting Instructions
+
 To host the policy document publicly:
+
 1. Copy or reference `docs/privacy-policy.md` in your Next.js/Vercel project at the route `/finbalance_policy`.
 2. Use standard Markdown rendering (such as `react-markdown` or Next.js MDX) to serve the page at `https://amruthlp.vercel.app/finbalance_policy`.
 3. The content matches the in-app `PrivacyPolicyScreen` identically, detailing the 14 privacy clauses, local-first on-device database architecture, financial data accuracy and market delays disclosures, and network usage restricted strictly to public AMFI mutual fund NAV rates with zero user data transmission.
