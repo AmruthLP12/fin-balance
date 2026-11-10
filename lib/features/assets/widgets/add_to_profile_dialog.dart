@@ -986,9 +986,7 @@ class _AddToProfileDialogState extends ConsumerState<AddToProfileDialog> {
                 tbl.status.equals('active')))
           .getSingleOrNull();
 
-      final categories =
-          await db.categoriesDao.getCategoriesByClassification('asset');
-      final categoryId = categories.isNotEmpty ? categories.first.id : 1;
+      final categoryId = await db.categoriesDao.mutualFundCategoryId();
 
       int holdingId;
       if (existingHolding == null) {

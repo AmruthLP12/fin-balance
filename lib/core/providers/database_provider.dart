@@ -69,6 +69,10 @@ final swpsDaoProvider = Provider<SwpsDao>((ref) {
 final mainTabProvider = StateProvider<int>((ref) => 0);
 
 /// One-shot request for the Assets tab to show a category (e.g. 'mutual_fund'); consumed by the screen.
+/// Category tab currently shown on the Assets screen (drives the + button).
+final assetsActiveCategoryProvider =
+    StateProvider<String>((ref) => 'mutual_fund');
+
 final assetsCategoryRequestProvider = StateProvider<String?>((ref) => null);
 
 final hasSelectedInitialProfileProvider = StateProvider<bool>((ref) => false);

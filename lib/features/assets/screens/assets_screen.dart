@@ -397,6 +397,7 @@ class _AssetsScreenState extends ConsumerState<AssetsScreen> {
   final _pillKeys = {for (final v in _tabOrder) v: GlobalKey()};
 
   void _select(String category) {
+    ref.read(assetsActiveCategoryProvider.notifier).state = category;
     setState(() => _selectedCategoryFilter = category);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final ctx = _pillKeys[category]?.currentContext;

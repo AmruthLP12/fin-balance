@@ -40,6 +40,42 @@ class CategoriesDao extends DatabaseAccessor<AppDatabase>
         .watch();
   }
 
+  /// Id of the "Mutual Funds & SIPs" category (not the alphabetically first
+  /// asset category, which is "Bonds").
+  Future<int> mutualFundCategoryId() async {
+    final row = await (select(financialCategories)
+          ..where((t) => t.name.equals('Mutual Funds & SIPs'))
+          ..limit(1))
+        .getSingleOrNull();
+    return row?.id ?? 1;
+  }
+
+  /// Moves mutual fund holdings and their transactions that were filed under
+  /// the wrong category (older builds used "Bonds") to Mutual Funds & SIPs.
+  Future<void> repairMutualFundCategories() async {
+    final id = await mutualFundCategoryId();
+    await customUpdate(
+      'UPDATE transactions SET category_id = ? WHERE category_id != ? AND '
+      'financial_item_id IN (SELECT id FROM financial_items WHERE sub_type = ?)',
+      variables: [
+        Variable.withInt(id),
+        Variable.withInt(id),
+        Variable.withString('mutual_fund'),
+      ],
+      updates: {db.transactions},
+    );
+    await customUpdate(
+      'UPDATE financial_items SET category_id = ? WHERE category_id != ? '
+      'AND sub_type = ?',
+      variables: [
+        Variable.withInt(id),
+        Variable.withInt(id),
+        Variable.withString('mutual_fund'),
+      ],
+      updates: {db.financialItems},
+    );
+  }
+
   /// Get categories by classification ('asset', 'liability', 'income', 'expense').
   Future<List<FinancialCategory>> getCategoriesByClassification(
     String classification, {

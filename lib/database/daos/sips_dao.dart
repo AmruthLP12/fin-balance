@@ -420,9 +420,7 @@ class SipsDao extends DatabaseAccessor<AppDatabase> with _$SipsDaoMixin {
         int? txId;
         if (markAsConfirmed) {
           // Find or default category
-          final cat =
-              await db.categoriesDao.getCategoriesByClassification('asset');
-          final categoryId = cat.isNotEmpty ? cat.first.id : 1;
+          final categoryId = await db.categoriesDao.mutualFundCategoryId();
 
           txId = await into(transactions).insert(
             TransactionsCompanion(
@@ -506,8 +504,7 @@ class SipsDao extends DatabaseAccessor<AppDatabase> with _$SipsDaoMixin {
       }
 
       // Record transaction
-      final cat = await db.categoriesDao.getCategoriesByClassification('asset');
-      final categoryId = cat.isNotEmpty ? cat.first.id : 1;
+      final categoryId = await db.categoriesDao.mutualFundCategoryId();
 
       final txId = await into(transactions).insert(
         TransactionsCompanion(
@@ -850,9 +847,7 @@ class SipsDao extends DatabaseAccessor<AppDatabase> with _$SipsDaoMixin {
                 tbl.status.equals('active')))
           .getSingleOrNull();
 
-      final categories =
-          await db.categoriesDao.getCategoriesByClassification('asset');
-      final categoryId = categories.isNotEmpty ? categories.first.id : 1;
+      final categoryId = await db.categoriesDao.mutualFundCategoryId();
 
       int holdingId;
       if (existingHolding == null) {
@@ -1070,9 +1065,7 @@ class SipsDao extends DatabaseAccessor<AppDatabase> with _$SipsDaoMixin {
       if (rows.isEmpty) return 0;
 
       int revaluedCount = 0;
-      final categoryList =
-          await db.categoriesDao.getCategoriesByClassification('asset');
-      final categoryId = categoryList.isNotEmpty ? categoryList.first.id : 1;
+      final categoryId = await db.categoriesDao.mutualFundCategoryId();
 
       for (final row in rows) {
         final inst = row.readTable(sipInstallments);

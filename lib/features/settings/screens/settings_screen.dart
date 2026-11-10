@@ -1,4 +1,8 @@
+import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import '../../../data/backup/backup_service.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import '../widgets/update_dialog.dart';
 import '../../../core/widgets/open_link.dart';
@@ -47,6 +51,60 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     ref.read(appSettingsDaoProvider).getSetting(updateLastCheckedKey).then((v) {
       if (mounted && v != null) setState(() => _lastChecked = v);
     });
+  }
+
+  void _say(String m) =>
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
+
+  Future<void> _exportBackup() async {
+    try {
+      final bytes = await BackupService(ref.read(databaseProvider)).export();
+      final stamp = DateTime.now().toIso8601String().substring(0, 10);
+      final saved = await FilePicker.saveFile(
+        fileName: 'finbalance_backup_$stamp.json',
+        bytes: bytes,
+        mimeType: 'application/json',
+      );
+      if (saved != null) _say('Backup saved.');
+    } catch (e) {
+      _say('Backup failed: $e');
+    }
+  }
+
+  Future<void> _importBackup() async {
+    final picked = await FilePicker.pickFile(
+        type: FileType.custom, allowedExtensions: ['json']);
+    final path = picked?.path;
+    if (path == null || !mounted) return;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Replace all data?'),
+        content: const Text(
+            'Everything currently in FinBalance (all profiles, holdings and '
+            'transactions) will be replaced by the backup. This cannot be undone.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel')),
+          FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Replace')),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    try {
+      final n = await BackupService(ref.read(databaseProvider))
+          .restore(await File(path).readAsBytes());
+      ref.invalidate(activeProfileIdProvider);
+      ref.read(hasSelectedInitialProfileProvider.notifier).state = false;
+      _say('Restored $n records.');
+    } on FormatException catch (e) {
+      _say(e.message);
+    } catch (e) {
+      _say('Restore failed: $e');
+    }
   }
 
   @override
@@ -331,30 +389,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   leading: const Icon(Icons.file_upload_outlined),
                   title: const Text('Export JSON Backup',
                       style: AppTypography.titleMedium),
-                  subtitle: const Text('Save encrypted portable JSON file',
+                  subtitle: const Text(
+                      'Save all profiles and data to a JSON file (not encrypted, keep it private)',
                       style: AppTypography.bodyMedium),
-                  onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content: Text(
-                              'Backup export will be implemented in Milestone 8')),
-                    );
-                  },
+                  onTap: _exportBackup,
                 ),
                 const Divider(),
                 ListTile(
                   leading: const Icon(Icons.file_download_outlined),
                   title: const Text('Import Backup',
                       style: AppTypography.titleMedium),
-                  subtitle: const Text('Restore holdings from JSON file',
+                  subtitle: const Text(
+                      'Restore from a JSON backup (replaces current data)',
                       style: AppTypography.bodyMedium),
-                  onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content: Text(
-                              'Backup restore will be implemented in Milestone 8')),
-                    );
-                  },
+                  onTap: _importBackup,
                 ),
               ],
             ),

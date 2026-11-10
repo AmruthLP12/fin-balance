@@ -856,7 +856,8 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen>
             expensePaise += txn.amountPaise;
             expenseByCategory[txn.categoryId] =
                 (expenseByCategory[txn.categoryId] ?? 0) + txn.amountPaise;
-          } else if (txn.transactionType == 'investment_purchase') {
+          } else if (txn.transactionType == 'investment_purchase' ||
+              txn.transactionType == 'sip_investment') {
             investmentOutflowPaise += txn.amountPaise;
             investmentByCategory[txn.categoryId] =
                 (investmentByCategory[txn.categoryId] ?? 0) + txn.amountPaise;

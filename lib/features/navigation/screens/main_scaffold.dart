@@ -38,6 +38,7 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
   @override
   void initState() {
     super.initState();
+    ref.read(databaseProvider).categoriesDao.repairMutualFundCategories();
     // Refresh NAVs once per launch when due under the user's refresh policy.
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       try {
@@ -230,6 +231,11 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
     // Floating action button is enabled only for investment workflows (Overview & Assets).
     // Suppressed on Liabilities (index 2), Activity (index 3), and Settings (index 4).
     if (_currentIndex > 1) return null;
+    // Only mutual funds can be added so far; other categories have no add flow.
+    if (_currentIndex == 1) {
+      final tab = ref.watch(assetsActiveCategoryProvider);
+      if (tab != 'mutual_fund' && tab != 'all') return null;
+    }
 
     final String tooltip =
         _currentIndex == 0 ? 'Add Investment Schedule' : 'Add Asset';

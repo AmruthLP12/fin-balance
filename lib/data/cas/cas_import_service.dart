@@ -62,9 +62,7 @@ class CasImportService {
     required DateTime periodStart,
   }) async {
     final result = CasImportResult();
-    final categories =
-        await _db.categoriesDao.getCategoriesByClassification('asset');
-    final categoryId = categories.isNotEmpty ? categories.first.id : 1;
+    final categoryId = await _db.categoriesDao.mutualFundCategoryId();
 
     final byIsin = <String, List<CasFolio>>{};
     for (final f in folios) {

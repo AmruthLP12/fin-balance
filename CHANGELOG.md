@@ -5,6 +5,30 @@ All notable changes to the FinBalance application will be documented in this fil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.23.0] - 2026-11-10
+
+### Added
+
+- **Backup & Restore now work** (Settings > Backup & Restore). Export writes every profile, holding, transaction and setting to one JSON file at a place you choose; Import replaces all current data after a confirmation. The file is validated first (app name, schema version, foreign keys), so a wrong file changes nothing. Backups are not encrypted.
+- The Indian flag now waves like the Karnataka flag (same lightweight painter, still when system animations are off). This replaces the static flag added in 0.22.0.
+
+### Fixed
+
+- Mutual funds added by the CAS import, the add-investment dialog and SIP installments were filed under **Bonds** (the alphabetically first asset category). They now use **Mutual Funds & SIPs**, and existing misfiled funds are corrected once at app start.
+- Cash flow (Activity and Overview) ignored SIP lines (`sip_investment`), so imported SIPs did not appear as investment outflow. They are counted now.
+- The **+** button on Assets shows only on All Assets and Mutual Funds; other categories have no add flow yet, so it no longer opens the mutual fund search there.
+
+## [0.22.1] - 2026-11-10
+
+### Fixed
+
+- Release builds are signed with one fixed key (`android/key.properties` + keystore, both git-ignored) instead of each machine's own debug key. Android refuses to update an app signed with a different key, which broke updating a build made on another computer. Without `key.properties` the build still falls back to the debug key.
+- Version bumped to `0.22.1+22` (built and installed as `0.21.1+22` before the 0.22.0 changes were merged; the git commit message still says 0.21.1); the number after `+` must increase for every release or Android rejects the update.
+
+### Notes
+
+- Copy `android/key.properties` and `android/finbalance.keystore` to any computer that builds releases, and back them up outside the repository. Losing the key means testers must reinstall.
+
 ## [0.22.0] - 2026-11-07
 
 ### Added
@@ -22,15 +46,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Updated NAV policy coverage for the 3:00 AM schedule.
 - Branding widget tests and `flutter analyze` pass.
-
-## [0.21.1] - 2026-11-10
-
-### Fixed
-- Release builds are signed with one fixed key (`android/key.properties` + keystore, both git-ignored) instead of each machine's own debug key. Android refuses to update an app signed with a different key, which broke updating a build made on another computer. Without `key.properties` the build still falls back to the debug key.
-- Version bumped to `0.21.1+22`; the number after `+` must increase for every release or Android rejects the update.
-
-### Notes
-- Copy `android/key.properties` and `android/finbalance.keystore` to any computer that builds releases, and back them up outside the repository. Losing the key means testers must reinstall.
 
 ## [0.21.0] - 2026-11-06
 
