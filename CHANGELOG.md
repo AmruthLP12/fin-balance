@@ -23,6 +23,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated NAV policy coverage for the 3:00 AM schedule.
 - Branding widget tests and `flutter analyze` pass.
 
+## [0.21.1] - 2026-11-10
+
+### Fixed
+- Release builds are signed with one fixed key (`android/key.properties` + keystore, both git-ignored) instead of each machine's own debug key. Android refuses to update an app signed with a different key, which broke updating a build made on another computer. Without `key.properties` the build still falls back to the debug key.
+- Version bumped to `0.21.1+22`; the number after `+` must increase for every release or Android rejects the update.
+
+### Notes
+- Copy `android/key.properties` and `android/finbalance.keystore` to any computer that builds releases, and back them up outside the repository. Losing the key means testers must reinstall.
+
 ## [0.21.0] - 2026-11-06
 
 ### Added
