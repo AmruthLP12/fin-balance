@@ -5,6 +5,24 @@ All notable changes to the FinBalance application will be documented in this fil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.24.0] - 2026-11-12
+
+### Fixed
+
+- **NAV did not refresh after 3:00 AM.** The check only ran when the app was cold-started (and only after a profile was opened), so an app that stayed open or in the background never refreshed. It now runs app-wide: when the app opens, every time it returns to the foreground, and at the next due time while it stays open. Android does not let an idle app run at 3:00 AM, so "due" means the first moment the app is opened or resumed after 3:00 AM.
+- **Offline handling:** when two schemes in a row cannot be fetched the run stops instead of waiting out timeouts for every scheme, retries after 10 minutes while the app is open, and does not advance the "last sync" marker when nothing was updated. Settings > NAV shows the outcome ("failed at 03:05: no internet connection ... will retry").
+- **Switch Profile did nothing** when Settings was opened from the start page (the app was already on the profile picker underneath). The profile menu now also closes any screen opened on top.
+- **CAS import said "No mutual fund folios found"** for a CAMS **Consolidated Account Summary** (a holdings list without transactions). Both statement types are now read.
+
+### Changed
+
+- **Profile menu:** shows up to 3 profiles to switch to directly (the active one first, with a check mark). With more than 3, "Show more (N)" opens the home screen listing everyone. The old "Switch Profile" entry is gone.
+- **CAS import:** choose the profile to import into (defaults to the current profile). A summary statement imports each folio as one opening lot (units and cost as printed, dated the "as on" date); it is skipped for a holding that already has transactions so numbers are never doubled.
+
+### Testing
+
+- Summary parser and import, offline NAV sync (stops after two failures, marker not advanced), updated profile menu test.
+
 ## [0.23.0] - 2026-11-10
 
 ### Added

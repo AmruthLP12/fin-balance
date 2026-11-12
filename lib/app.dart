@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/constants/app_constants.dart';
 import 'core/providers/database_provider.dart';
+import 'core/providers/nav_auto_refresh.dart';
 import 'core/providers/theme_provider.dart';
 import 'core/theme/app_theme.dart';
 import 'features/navigation/screens/main_scaffold.dart';
@@ -22,6 +23,7 @@ class FinBalanceApp extends ConsumerWidget {
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: themeMode,
+      builder: (context, child) => NavAutoRefresh(child: child!),
       home: hasSelectedProfile
           ? const MainScaffold()
           : const ProfileSelectionScreen(),

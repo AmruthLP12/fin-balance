@@ -267,6 +267,9 @@ class PortfolioSyncSummary {
   final DateTime syncTime;
   final String? primaryProvider;
 
+  /// True when the sync stopped early because no provider could be reached.
+  final bool offline;
+
   const PortfolioSyncSummary({
     required this.totalSchemes,
     required this.successCount,
@@ -274,5 +277,6 @@ class PortfolioSyncSummary {
     required this.results,
     required this.syncTime,
     this.primaryProvider,
+    this.offline = false,
   });
 }

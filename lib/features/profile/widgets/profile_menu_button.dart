@@ -12,7 +12,7 @@ import 'profile_form_dialog.dart';
 ///
 /// Provides quick access to:
 /// - Profile details (initials avatar, name, relationship)
-/// - Switch Profile action (returns to profile selection screen)
+/// - Up to 3 profiles to switch to directly, plus "Show more" (profile selection screen)
 /// - Manage Profiles action (navigates to ProfileManagementScreen)
 /// - Add Family Member action (opens ProfileFormDialog)
 ///
@@ -25,6 +25,13 @@ class ProfileMenuButton extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final activeProfileAsync = ref.watch(activeProfileProvider);
+    final allProfiles = ref.watch(allProfilesProvider).value ?? const [];
+    final activeId = ref.watch(activeProfileIdProvider);
+    // Active profile first, then the others, at most 3 in the menu.
+    final shown = ([
+      ...allProfiles.where((p) => p.id == activeId),
+      ...allProfiles.where((p) => p.id != activeId),
+    ]).take(3).toList();
     final profile = activeProfileAsync.value;
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
@@ -54,10 +61,18 @@ class ProfileMenuButton extends ConsumerWidget {
         offset: const Offset(0, 46),
         padding: EdgeInsets.zero,
         onSelected: (action) {
+          if (action.startsWith('profile:')) {
+            ref
+                .read(activeProfileIdProvider.notifier)
+                .switchProfile(int.parse(action.substring(8)));
+            return;
+          }
           switch (action) {
-            case 'switch':
+            case 'more':
               ref.read(hasSelectedInitialProfileProvider.notifier).state =
                   false;
+              // Close any screen opened on top (e.g. Settings from the start page).
+              Navigator.of(context).popUntil((r) => r.isFirst);
               break;
             case 'manage':
               Navigator.of(context).push(
@@ -133,29 +148,50 @@ class ProfileMenuButton extends ConsumerWidget {
           ),
           const PopupMenuDivider(height: 1),
 
-          // 2. Action: Switch Profile
-          PopupMenuItem<String>(
-            value: 'switch',
-            child: Row(
-              children: [
-                Icon(
-                  Icons.swap_horiz_rounded,
-                  size: 20,
-                  color: isDark
-                      ? AppColors.brandPrimaryLight
-                      : AppColors.brandPrimary,
-                ),
-                const SizedBox(width: AppSpacing.sm),
-                const Expanded(
-                  child: Text(
-                    'Switch Profile',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+          // 2. Profiles to switch to (up to 3), then "Show more"
+          for (final p in shown)
+            PopupMenuItem<String>(
+              value: 'profile:${p.id}',
+              child: Row(
+                children: [
+                  ProfileAvatar(profile: p, radius: 12),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: Text(
+                      p.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
-                ),
-              ],
+                  if (p.id == activeId)
+                    const Icon(Icons.check_rounded, size: 18),
+                ],
+              ),
             ),
-          ),
+          if (allProfiles.length > shown.length)
+            PopupMenuItem<String>(
+              value: 'more',
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.groups_rounded,
+                    size: 20,
+                    color: isDark
+                        ? AppColors.brandPrimaryLight
+                        : AppColors.brandPrimary,
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: Text(
+                      'Show more (${allProfiles.length - shown.length})',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          const PopupMenuDivider(height: 1),
 
           // 3. Action: Manage Profiles
           PopupMenuItem<String>(

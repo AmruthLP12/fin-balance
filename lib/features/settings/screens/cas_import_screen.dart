@@ -26,6 +26,7 @@ class _CasImportScreenState extends ConsumerState<CasImportScreen> {
   List<CasFolio>? _folios;
   Map<String, AmfiScheme> _schemes = {};
   DateTime? _periodStart;
+  int? _profileId; // null = active profile
   bool _busy = false;
   String? _error;
   String? _done;
@@ -107,13 +108,37 @@ class _CasImportScreenState extends ConsumerState<CasImportScreen> {
     );
   }
 
+  Widget _profilePicker() {
+    final profiles = ref.watch(allProfilesProvider).value ?? const [];
+    if (profiles.isEmpty) return const SizedBox.shrink();
+    final activeId = ref.watch(activeProfileIdProvider);
+    final value = profiles.any((p) => p.id == (_profileId ?? activeId))
+        ? (_profileId ?? activeId)
+        : profiles.first.id;
+    return DropdownButtonFormField<int>(
+      initialValue: value,
+      decoration: const InputDecoration(
+        labelText: 'Import into profile',
+        border: OutlineInputBorder(),
+      ),
+      items: [
+        for (final p in profiles)
+          DropdownMenuItem(
+            value: p.id,
+            child: Text(p.id == activeId ? '${p.name} (current)' : p.name),
+          ),
+      ],
+      onChanged: _busy ? null : (v) => setState(() => _profileId = v),
+    );
+  }
+
   bool _ok(CasFolio f) => f.reconciles && _schemes.containsKey(f.isin);
 
   Future<void> _import() async {
     setState(() => _busy = true);
     try {
       final r = await CasImportService(ref.read(databaseProvider)).importFolios(
-        profileId: ref.read(activeProfileIdProvider),
+        profileId: _profileId ?? ref.read(activeProfileIdProvider),
         folios: _folios!.where(_ok).toList(),
         schemes: _schemes,
         periodStart: _periodStart!,
@@ -141,11 +166,14 @@ class _CasImportScreenState extends ConsumerState<CasImportScreen> {
         padding: const EdgeInsets.all(AppSpacing.md),
         children: [
           const Text(
-            'Pick your CAMS + KFintech Consolidated Account Statement. It is '
-            'read on this device and imported into the active profile. Folios '
-            'of the same fund are combined into one holding.',
+            'Pick your CAMS + KFintech Consolidated Account Statement (with '
+            'transactions) or Consolidated Account Summary (holdings only). It '
+            'is read on this device. Folios of the same fund are combined into '
+            'one holding.',
             style: AppTypography.bodyMedium,
           ),
+          const SizedBox(height: AppSpacing.md),
+          _profilePicker(),
           const SizedBox(height: AppSpacing.md),
           FilledButton.icon(
             onPressed: _busy ? null : _pick,
@@ -199,11 +227,16 @@ class _CasImportScreenState extends ConsumerState<CasImportScreen> {
       children: [
         Text(matched?.name ?? f.schemeName, style: AppTypography.titleMedium),
         const SizedBox(height: 4),
-        Text('Folio ${f.folio} • ${f.txns.length} transactions',
+        Text(
+            f.summaryOnly
+                ? 'Folio ${f.folio} • holding as on statement date'
+                : 'Folio ${f.folio} • ${f.txns.length} transactions',
             style: AppTypography.bodySmall),
         Text(
-            'Opening ${f.opening.toStringAsFixed(3)} → closing '
-            '${f.closing.toStringAsFixed(3)} units • cost ₹${f.totalCost.toStringAsFixed(2)}',
+            f.summaryOnly
+                ? '${f.closing.toStringAsFixed(3)} units • cost ₹${f.totalCost.toStringAsFixed(2)} • value ₹${f.marketValue.toStringAsFixed(2)}'
+                : 'Opening ${f.opening.toStringAsFixed(3)} → closing '
+                    '${f.closing.toStringAsFixed(3)} units • cost ₹${f.totalCost.toStringAsFixed(2)}',
             style: AppTypography.bodySmall),
         const SizedBox(height: 4),
         if (problems.isEmpty)

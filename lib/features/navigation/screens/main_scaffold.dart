@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/providers/database_provider.dart';
-import '../../../core/providers/nav_providers.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/finbalance_logo.dart';
@@ -39,14 +38,8 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
   void initState() {
     super.initState();
     ref.read(databaseProvider).categoriesDao.repairMutualFundCategories();
-    // Refresh NAVs once per launch when due under the user's refresh policy.
+    // NAV refresh is handled app-wide by NavAutoRefresh.
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      try {
-        await ref.read(navSyncServiceProvider).syncAllPortfolioSchemes(
-              force: false,
-              frequency: ref.read(navRefreshFrequencyProvider),
-            );
-      } catch (_) {}
       if (mounted) await checkForUpdates(context, ref, silent: true);
     });
   }

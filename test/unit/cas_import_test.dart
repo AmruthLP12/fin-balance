@@ -30,6 +30,7 @@ Closing Unit Balance: 9.000 Total Cost Value: 500.00 Market Value on 29-Jun-2026
 ''';
 
 void main() {
+  summaryTests();
   test('parser reads folios, charges, signs and reconciles units', () {
     final f = parseCasText(_cas);
     expect(f.map((x) => x.folio), ['1111 / 0', '2222', '3333']);
@@ -75,5 +76,59 @@ void main() {
     expect(
         (await db.select(db.financialItems).get()).single.unitCountMicroUnits,
         110 * 1000000);
+  });
+}
+
+// Invented "Consolidated Account Summary" rows (holdings only, no transactions).
+const _summary = '''
+Consolidated Account Summary
+As on 12-Nov-2026
+Folio No. ISIN Scheme Name Cost Value Unit Balance NAV Date NAV Market Value Registrar
+1234567/0 INF000A01011 101ABCD - Sample Flexi Cap Fund Regular 10,000.000 500.000 11-Nov-2026 25.5000 12,750.00 KFINTECH
+Growth (Non Demat)
+9876 INF000B02022 L 686 G - Sample Small Cap Fund- 4,000.000 301.271 11-Nov-2026 13.38 4,031.01 CAMS
+Total 14,000.00 16,781.01
+''';
+
+void summaryTests() {
+  test('summary statement is read as one opening holding per folio', () {
+    final f = parseCasText(_summary);
+    expect(f, hasLength(2));
+    expect(f.first.summaryOnly, isTrue);
+    expect(f.first.folio, '1234567/0');
+    expect(f.first.schemeName, startsWith('Sample Flexi Cap'));
+    expect(f.first.closing, 500);
+    expect(f.first.openingCost, 10000);
+    expect(f.every((x) => x.reconciles), isTrue);
+    expect(casPeriodStart(_summary), DateTime(2026, 11, 12));
+  });
+
+  test('summary import is skipped for a holding that already has data',
+      () async {
+    final db = AppDatabase.forTesting(NativeDatabase.memory());
+    addTearDown(db.close);
+    final pid = await db.profilesDao.createProfile(
+        const FinancialProfilesCompanion(
+            name: drift.Value('A'), relationship: drift.Value('Self')));
+    final svc = CasImportService(db);
+    final folios = parseCasText(_summary);
+    final schemes = {
+      'INF000A01011': const AmfiScheme(1, 'Sample Flexi', 25.5),
+      'INF000B02022': const AmfiScheme(2, 'Sample Small', 13.38),
+    };
+    Future<CasImportResult> run() => svc.importFolios(
+        profileId: pid,
+        folios: folios,
+        schemes: schemes,
+        periodStart: DateTime(2026, 11, 12));
+    final first = await run();
+    expect(first.imported, 2);
+    final again = await run();
+    expect(again.imported, 0);
+    final units = (await db.select(db.financialItems).get())
+        .map((i) => i.unitCountMicroUnits)
+        .toList()
+      ..sort();
+    expect(units, [301271000, 500000000]);
   });
 }

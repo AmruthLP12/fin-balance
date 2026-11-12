@@ -42,6 +42,9 @@ class CasFolio {
   final String folio;
   final String isin;
   final String schemeName;
+
+  /// True for a "Consolidated Account Summary" (holdings only, no transactions).
+  bool summaryOnly = false;
   double opening = 0;
   double closing = 0;
   double totalCost = 0;
@@ -127,9 +130,50 @@ String casTxnType(String description, {required bool negativeUnits}) {
   return 'investment_purchase';
 }
 
-/// Parses the text of a CAMS + KFintech CAS into folios. Whitespace-tolerant:
+/// Parses the text of a CAMS + KFintech CAS into folios. Statements that only
+/// list holdings (Consolidated Account Summary) are read by [parseCasSummary]. Whitespace-tolerant:
 /// works on the text from any extractor as long as rows stay on one line.
 List<CasFolio> parseCasText(String text) {
+  final detailed = _parseDetailed(text);
+  return detailed.isNotEmpty ? detailed : parseCasSummary(text);
+}
+
+final _summaryRowRe = RegExp(
+    r'^(\d[\d/]*)\s+((?:INF)[A-Z0-9]{9})\s+(.+?)\s+'
+    r'([\d,]+\.\d+)\s+([\d,]+\.\d+)\s+(\d{2}-[A-Za-z]{3}-\d{4})\s+'
+    r'([\d,]+\.\d+)\s+([\d,]+\.\d+)\s+(?:CAMS|KFINTECH)\s*$',
+    caseSensitive: false);
+
+/// Reads a "Consolidated Account Summary": one row per folio with cost, units,
+/// NAV and value. Each row becomes a folio whose units are the closing balance
+/// and whose cost is the printed cost value.
+List<CasFolio> parseCasSummary(String text) {
+  final folios = <CasFolio>[];
+  for (final raw in text.split('\n')) {
+    final line = raw
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .replaceAll('( ', '(')
+        .replaceAll(' )', ')')
+        .trim();
+    final m = _summaryRowRe.firstMatch(line);
+    if (m == null) continue;
+    final f = CasFolio(
+      amc: '',
+      folio: m.group(1)!,
+      isin: m.group(2)!.toUpperCase(),
+      schemeName: m.group(3)!.replaceFirst(RegExp(r'^[A-Z0-9 ]{2,14} - '), ''),
+    )
+      ..summaryOnly = true
+      ..totalCost = _d(m.group(4)!)
+      ..closing = _d(m.group(5)!)
+      ..opening = _d(m.group(5)!)
+      ..marketValue = _d(m.group(8)!);
+    folios.add(f);
+  }
+  return folios;
+}
+
+List<CasFolio> _parseDetailed(String text) {
   final folios = <CasFolio>[];
   String amc = '';
   String? folio;
@@ -205,8 +249,12 @@ List<CasFolio> parseCasText(String text) {
 }
 
 /// Start date printed in the statement header ("01-Apr-2026 To 06-Nov-2026").
-DateTime? casPeriodStart(String text) {
+DateTime? casPeriodStart(String raw) {
+  final text = raw.replaceAll(RegExp(r'[ \t]+'), ' ');
   final m = RegExp(r'(\d{2}-[A-Za-z]{3}-\d{4})\s+To\s+\d{2}-[A-Za-z]{3}-\d{4}')
       .firstMatch(text);
-  return m == null ? null : _date(m.group(1)!);
+  if (m != null) return _date(m.group(1)!);
+  // Summary statements print "As on 12-Nov-2026".
+  final a = RegExp(r'As on\s+(\d{2}-[A-Za-z]{3}-\d{4})').firstMatch(text);
+  return a == null ? null : _date(a.group(1)!);
 }

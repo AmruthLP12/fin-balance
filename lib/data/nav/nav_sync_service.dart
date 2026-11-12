@@ -465,23 +465,36 @@ class NavSyncService {
     int failedCount = 0;
     String? primaryProvider;
 
+    var consecutiveFailures = 0;
+    var offline = false;
     for (final code in distinctCodes) {
+      // Two failures in a row means every provider is unreachable (no
+      // internet); stop instead of waiting out timeouts for each scheme.
+      if (consecutiveFailures >= 2) {
+        offline = true;
+        failedCount++;
+        continue;
+      }
       final res = await syncSchemeNav(code, force: force, frequency: frequency);
       results.add(res);
       if (res.success) {
+        consecutiveFailures = 0;
         successCount++;
         primaryProvider ??= res.provider;
       } else {
+        consecutiveFailures++;
         failedCount++;
       }
     }
 
-    // Record last sync timestamp in AppSettings
+    // Record last sync timestamp in AppSettings (only when something synced)
     final now = DateTime.now().toUtc();
-    await _mutualFundDao.db.appSettingsDao.setSetting(
-      'last_nav_sync_time',
-      now.toIso8601String(),
-    );
+    if (successCount > 0 || failedCount == 0) {
+      await _mutualFundDao.db.appSettingsDao.setSetting(
+        'last_nav_sync_time',
+        now.toIso8601String(),
+      );
+    }
 
     return PortfolioSyncSummary(
       totalSchemes: distinctCodes.length,
@@ -490,6 +503,7 @@ class NavSyncService {
       results: results,
       syncTime: now,
       primaryProvider: primaryProvider,
+      offline: offline,
     );
   }
 }

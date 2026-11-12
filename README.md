@@ -2,12 +2,12 @@
 
 > **FinBalance** is an offline-first, multi-profile personal finance and net worth management application for Android and Web, built with Flutter and SQLite (Drift).
 
-### Current Release Focus (0.23.0)
+### Current Release Focus (0.24.0)
 
-- Backup & Restore: export all data to a JSON file and restore it (Settings), validated before anything is replaced.
-- Mutual funds are filed under "Mutual Funds & SIPs" (CAS import, add-investment and SIP installments used to file them under Bonds) and SIPs count in cash flow.
-- Both flags (Indian and Karnataka) wave next to the app name; the Assets + button appears only where an add flow exists.
-- Release builds use one fixed signing key so updates install over the existing app from any build machine; testers can update from inside the app.
+- NAV auto-refresh runs app-wide (on open, on resume, at the next due time) and handles being offline; Settings shows why a refresh failed.
+- CAS import also reads holdings-only "Consolidated Account Summary" files and lets you pick the profile to import into.
+- The profile menu lists up to 3 profiles to switch to, plus "Show more" to the home screen (it also works from Settings opened on the start page).
+- Backup & Restore, fixed release signing and in-app updates from earlier releases remain.
 
 ---
 
@@ -78,7 +78,7 @@ lib/
 │   └── widgets/                  # FinCard, StatCard, StatusBadge, SectionHeader, EmptyStateView, FinBalanceLogo, IndianFlag, WavingFlag
 ├── data/
 │   ├── backup/                   # BackupService: JSON export / validated restore of all tables
-│   ├── cas/                      # CAS PDF import: pdf text, parser, ISIN lookup, import service
+│   ├── cas/                      # CAS PDF import (statement + summary): pdf text, parser, ISIN lookup, import service
 │   ├── update/                   # UpdateService: GitHub Releases check, APK download and install
 │   └── nav/                      # NAV provider layer (MFapi, TIGZIG, AMFI) & sync coordinator
 │       ├── models/               # MutualFundSearchResult, NavRecord, MutualFundSchemeDetail
@@ -225,6 +225,7 @@ make clean
 - [x] **Branding, Family Overview & NAV Timing ([0.22.0]):** Added the Indian flag beside the FinBalance name, retained the Karnataka flag, reordered the family overview metrics, applied red liability styling, and moved daily NAV eligibility to 3:00 AM local time while preserving launch, weekly, and manual sync behavior.
 - [x] **Stable Release Signing ([0.22.1]):** releases signed with one key so updates install over the existing app on any build machine.
 - [x] **Backup/Restore & Fixes ([0.23.0]):** JSON export/import of all data, waving Indian flag, mutual funds filed under the right category, SIPs counted in cash flow, context-aware + button.
+- [x] **NAV Auto-Refresh, CAS Summary & Profile Menu ([0.24.0]):** refresh on open/resume/due time with offline retry, holdings-only CAS summaries, profile choice for CAS import, in-menu profile switching.
 - [ ] **Milestone 5 — Transaction & Valuation Engine:** Simulated installments, lump-sum purchases, redemptions, unit calculations.
 - [ ] **Milestone 6 — Dashboard & Overview:** Real-time net worth calculation, active SIPs, upcoming EMIs.
 - [ ] **Milestone 7 — Financial Analytics:** Dated-cashflow XIRR (Newton-Raphson), asset allocation, historical charts.
@@ -237,7 +238,7 @@ make clean
 
 - **Built by:** Amruth L P
 - **Developer Portfolio:** [https://amruthlp.vercel.app](https://amruthlp.vercel.app)
-- **Application Version:** `v0.23.0` (read from the installed app in Settings > About)
+- **Application Version:** `v0.24.0` (read from the installed app in Settings > About)
 - **Support & Inquiries:** Accessible in-app under `Settings` $\rightarrow$ `Support` (`Contact details will be provided here.`).
 - **In-App Privacy Policy:** Open `Settings` $\rightarrow$ `Support` $\rightarrow$ `Privacy Policy`.
 - **Privacy Policy Markdown File:** Located in the repository at [`docs/privacy-policy.md`](docs/privacy-policy.md).

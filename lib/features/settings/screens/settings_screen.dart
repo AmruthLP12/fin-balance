@@ -4,6 +4,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import '../../../data/backup/backup_service.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import '../../../core/providers/nav_auto_refresh.dart';
 import '../widgets/update_dialog.dart';
 import '../../../core/widgets/open_link.dart';
 import '../widgets/support_developer_card.dart';
@@ -299,7 +300,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       title: const Text('Sync Schedule Status',
                           style: AppTypography.titleMedium),
                       subtitle: Text(
-                        'Last sync: $lastSyncStr\nNext eligible: $nextEligibleStr',
+                        'Last sync: $lastSyncStr\nNext eligible: $nextEligibleStr'
+                        '${ref.watch(navAutoRefreshStatusProvider) != null ? '\n${ref.watch(navAutoRefreshStatusProvider)}' : ''}',
                         style: AppTypography.labelSmall.copyWith(
                           color: isDark
                               ? AppColors.darkTextSecondary

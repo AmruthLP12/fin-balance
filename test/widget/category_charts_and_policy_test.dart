@@ -149,6 +149,11 @@ void main() {
       await tester.binding.setSurfaceSize(const Size(500, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
+      // The default profile plus three more: the menu lists 3, "Show more" has 1.
+      for (final n in ['Asha', 'Ravi', 'Meena']) {
+        await db.profilesDao.createProfile(FinancialProfilesCompanion(
+            name: drift.Value(n), relationship: const drift.Value('Family')));
+      }
       final container = ProviderContainer(
         overrides: [
           databaseProvider.overrideWithValue(db),
@@ -173,7 +178,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Popover menu items must appear
-      expect(find.text('Switch Profile'), findsOneWidget);
+      expect(find.text('Show more (1)'), findsOneWidget);
       expect(find.text('Manage Profiles'), findsOneWidget);
       expect(find.text('Add Family Member'), findsOneWidget);
 
@@ -182,13 +187,13 @@ void main() {
       await tester.pumpAndSettle();
 
       // Popover dismissed, still on dashboard
-      expect(find.text('Switch Profile'), findsNothing);
+      expect(find.text('Show more (1)'), findsNothing);
       expect(container.read(hasSelectedInitialProfileProvider), isTrue);
 
-      // Tap menu again and select 'Switch Profile'
+      // Tap menu again and select 'Show more'
       await tester.tap(menuButton.first);
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Switch Profile'));
+      await tester.tap(find.text('Show more (1)'));
       await tester.pumpAndSettle();
 
       // Returned to family selection screen

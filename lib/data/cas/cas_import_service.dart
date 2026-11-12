@@ -115,6 +115,12 @@ class CasImportService {
       // Rows to write: opening lots first, then dated transactions.
       final rows = <_Row>[];
       for (final f in entry.value) {
+        // A holdings-only summary has no dates to dedupe on, so it is only
+        // imported into a holding that has no transactions yet.
+        if (f.summaryOnly && existing.isNotEmpty) {
+          result.duplicates++;
+          continue;
+        }
         if (f.opening > 0 && !hadEarlierHistory) {
           final cost = f.openingCost;
           rows.add(_Row(

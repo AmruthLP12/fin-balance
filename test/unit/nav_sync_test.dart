@@ -290,5 +290,41 @@ void main() {
       expect(res.success, isFalse);
       expect(res.errorMessage, isNotNull);
     });
+
+    test('Offline portfolio sync gives up after two failures and says so',
+        () async {
+      var requests = 0;
+      mockDio.interceptors.add(
+        InterceptorsWrapper(
+          onRequest: (options, handler) {
+            requests++;
+            return handler.reject(DioException(
+              requestOptions: options,
+              type: DioExceptionType.connectionError,
+            ));
+          },
+        ),
+      );
+      for (var code = 1; code <= 5; code++) {
+        await db.mutualFundDao.upsertScheme(MutualFundSchemesCompanion(
+          schemeCode: drift.Value(code),
+          schemeName: drift.Value('Scheme $code'),
+          isFavorite: const drift.Value(true),
+        ));
+      }
+      final syncService = NavSyncService(
+        mutualFundDao: db.mutualFundDao,
+        financialItemsDao: db.financialItemsDao,
+        providers: [MFapiProvider(dio: mockDio)],
+      );
+
+      final summary = await syncService.syncAllPortfolioSchemes(force: true);
+      expect(summary.offline, isTrue);
+      expect(summary.successCount, 0);
+      expect(summary.failedCount, 5);
+      expect(requests, 2);
+      // Nothing synced, so the "last sync" marker is not advanced.
+      expect(await db.appSettingsDao.getSetting('last_nav_sync_time'), isNull);
+    });
   });
 }
