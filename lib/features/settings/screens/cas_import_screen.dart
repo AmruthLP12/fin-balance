@@ -135,11 +135,15 @@ class _CasImportScreenState extends ConsumerState<CasImportScreen> {
   bool _ok(CasFolio f) => f.reconciles && _schemes.containsKey(f.isin);
 
   Future<void> _import() async {
+    final folios = _folios!;
+    if (folios.any((f) => f.summaryOnly) && !await _confirmSummaryImport()) {
+      return;
+    }
     setState(() => _busy = true);
     try {
       final r = await CasImportService(ref.read(databaseProvider)).importFolios(
         profileId: _profileId ?? ref.read(activeProfileIdProvider),
-        folios: _folios!.where(_ok).toList(),
+        folios: folios.where(_ok).toList(),
         schemes: _schemes,
         periodStart: _periodStart!,
       );
@@ -154,6 +158,32 @@ class _CasImportScreenState extends ConsumerState<CasImportScreen> {
     } finally {
       if (mounted) setState(() => _busy = false);
     }
+  }
+
+  Future<bool> _confirmSummaryImport() async {
+    return await showDialog<bool>(
+          context: context,
+          builder: (_) => AlertDialog(
+            title: const Text('Import Consolidated Account Summary?'),
+            content: const Text(
+              'This file contains current holdings only, not transaction '
+              'history. Each investment will be added as one opening entry '
+              'dated on the statement date. Past purchases and redemptions '
+              'will not be imported.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Import'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
   }
 
   @override

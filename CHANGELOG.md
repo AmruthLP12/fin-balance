@@ -5,6 +5,17 @@ All notable changes to the FinBalance application will be documented in this fil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.25.1] - 2026-11-13
+
+### Changed
+
+- CAS imports now ask for confirmation before importing a holdings-only Consolidated Account Summary, which is recorded as one opening entry per investment without transaction history.
+- Synchronized the application version across the package metadata, Settings > About, README, and changelog.
+
+### Testing
+
+- Verified the changed Flutter screen with `flutter analyze`.
+
 ## [0.25.0] - 2026-11-13
 
 ### Added
