@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/constants/asset_categories.dart';
+import '../../../core/formatting/currency_formatter.dart';
 import '../../../core/providers/database_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
@@ -7,64 +9,18 @@ import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/fin_card.dart';
 import '../../../core/widgets/finbalance_logo.dart';
 import '../../../core/widgets/section_header.dart';
-import '../../../core/widgets/status_badge.dart';
+import '../../../database/app_database.dart';
 import '../../profile/widgets/profile_menu_button.dart';
+import '../widgets/add_liability_dialog.dart';
 
-/// Liabilities screen presenting the planned liability and debt tracking capabilities
-/// for a future milestone (home loans, personal loans, vehicle loans, education loans,
-/// credit card dues, and other liabilities).
 class LiabilitiesScreen extends ConsumerWidget {
   const LiabilitiesScreen({super.key});
-
-  static const List<PlannedCategory> _plannedCategories = [
-    PlannedCategory(
-      title: 'Home Loans',
-      description:
-          'Mortgage tracking, principal/interest split, and EMI amortization schedules.',
-      icon: Icons.home_rounded,
-      color: Color(0xFF3B82F6),
-    ),
-    PlannedCategory(
-      title: 'Personal Loans',
-      description:
-          'Fixed-term unsecured bank loans, tenure tracking, and repayment progress.',
-      icon: Icons.person_rounded,
-      color: Color(0xFF8B5CF6),
-    ),
-    PlannedCategory(
-      title: 'Vehicle Loans',
-      description:
-          'Car and two-wheeler financing, hypothecation tracking, and EMI alerts.',
-      icon: Icons.directions_car_rounded,
-      color: Color(0xFF06B6D4),
-    ),
-    PlannedCategory(
-      title: 'Education Loans',
-      description:
-          'Student loans, moratorium periods, and Section 80E interest deduction tracking.',
-      icon: Icons.school_rounded,
-      color: Color(0xFFF59E0B),
-    ),
-    PlannedCategory(
-      title: 'Credit Card Dues',
-      description:
-          'Statement cycles, total dues vs minimum payment, and billing cycle management.',
-      icon: Icons.credit_card_rounded,
-      color: Color(0xFFEC4899),
-    ),
-    PlannedCategory(
-      title: 'Other Liabilities',
-      description:
-          'Peer borrowings, informal family debts, and miscellaneous payment obligations.',
-      icon: Icons.account_balance_wallet_outlined,
-      color: Color(0xFF64748B),
-    ),
-  ];
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final liabilities = ref.watch(activeProfileLiabilitiesProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -73,10 +29,9 @@ class LiabilitiesScreen extends ConsumerWidget {
           message: 'Switch Family Profile',
           child: InkWell(
             borderRadius: BorderRadius.circular(8),
-            onTap: () {
-              ref.read(hasSelectedInitialProfileProvider.notifier).state =
-                  false;
-            },
+            onTap: () => ref
+                .read(hasSelectedInitialProfileProvider.notifier)
+                .state = false,
             child: const Padding(
               padding: EdgeInsets.symmetric(horizontal: 4, vertical: 4),
               child:
@@ -84,170 +39,157 @@ class LiabilitiesScreen extends ConsumerWidget {
             ),
           ),
         ),
-        actions: const [
-          ProfileMenuButton(radius: 16),
-          SizedBox(width: AppSpacing.xs),
-        ],
+        actions: const [ProfileMenuButton(radius: 16), SizedBox(width: 8)],
       ),
-      body: ListView(
-        padding: AppSpacing.screenPadding,
-        children: [
-          // Milestone Status Banner
-          FinCard(
-            backgroundColor:
-                isDark ? AppColors.darkSurfaceElevated : AppColors.lightSurface,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      body: liabilities.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, _) =>
+            Center(child: Text('Unable to load loans: $error')),
+        data: (items) => ListView(
+          padding: AppSpacing.screenPadding,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(AppSpacing.sm),
-                      decoration: BoxDecoration(
-                        color: AppColors.liability.withValues(alpha: 0.12),
-                        borderRadius:
-                            BorderRadius.circular(AppSpacing.radiusSm),
-                      ),
-                      child: const Icon(
-                        Icons.account_balance_rounded,
-                        color: AppColors.liability,
-                        size: 24,
-                      ),
-                    ),
-                    const StatusBadge(
-                      label: 'Coming in Future Milestone',
-                      type: BadgeType.scheduled,
-                      icon: Icons.upcoming_rounded,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.md),
-                Text(
-                  'Liabilities & Debt Tracking',
-                  style: AppTypography.titleLarge.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.xs),
-                Text(
-                  'Full debt tracking, amortization schedules, and liability management will be introduced in an upcoming milestone. FinBalance Milestone 3 is focused exclusively on Mutual Fund Schemes, NAV Integration, and SIP Investment Schedules.',
-                  style: AppTypography.bodyMedium.copyWith(
-                    color: isDark
-                        ? AppColors.darkTextSecondary
-                        : AppColors.lightTextSecondary,
-                    height: 1.4,
+                Text('Loans & Borrowings',
+                    style: AppTypography.headlineMedium
+                        .copyWith(fontWeight: FontWeight.bold)),
+                FilledButton.icon(
+                  onPressed: () => AddLiabilityDialog.show(context),
+                  icon: const Icon(Icons.add, size: 18),
+                  label: const Text('Add Loan'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.liability,
+                    visualDensity: VisualDensity.compact,
                   ),
                 ),
               ],
             ),
-          ),
-          const SizedBox(height: AppSpacing.lg),
-
-          // Planned Categories Section
-          const SectionHeader(
-            title: 'Planned Categories',
-          ),
-          const SizedBox(height: AppSpacing.sm),
-
-          ..._plannedCategories.map(
-            (cat) => Padding(
-              padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-              child: FinCard(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+            const SizedBox(height: AppSpacing.md),
+            _SummaryCard(items: items, isDark: isDark),
+            const SizedBox(height: AppSpacing.lg),
+            const SectionHeader(title: 'Active Loans'),
+            const SizedBox(height: AppSpacing.sm),
+            if (items.isEmpty)
+              const FinCard(
+                child: Column(
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: cat.color.withValues(alpha: 0.12),
-                        borderRadius:
-                            BorderRadius.circular(AppSpacing.radiusSm),
-                      ),
-                      child: Icon(cat.icon, color: cat.color, size: 22),
-                    ),
-                    const SizedBox(width: AppSpacing.md),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            cat.title,
-                            style: AppTypography.titleMedium.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            cat.description,
-                            style: AppTypography.bodySmall.copyWith(
-                              color: isDark
-                                  ? AppColors.darkTextSecondary
-                                  : AppColors.lightTextSecondary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                    Icon(Icons.account_balance_rounded,
+                        size: 42, color: AppColors.liability),
+                    SizedBox(height: AppSpacing.sm),
+                    Text('No loans added yet'),
+                    SizedBox(height: 4),
+                    Text('Add a loan to include it in your net worth.'),
                   ],
                 ),
-              ),
-            ),
-          ),
-          const SizedBox(height: AppSpacing.sm),
+              )
+            else
+              ...items.map((item) => _LoanCard(item: item)),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
-          // Scope Control Note Card
+class _SummaryCard extends StatelessWidget {
+  final List<FinancialItem> items;
+  final bool isDark;
+
+  const _SummaryCard({required this.items, required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    final total =
+        items.fold<int>(0, (sum, item) => sum + item.currentValuationPaise);
+    return FinCard(
+      backgroundColor:
+          isDark ? AppColors.darkSurfaceElevated : AppColors.lightSurface,
+      child: Row(
+        children: [
           Container(
-            padding: const EdgeInsets.all(AppSpacing.md),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: isDark
-                  ? AppColors.darkSurfaceElevated.withValues(alpha: 0.5)
-                  : AppColors.lightSurfaceElevated,
-              borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-              border: Border.all(
-                color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
-              ),
+              color: AppColors.liability.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
             ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Icon(
-                  Icons.info_outline_rounded,
-                  size: 20,
-                  color: AppColors.brandPrimaryLight,
-                ),
-                const SizedBox(width: AppSpacing.sm),
-                Expanded(
-                  child: Text(
-                    'Net worth calculations in the current milestone reflect your verified assets exclusively without speculative debt figures.',
-                    style: AppTypography.labelSmall.copyWith(
+            child: const Icon(Icons.account_balance_rounded,
+                color: AppColors.liability),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Total outstanding',
+                  style: AppTypography.bodySmall.copyWith(
                       color: isDark
                           ? AppColors.darkTextSecondary
-                          : AppColors.lightTextSecondary,
-                      height: 1.35,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+                          : AppColors.lightTextSecondary)),
+              const SizedBox(height: 2),
+              Text(CurrencyFormatter.formatPaise(total),
+                  style: AppTypography.titleLarge
+                      .copyWith(fontWeight: FontWeight.bold)),
+            ],
           ),
-          const SizedBox(height: AppSpacing.xxl),
         ],
       ),
     );
   }
 }
 
-class PlannedCategory {
-  final String title;
-  final String description;
-  final IconData icon;
-  final Color color;
+class _LoanCard extends StatelessWidget {
+  final FinancialItem item;
 
-  const PlannedCategory({
-    required this.title,
-    required this.description,
-    required this.icon,
-    required this.color,
-  });
+  const _LoanCard({required this.item});
+
+  @override
+  Widget build(BuildContext context) {
+    final lender = item.lenderName;
+    final tenure = [
+      if ((item.tenureYears ?? 0) > 0) '${item.tenureYears} yrs',
+      if ((item.tenureMonths ?? 0) > 0) '${item.tenureMonths} mths',
+      if ((item.tenureDays ?? 0) > 0) '${item.tenureDays} days',
+    ].join(' ');
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: FinCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.account_balance_wallet_rounded,
+                    color: AppColors.liability),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: Text(item.name,
+                      style: AppTypography.titleMedium
+                          .copyWith(fontWeight: FontWeight.bold)),
+                ),
+                Text(CurrencyFormatter.formatPaise(item.currentValuationPaise),
+                    style: AppTypography.titleMedium.copyWith(
+                        color: AppColors.liability,
+                        fontWeight: FontWeight.bold)),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Wrap(
+              spacing: AppSpacing.md,
+              runSpacing: AppSpacing.xs,
+              children: [
+                Text(categoryLabel(item.subType)),
+                if (lender != null && lender.isNotEmpty) Text(lender),
+                if (item.interestRateBasisPoints != null)
+                  Text(
+                      '${(item.interestRateBasisPoints! / 100).toStringAsFixed(2)}% ${item.interestRateType ?? ''}'),
+                if (item.emiPaise != null)
+                  Text('EMI ${CurrencyFormatter.formatPaise(item.emiPaise!)}'),
+                if (tenure.isNotEmpty) Text(tenure),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

@@ -8,6 +8,7 @@ import '../../activity/screens/activity_screen.dart';
 import '../../assets/screens/assets_screen.dart';
 import '../../assets/screens/mutual_fund_search_screen.dart';
 import '../../liabilities/screens/liabilities_screen.dart';
+import '../../liabilities/widgets/add_liability_dialog.dart';
 import '../../overview/screens/overview_screen.dart';
 import '../../profile/widgets/profile_menu_button.dart';
 import '../../settings/screens/settings_screen.dart';
@@ -220,10 +221,17 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
 
   /// Compact circular context-aware Floating Action Button
   Widget? _buildContextualFab(BuildContext context, bool isDark) {
-    // Milestone Scope Control:
-    // Floating action button is enabled only for investment workflows (Overview & Assets).
-    // Suppressed on Liabilities (index 2), Activity (index 3), and Settings (index 4).
-    if (_currentIndex > 1) return null;
+    if (_currentIndex > 2) return null;
+    if (_currentIndex == 2) {
+      return FloatingActionButton(
+        shape: const CircleBorder(),
+        backgroundColor: AppColors.liability,
+        foregroundColor: Colors.white,
+        tooltip: 'Add Loan',
+        onPressed: () => AddLiabilityDialog.show(context),
+        child: const Icon(Icons.add_rounded, size: 28),
+      );
+    }
     // Only mutual funds can be added so far; other categories have no add flow.
     if (_currentIndex == 1) {
       final tab = ref.watch(assetsActiveCategoryProvider);

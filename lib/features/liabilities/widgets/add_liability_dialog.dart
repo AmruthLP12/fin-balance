@@ -37,9 +37,15 @@ class _AddLiabilityDialogState extends ConsumerState<AddLiabilityDialog> {
   late TextEditingController _outstandingController;
   late TextEditingController _principalController;
   late TextEditingController _interestRateController;
+  late TextEditingController _lenderController;
+  late TextEditingController _emiController;
+  late TextEditingController _yearsController;
+  late TextEditingController _monthsController;
+  late TextEditingController _daysController;
   late TextEditingController _notesController;
 
   String _subType = 'home_loan';
+  String _interestRateType = 'Floating';
   late DateTime _startDate;
   int? _selectedProfileId;
   bool _isSaving = false;
@@ -51,6 +57,11 @@ class _AddLiabilityDialogState extends ConsumerState<AddLiabilityDialog> {
     _outstandingController = TextEditingController();
     _principalController = TextEditingController();
     _interestRateController = TextEditingController(text: '8.5');
+    _lenderController = TextEditingController();
+    _emiController = TextEditingController();
+    _yearsController = TextEditingController(text: '0');
+    _monthsController = TextEditingController(text: '0');
+    _daysController = TextEditingController(text: '0');
     _notesController = TextEditingController();
 
     final now = DateTime.now();
@@ -64,6 +75,11 @@ class _AddLiabilityDialogState extends ConsumerState<AddLiabilityDialog> {
     _outstandingController.dispose();
     _principalController.dispose();
     _interestRateController.dispose();
+    _lenderController.dispose();
+    _emiController.dispose();
+    _yearsController.dispose();
+    _monthsController.dispose();
+    _daysController.dispose();
     _notesController.dispose();
     super.dispose();
   }
@@ -175,7 +191,23 @@ class _AddLiabilityDialogState extends ConsumerState<AddLiabilityDialog> {
                   ),
                   const SizedBox(height: AppSpacing.md),
 
-                  // 3. Owning Profile
+                  Text(
+                    'Bank / Institution Name',
+                    style: AppTypography.labelMedium.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  TextFormField(
+                    controller: _lenderController,
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                      hintText: 'e.g. HDFC Bank, SBI, Bajaj Finance',
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+
+                  // 4. Owning Profile
                   Text(
                     'Owning Profile',
                     style: AppTypography.labelMedium.copyWith(
@@ -210,7 +242,7 @@ class _AddLiabilityDialogState extends ConsumerState<AddLiabilityDialog> {
                   ),
                   const SizedBox(height: AppSpacing.md),
 
-                  // 3. Outstanding Balance
+                  // 5. Outstanding Balance
                   Text(
                     'Current Outstanding Balance (INR)',
                     style: AppTypography.labelMedium.copyWith(
@@ -242,7 +274,7 @@ class _AddLiabilityDialogState extends ConsumerState<AddLiabilityDialog> {
                   ),
                   const SizedBox(height: AppSpacing.md),
 
-                  // 4. Principal Amount & Interest Rate
+                  // 6. Principal Amount & Interest Rate
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -301,7 +333,63 @@ class _AddLiabilityDialogState extends ConsumerState<AddLiabilityDialog> {
                   ),
                   const SizedBox(height: AppSpacing.md),
 
-                  // 5. Start Date
+                  Text(
+                    'EMI Amount (₹)',
+                    style: AppTypography.labelMedium.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  TextFormField(
+                    controller: _emiController,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    decoration: const InputDecoration(
+                      prefixText: '₹ ',
+                      border: OutlineInputBorder(),
+                      hintText: 'Optional',
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+
+                  Text(
+                    'Tenure',
+                    style: AppTypography.labelMedium.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Row(
+                    children: [
+                      _tenureField(_yearsController, 'Yrs'),
+                      const SizedBox(width: AppSpacing.sm),
+                      _tenureField(_monthsController, 'Mths'),
+                      const SizedBox(width: AppSpacing.sm),
+                      _tenureField(_daysController, 'Days'),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+
+                  DropdownButtonFormField<String>(
+                    initialValue: _interestRateType,
+                    decoration: const InputDecoration(
+                      labelText: 'Interest Rate Type',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: const [
+                      DropdownMenuItem(
+                          value: 'Floating', child: Text('Floating')),
+                      DropdownMenuItem(value: 'Fixed', child: Text('Fixed')),
+                    ],
+                    onChanged: (value) {
+                      if (value != null) {
+                        setState(() => _interestRateType = value);
+                      }
+                    },
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+
+                  // 7. Start Date
                   Text(
                     'Origination / Start Date',
                     style: AppTypography.labelMedium.copyWith(
@@ -366,6 +454,19 @@ class _AddLiabilityDialogState extends ConsumerState<AddLiabilityDialog> {
     );
   }
 
+  Widget _tenureField(TextEditingController controller, String label) {
+    return Expanded(
+      child: TextFormField(
+        controller: controller,
+        keyboardType: TextInputType.number,
+        decoration: InputDecoration(
+          labelText: label,
+          border: const OutlineInputBorder(),
+        ),
+      ),
+    );
+  }
+
   Future<void> _saveLiability() async {
     if (!_formKey.currentState!.validate()) return;
     final profileId = _selectedProfileId;
@@ -383,6 +484,9 @@ class _AddLiabilityDialogState extends ConsumerState<AddLiabilityDialog> {
 
     final ratePct = double.tryParse(_interestRateController.text.trim()) ?? 0.0;
     final rateBps = (ratePct * 100).round();
+    final emiRupees = double.tryParse(_emiController.text.trim());
+    final lender = _lenderController.text.trim();
+    int parseTenure(String value) => int.tryParse(value.trim()) ?? 0;
 
     final notes = _notesController.text.trim();
 
@@ -404,6 +508,16 @@ class _AddLiabilityDialogState extends ConsumerState<AddLiabilityDialog> {
           initialValuePaise: drift.Value(principalPaise),
           currentValuationPaise: drift.Value(outstandingPaise),
           interestRateBasisPoints: drift.Value(rateBps),
+          lenderName: lender.isNotEmpty
+              ? drift.Value(lender)
+              : const drift.Value.absent(),
+          emiPaise: emiRupees == null
+              ? const drift.Value.absent()
+              : drift.Value(FinancialPrecision.rupeesToPaise(emiRupees)),
+          tenureYears: drift.Value(parseTenure(_yearsController.text)),
+          tenureMonths: drift.Value(parseTenure(_monthsController.text)),
+          tenureDays: drift.Value(parseTenure(_daysController.text)),
+          interestRateType: drift.Value(_interestRateType),
           startDate: drift.Value(_startDate),
           notes: notes.isNotEmpty
               ? drift.Value(notes)

@@ -5,6 +5,23 @@ All notable changes to the FinBalance application will be documented in this fil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.25.0] - 2026-11-13
+
+### Added
+
+- **Loan liability tracking:** Add and manage active loans from the Liabilities tab or the context-aware add button.
+- **Loan details:** Record the loan name, loan type, bank or finance institution, outstanding balance, sanctioned amount, start date, interest rate, interest rate type, EMI, tenure, and notes.
+- **Liability summary:** View total outstanding debt and a list of active loans with lender, interest, EMI, and tenure details.
+
+### Changed
+
+- Enabled liability persistence in the Drift database with schema version 6 and a safe migration for existing installations.
+- Replaced the Liabilities milestone placeholder with the working loan list and add-loan workflow while preserving the existing application styling.
+
+### Testing
+
+- Regenerated Drift database code and verified the affected Flutter files with `flutter analyze`.
+
 ## [0.24.0] - 2026-11-12
 
 ### Fixed

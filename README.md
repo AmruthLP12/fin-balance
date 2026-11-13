@@ -2,8 +2,10 @@
 
 > **FinBalance** is an offline-first, multi-profile personal finance and net worth management application for Android and Web, built with Flutter and SQLite (Drift).
 
-### Current Release Focus (0.24.0)
+### Current Release Focus (0.25.0)
 
+- Loan liability tracking with lender, loan type, outstanding balance, sanctioned amount, EMI, tenure, interest rate, start date, and notes.
+- Active loan list with total outstanding debt and key repayment details.
 - NAV auto-refresh runs app-wide (on open, on resume, at the next due time) and handles being offline; Settings shows why a refresh failed.
 - CAS import also reads holdings-only "Consolidated Account Summary" files and lets you pick the profile to import into.
 - The profile menu lists up to 3 profiles to switch to, plus "Show more" to the home screen (it also works from Settings opened on the start page).
@@ -88,7 +90,7 @@ lib/
 │       ├── amfi_provider.dart    # Tertiary AMFI text parser fallback
 │       └── nav_sync_service.dart # Failover, caching, and valuation propagation orchestrator
 ├── database/
-│   ├── app_database.dart         # Drift AppDatabase with schema version 5 & safe migrations
+│   ├── app_database.dart         # Drift AppDatabase with schema version 6 & safe migrations
 │   ├── connection/               # Multi-platform Drift connection (Native SQLite & Web WASM)
 │   ├── precision/                # FinancialPrecision (Paise, micro-units, micro-paise)
 │   ├── tables/                   # Drift table definitions (17 normalized tables incl. SIP & SWP plans/periods/installments)
@@ -181,7 +183,7 @@ make clean
   - Atomic cascade deletion for SIP investment schedules (`deleteSip` in `SipsDao`) inside Drift transactions: cleans up master plans, schedule periods, installments (recorded, upcoming, simulated, pending valuation), and linked ledger transactions.
   - Holding recalculation & cleanup: automatically updates or deletes the holding (`FinancialItems`) without leaving orphaned records, while strictly preserving shared master schemes (`MutualFundSchemes`) and historical NAV records (`NavHistory`).
   - Granular installment actions: individual installment deletion with transaction cleanup, status skipping, and future installment cancellation without affecting past recorded investments.
-  - Milestone scope control: restricted liabilities tracking to a polished future milestone preview (Home loans, Personal loans, Vehicle loans, Education loans, Credit card dues, Other liabilities) with zero fake records and liabilities excluded from net worth.
+  - Enabled loan liability tracking with a polished add-loan workflow, active loan list, total outstanding summary, and profile-scoped persistence for home, car, business, loan-against-property, term, education, and other loans.
   - Transaction scope control: restricted transaction creation strictly to investment workflows (SIPs), removing manual entry dialogs and quick action buttons.
   - Local theme persistence: integrated `ThemeModeNotifier` backed by `AppSettingsDao` for persistent System, Light, and Dark mode preferences across application launches.
 - [x] **Profile Overview, Dashboard Redesign, Navigation & SIP Cash Flow Fixes:**
@@ -226,6 +228,7 @@ make clean
 - [x] **Stable Release Signing ([0.22.1]):** releases signed with one key so updates install over the existing app on any build machine.
 - [x] **Backup/Restore & Fixes ([0.23.0]):** JSON export/import of all data, waving Indian flag, mutual funds filed under the right category, SIPs counted in cash flow, context-aware + button.
 - [x] **NAV Auto-Refresh, CAS Summary & Profile Menu ([0.24.0]):** refresh on open/resume/due time with offline retry, holdings-only CAS summaries, profile choice for CAS import, in-menu profile switching.
+- [x] **Loan Liability Tracking ([0.25.0]):** added profile-scoped loan entry and persistence with lender, loan type, outstanding balance, sanctioned amount, EMI, tenure, interest rate, start date, notes, active-loan summaries, and a working Liabilities add flow.
 - [ ] **Milestone 5 — Transaction & Valuation Engine:** Simulated installments, lump-sum purchases, redemptions, unit calculations.
 - [ ] **Milestone 6 — Dashboard & Overview:** Real-time net worth calculation, active SIPs, upcoming EMIs.
 - [ ] **Milestone 7 — Financial Analytics:** Dated-cashflow XIRR (Newton-Raphson), asset allocation, historical charts.
@@ -238,7 +241,7 @@ make clean
 
 - **Built by:** Amruth L P
 - **Developer Portfolio:** [https://amruthlp.vercel.app](https://amruthlp.vercel.app)
-- **Application Version:** `v0.24.0` (read from the installed app in Settings > About)
+- **Application Version:** `v0.25.0` (read from the installed app in Settings > About)
 - **Support & Inquiries:** Accessible in-app under `Settings` $\rightarrow$ `Support` (`Contact details will be provided here.`).
 - **In-App Privacy Policy:** Open `Settings` $\rightarrow$ `Support` $\rightarrow$ `Privacy Policy`.
 - **Privacy Policy Markdown File:** Located in the repository at [`docs/privacy-policy.md`](docs/privacy-policy.md).

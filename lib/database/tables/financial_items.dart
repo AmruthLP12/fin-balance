@@ -49,6 +49,14 @@ class FinancialItems extends Table {
   /// Annual interest rate in basis points (e.g. 850 = 8.50% p.a., 710 = 7.10% for PPF)
   IntColumn get interestRateBasisPoints => integer().nullable()();
 
+  /// Liability-specific repayment details.
+  TextColumn get lenderName => text().nullable()();
+  IntColumn get emiPaise => integer().nullable()();
+  IntColumn get tenureYears => integer().nullable()();
+  IntColumn get tenureMonths => integer().nullable()();
+  IntColumn get tenureDays => integer().nullable()();
+  TextColumn get interestRateType => text().nullable()();
+
   DateTimeColumn get startDate => dateTime().nullable()();
   DateTimeColumn get maturityDate => dateTime().nullable()();
   TextColumn get notes => text().nullable()();
