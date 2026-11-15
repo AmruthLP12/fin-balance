@@ -172,6 +172,54 @@ class TransactionsDao extends DatabaseAccessor<AppDatabase>
     return (delete(transactions)..where((tbl) => tbl.id.equals(id))).go();
   }
 
+  /// Records a dated loan repayment and reduces the linked loan balance.
+  Future<int> recordDebtRepayment({
+    required int profileId,
+    required int financialItemId,
+    required int categoryId,
+    required DateTime transactionDate,
+    required int amountPaise,
+    String? notes,
+  }) async {
+    if (amountPaise <= 0) {
+      throw ArgumentError('Repayment amount must be greater than zero.');
+    }
+
+    return transaction(() async {
+      final item = await db.financialItemsDao.getItemById(financialItemId);
+      if (item == null || item.profileId != profileId) {
+        throw ArgumentError('Loan does not belong to this profile.');
+      }
+      if (item.itemType != 'liability' || item.status != 'active') {
+        throw ArgumentError('Only an active loan can receive repayments.');
+      }
+
+      final outstanding = item.currentValuationPaise;
+      final updatedBalance =
+          (outstanding - amountPaise).clamp(0, outstanding).toInt();
+      final transactionId = await insertTransaction(
+        TransactionsCompanion(
+          profileId: Value(profileId),
+          financialItemId: Value(financialItemId),
+          transactionType: const Value('debt_repayment'),
+          categoryId: Value(categoryId),
+          transactionDate: Value(transactionDate),
+          amountPaise: Value(amountPaise),
+          netAmountPaise: Value(amountPaise),
+          source: const Value('manual'),
+          notes: notes == null || notes.trim().isEmpty
+              ? const Value.absent()
+              : Value(notes.trim()),
+        ),
+      );
+      await db.financialItemsDao.updateValuation(
+        id: financialItemId,
+        currentValuationPaise: updatedBalance,
+      );
+      return transactionId;
+    });
+  }
+
   /// Record an investment transaction with atomic unit, valuation, and cost basis updates.
   Future<int> recordInvestmentTransaction({
     required int profileId,

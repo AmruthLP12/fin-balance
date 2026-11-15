@@ -5,6 +5,18 @@ All notable changes to the FinBalance application will be documented in this fil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.25.2] - 2026-11-15
+
+### Fixed
+
+- Fixed home and profile liability summaries not updating because the home screen watched assets only.
+- Added loan editing, repayment recording with balance updates, monthly payment history, close, and delete actions.
+- Loan repayment transactions now use their recorded date for profile activity and monthly totals.
+
+### Testing
+
+- Verified with `flutter analyze` and targeted liability/database tests.
+
 ## [0.25.1] - 2026-11-13
 
 ### Changed

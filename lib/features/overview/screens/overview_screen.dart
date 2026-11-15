@@ -103,18 +103,18 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
 
     final activeProfileAsync = ref.watch(activeProfileProvider);
     final assetsAsync = ref.watch(activeProfileAssetsProvider);
+    final liabilitiesAsync = ref.watch(activeProfileLiabilitiesProvider);
     final transactionsAsync = ref.watch(activeProfileTransactionsProvider);
     final categoriesAsync = ref.watch(allCategoriesProvider);
 
     final profile = activeProfileAsync.value;
     final profileName = profile?.name ?? 'My Profile';
 
-    final items = assetsAsync.value ?? <FinancialItem>[];
-    final activeAssets = items
-        .where((a) => a.status == 'active' && a.itemType != 'liability')
+    final activeAssets = (assetsAsync.value ?? <FinancialItem>[])
+        .where((a) => a.status == 'active')
         .toList();
-    final activeLiabilities = items
-        .where((a) => a.status == 'active' && a.itemType == 'liability')
+    final activeLiabilities = (liabilitiesAsync.value ?? <FinancialItem>[])
+        .where((a) => a.status == 'active')
         .toList();
     final transactions = transactionsAsync.value ?? <Transaction>[];
     final categoriesList = categoriesAsync.value ?? <FinancialCategory>[];

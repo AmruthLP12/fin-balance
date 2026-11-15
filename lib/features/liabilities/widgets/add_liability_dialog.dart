@@ -13,15 +13,26 @@ import '../../../database/precision/financial_precision.dart';
 /// Full-screen mobile-optimized dialog for recording a new liability or debt commitment.
 class AddLiabilityDialog extends ConsumerStatefulWidget {
   final int? preselectedProfileId;
+  final FinancialItem? liability;
 
-  const AddLiabilityDialog({super.key, this.preselectedProfileId});
+  const AddLiabilityDialog({
+    super.key,
+    this.preselectedProfileId,
+    this.liability,
+  });
 
-  static Future<void> show(BuildContext context, {int? preselectedProfileId}) {
+  static Future<void> show(
+    BuildContext context, {
+    int? preselectedProfileId,
+    FinancialItem? liability,
+  }) {
     return Navigator.of(context).push<void>(
       MaterialPageRoute(
         fullscreenDialog: true,
-        builder: (_) =>
-            AddLiabilityDialog(preselectedProfileId: preselectedProfileId),
+        builder: (_) => AddLiabilityDialog(
+          preselectedProfileId: preselectedProfileId,
+          liability: liability,
+        ),
       ),
     );
   }
@@ -66,7 +77,28 @@ class _AddLiabilityDialogState extends ConsumerState<AddLiabilityDialog> {
 
     final now = DateTime.now();
     _startDate = DateTime(now.year, now.month, now.day);
-    _selectedProfileId = widget.preselectedProfileId;
+    final item = widget.liability;
+    _selectedProfileId = item?.profileId ?? widget.preselectedProfileId;
+    if (item != null) {
+      _nameController.text = item.name;
+      _outstandingController.text =
+          (item.currentValuationPaise / 100).toStringAsFixed(2);
+      _principalController.text =
+          (item.initialValuePaise / 100).toStringAsFixed(2);
+      _interestRateController.text =
+          ((item.interestRateBasisPoints ?? 0) / 100).toStringAsFixed(2);
+      _lenderController.text = item.lenderName ?? '';
+      _emiController.text = item.emiPaise == null
+          ? ''
+          : (item.emiPaise! / 100).toStringAsFixed(2);
+      _yearsController.text = '${item.tenureYears ?? 0}';
+      _monthsController.text = '${item.tenureMonths ?? 0}';
+      _daysController.text = '${item.tenureDays ?? 0}';
+      _notesController.text = item.notes ?? '';
+      _subType = item.subType;
+      _interestRateType = item.interestRateType ?? 'Floating';
+      _startDate = item.startDate ?? _startDate;
+    }
   }
 
   @override
@@ -100,7 +132,8 @@ class _AddLiabilityDialogState extends ConsumerState<AddLiabilityDialog> {
           tooltip: 'Close',
           onPressed: _isSaving ? null : () => Navigator.of(context).pop(),
         ),
-        title: const Text('Add Liability'),
+        title:
+            Text(widget.liability == null ? 'Add Liability' : 'Edit Liability'),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: AppSpacing.sm),
@@ -498,38 +531,56 @@ class _AddLiabilityDialogState extends ConsumerState<AddLiabilityDialog> {
           await db.categoriesDao.getCategoriesByClassification('liability');
       final categoryId = categories.isNotEmpty ? categories.first.id : 2;
 
-      await db.financialItemsDao.insertItem(
-        FinancialItemsCompanion(
-          profileId: drift.Value(profileId),
-          name: drift.Value(name),
-          itemType: const drift.Value('liability'),
-          subType: drift.Value(_subType),
-          categoryId: drift.Value(categoryId),
-          initialValuePaise: drift.Value(principalPaise),
-          currentValuationPaise: drift.Value(outstandingPaise),
-          interestRateBasisPoints: drift.Value(rateBps),
-          lenderName: lender.isNotEmpty
-              ? drift.Value(lender)
-              : const drift.Value.absent(),
-          emiPaise: emiRupees == null
-              ? const drift.Value.absent()
-              : drift.Value(FinancialPrecision.rupeesToPaise(emiRupees)),
-          tenureYears: drift.Value(parseTenure(_yearsController.text)),
-          tenureMonths: drift.Value(parseTenure(_monthsController.text)),
-          tenureDays: drift.Value(parseTenure(_daysController.text)),
-          interestRateType: drift.Value(_interestRateType),
-          startDate: drift.Value(_startDate),
-          notes: notes.isNotEmpty
-              ? drift.Value(notes)
-              : const drift.Value.absent(),
-        ),
+      final values = FinancialItemsCompanion(
+        profileId: drift.Value(profileId),
+        name: drift.Value(name),
+        itemType: const drift.Value('liability'),
+        subType: drift.Value(_subType),
+        categoryId: drift.Value(categoryId),
+        initialValuePaise: drift.Value(principalPaise),
+        currentValuationPaise: drift.Value(outstandingPaise),
+        interestRateBasisPoints: drift.Value(rateBps),
+        lenderName: drift.Value(lender.isNotEmpty ? lender : null),
+        emiPaise: drift.Value(emiRupees == null
+            ? null
+            : FinancialPrecision.rupeesToPaise(emiRupees)),
+        tenureYears: drift.Value(parseTenure(_yearsController.text)),
+        tenureMonths: drift.Value(parseTenure(_monthsController.text)),
+        tenureDays: drift.Value(parseTenure(_daysController.text)),
+        interestRateType: drift.Value(_interestRateType),
+        startDate: drift.Value(_startDate),
+        notes: drift.Value(notes.isNotEmpty ? notes : null),
       );
+      if (widget.liability == null) {
+        await db.financialItemsDao.insertItem(values);
+      } else {
+        await db.financialItemsDao.updateItem(
+          widget.liability!.copyWith(
+            profileId: values.profileId.value,
+            name: values.name.value,
+            subType: values.subType.value,
+            initialValuePaise: values.initialValuePaise.value,
+            currentValuationPaise: values.currentValuationPaise.value,
+            interestRateBasisPoints: values.interestRateBasisPoints,
+            lenderName: values.lenderName,
+            emiPaise: values.emiPaise,
+            tenureYears: values.tenureYears,
+            tenureMonths: values.tenureMonths,
+            tenureDays: values.tenureDays,
+            interestRateType: values.interestRateType,
+            startDate: values.startDate,
+            notes: values.notes,
+            updatedAt: DateTime.now().toUtc(),
+          ),
+        );
+      }
 
       if (mounted) {
         Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Added liability "$name" to profile balance sheet!'),
+            content: Text(
+                '${widget.liability == null ? 'Added' : 'Updated'} liability "$name".'),
             backgroundColor: AppColors.liability,
           ),
         );

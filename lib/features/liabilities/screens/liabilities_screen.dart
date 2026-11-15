@@ -10,6 +10,7 @@ import '../../../core/widgets/fin_card.dart';
 import '../../../core/widgets/finbalance_logo.dart';
 import '../../../core/widgets/section_header.dart';
 import '../../../database/app_database.dart';
+import '../../../database/precision/financial_precision.dart';
 import '../../profile/widgets/profile_menu_button.dart';
 import '../widgets/add_liability_dialog.dart';
 
@@ -137,14 +138,16 @@ class _SummaryCard extends StatelessWidget {
   }
 }
 
-class _LoanCard extends StatelessWidget {
+class _LoanCard extends ConsumerWidget {
   final FinancialItem item;
 
   const _LoanCard({required this.item});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final lender = item.lenderName;
+    final transactionsAsync = ref.watch(transactionsByItemProvider(
+        (profileId: item.profileId, itemId: item.id)));
     final tenure = [
       if ((item.tenureYears ?? 0) > 0) '${item.tenureYears} yrs',
       if ((item.tenureMonths ?? 0) > 0) '${item.tenureMonths} mths',
@@ -170,6 +173,17 @@ class _LoanCard extends StatelessWidget {
                     style: AppTypography.titleMedium.copyWith(
                         color: AppColors.liability,
                         fontWeight: FontWeight.bold)),
+                PopupMenuButton<String>(
+                  tooltip: 'Loan actions',
+                  onSelected: (action) => _handleAction(context, ref, action),
+                  itemBuilder: (_) => const [
+                    PopupMenuItem(value: 'edit', child: Text('Edit loan')),
+                    PopupMenuItem(
+                        value: 'repay', child: Text('Record repayment')),
+                    PopupMenuItem(value: 'close', child: Text('Close loan')),
+                    PopupMenuItem(value: 'delete', child: Text('Delete loan')),
+                  ],
+                ),
               ],
             ),
             const SizedBox(height: AppSpacing.sm),
@@ -187,9 +201,176 @@ class _LoanCard extends StatelessWidget {
                 if (tenure.isNotEmpty) Text(tenure),
               ],
             ),
+            const SizedBox(height: AppSpacing.sm),
+            transactionsAsync.when(
+              loading: () => const LinearProgressIndicator(),
+              error: (error, _) =>
+                  Text('Unable to load payment history: $error'),
+              data: (transactions) =>
+                  _PaymentHistory(transactions: transactions),
+            ),
           ],
         ),
       ),
     );
+  }
+
+  Future<void> _handleAction(
+      BuildContext context, WidgetRef ref, String action) async {
+    final db = ref.read(databaseProvider);
+    if (action == 'edit') {
+      await AddLiabilityDialog.show(context, liability: item);
+    } else if (action == 'repay') {
+      await _showRepaymentDialog(context, ref);
+    } else if (action == 'close') {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Close loan?'),
+          content:
+              Text('Close "${item.name}" and remove it from active balances?'),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel')),
+            FilledButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Close loan')),
+          ],
+        ),
+      );
+      if (confirmed == true) {
+        await db.financialItemsDao.updateItem(
+          item.copyWith(status: 'closed', updatedAt: DateTime.now().toUtc()),
+        );
+      }
+    } else if (action == 'delete') {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Delete loan?'),
+          content: const Text(
+              'This permanently deletes the loan. Its payment history is kept as unlinked transactions.'),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel')),
+            FilledButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Delete')),
+          ],
+        ),
+      );
+      if (confirmed == true) {
+        await db.financialItemsDao.deleteItem(item.id);
+      }
+    }
+  }
+
+  Future<void> _showRepaymentDialog(BuildContext context, WidgetRef ref) async {
+    final controller = TextEditingController();
+    final notesController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    final amount = await showDialog<double>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Record payment for ${item.name}'),
+        content: Form(
+          key: formKey,
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            TextFormField(
+              controller: controller,
+              autofocus: true,
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(labelText: 'Amount'),
+              validator: (value) => double.tryParse(value ?? '') == null
+                  ? 'Enter a valid amount'
+                  : null,
+            ),
+            TextField(
+              controller: notesController,
+              decoration: const InputDecoration(labelText: 'Notes (optional)'),
+            ),
+          ]),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel')),
+          FilledButton(
+            onPressed: () {
+              if (formKey.currentState!.validate()) {
+                Navigator.pop(context, double.parse(controller.text.trim()));
+              }
+            },
+            child: const Text('Save payment'),
+          ),
+        ],
+      ),
+    );
+    final notes = notesController.text;
+    controller.dispose();
+    notesController.dispose();
+    if (amount == null || !context.mounted) return;
+    try {
+      await ref.read(transactionsDaoProvider).recordDebtRepayment(
+            profileId: item.profileId,
+            financialItemId: item.id,
+            categoryId: item.categoryId,
+            transactionDate: DateTime.now(),
+            amountPaise: FinancialPrecision.rupeesToPaise(amount),
+            notes: notes,
+          );
+    } catch (error) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Payment failed: $error')));
+      }
+    }
+  }
+}
+
+class _PaymentHistory extends StatelessWidget {
+  final List<Transaction> transactions;
+
+  const _PaymentHistory({required this.transactions});
+
+  @override
+  Widget build(BuildContext context) {
+    final payments = transactions
+        .where((transaction) => transaction.transactionType == 'debt_repayment')
+        .toList();
+    if (payments.isEmpty) {
+      return const Text('No repayments recorded yet.');
+    }
+    final monthly = <String, int>{};
+    for (final payment in payments) {
+      final key =
+          '${payment.transactionDate.year}-${payment.transactionDate.month.toString().padLeft(2, '0')}';
+      monthly[key] = (monthly[key] ?? 0) + payment.amountPaise;
+    }
+    return ExpansionTile(
+      tilePadding: EdgeInsets.zero,
+      title: Text('Payment history (${payments.length})'),
+      subtitle: Text(
+          'This month: ${CurrencyFormatter.formatPaise(_currentMonthTotal(payments))}'),
+      children: monthly.entries
+          .map((entry) => ListTile(
+                dense: true,
+                title: Text(entry.key),
+                trailing: Text(CurrencyFormatter.formatPaise(entry.value)),
+              ))
+          .toList(),
+    );
+  }
+
+  int _currentMonthTotal(List<Transaction> payments) {
+    final now = DateTime.now();
+    return payments
+        .where((payment) =>
+            payment.transactionDate.year == now.year &&
+            payment.transactionDate.month == now.month)
+        .fold(0, (sum, payment) => sum + payment.amountPaise);
   }
 }
