@@ -9,9 +9,11 @@ import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/fin_card.dart';
 import '../../../core/widgets/finbalance_logo.dart';
 import '../../../core/widgets/section_header.dart';
+import '../../../core/widgets/status_badge.dart';
 import '../../../database/app_database.dart';
 import '../../../database/precision/financial_precision.dart';
 import '../../profile/widgets/profile_menu_button.dart';
+import '../loan_calculator.dart';
 import '../widgets/add_liability_dialog.dart';
 
 class LiabilitiesScreen extends ConsumerWidget {
@@ -127,7 +129,7 @@ class _SummaryCard extends StatelessWidget {
                           ? AppColors.darkTextSecondary
                           : AppColors.lightTextSecondary)),
               const SizedBox(height: 2),
-              Text(CurrencyFormatter.formatPaise(total),
+              Text(CurrencyFormatter.formatPaiseCompact(total),
                   style: AppTypography.titleLarge
                       .copyWith(fontWeight: FontWeight.bold)),
             ],
@@ -146,8 +148,6 @@ class _LoanCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final lender = item.lenderName;
-    final transactionsAsync = ref.watch(transactionsByItemProvider(
-        (profileId: item.profileId, itemId: item.id)));
     final tenure = [
       if ((item.tenureYears ?? 0) > 0) '${item.tenureYears} yrs',
       if ((item.tenureMonths ?? 0) > 0) '${item.tenureMonths} mths',
@@ -169,7 +169,9 @@ class _LoanCard extends ConsumerWidget {
                       style: AppTypography.titleMedium
                           .copyWith(fontWeight: FontWeight.bold)),
                 ),
-                Text(CurrencyFormatter.formatPaise(item.currentValuationPaise),
+                Text(
+                    CurrencyFormatter.formatPaiseCompact(
+                        item.currentValuationPaise),
                     style: AppTypography.titleMedium.copyWith(
                         color: AppColors.liability,
                         fontWeight: FontWeight.bold)),
@@ -180,6 +182,8 @@ class _LoanCard extends ConsumerWidget {
                     PopupMenuItem(value: 'edit', child: Text('Edit loan')),
                     PopupMenuItem(
                         value: 'repay', child: Text('Record repayment')),
+                    PopupMenuItem(
+                        value: 'details', child: Text('View details')),
                     PopupMenuItem(value: 'close', child: Text('Close loan')),
                     PopupMenuItem(value: 'delete', child: Text('Delete loan')),
                   ],
@@ -197,17 +201,30 @@ class _LoanCard extends ConsumerWidget {
                   Text(
                       '${(item.interestRateBasisPoints! / 100).toStringAsFixed(2)}% ${item.interestRateType ?? ''}'),
                 if (item.emiPaise != null)
-                  Text('EMI ${CurrencyFormatter.formatPaise(item.emiPaise!)}'),
+                  Text(
+                      'EMI ${CurrencyFormatter.formatPaiseCompact(item.emiPaise!)}'),
                 if (tenure.isNotEmpty) Text(tenure),
               ],
             ),
             const SizedBox(height: AppSpacing.sm),
-            transactionsAsync.when(
-              loading: () => const LinearProgressIndicator(),
-              error: (error, _) =>
-                  Text('Unable to load payment history: $error'),
-              data: (transactions) =>
-                  _PaymentHistory(transactions: transactions),
+            Row(
+              children: [
+                StatusBadge(
+                  label: LoanCalculator.status(item),
+                  type: item.currentValuationPaise <= 0
+                      ? BadgeType.asset
+                      : LoanCalculator.termEnded(item)
+                          ? BadgeType.liability
+                          : BadgeType.scheduled,
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                if (LoanCalculator.remainingMonths(item) > 0)
+                  Text('${LoanCalculator.remainingMonths(item)} months left'),
+                if (LoanCalculator.termEnded(item) &&
+                    item.currentValuationPaise > 0)
+                  Text(
+                      ' ${CurrencyFormatter.formatPaiseCompact(item.currentValuationPaise)} pending'),
+              ],
             ),
           ],
         ),
@@ -218,7 +235,11 @@ class _LoanCard extends ConsumerWidget {
   Future<void> _handleAction(
       BuildContext context, WidgetRef ref, String action) async {
     final db = ref.read(databaseProvider);
-    if (action == 'edit') {
+    if (action == 'details') {
+      await Navigator.of(context).push<void>(MaterialPageRoute(
+        builder: (_) => LoanDetailsScreen(item: item),
+      ));
+    } else if (action == 'edit') {
       await AddLiabilityDialog.show(context, liability: item);
     } else if (action == 'repay') {
       await _showRepaymentDialog(context, ref);
@@ -271,28 +292,51 @@ class _LoanCard extends ConsumerWidget {
     final controller = TextEditingController();
     final notesController = TextEditingController();
     final formKey = GlobalKey<FormState>();
-    final amount = await showDialog<double>(
+    DateTime paymentDate = DateTime.now();
+    final result =
+        await showDialog<({double amount, DateTime date, String notes})>(
       context: context,
       builder: (context) => AlertDialog(
         title: Text('Record payment for ${item.name}'),
-        content: Form(
-          key: formKey,
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            TextFormField(
-              controller: controller,
-              autofocus: true,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(labelText: 'Amount'),
-              validator: (value) => double.tryParse(value ?? '') == null
-                  ? 'Enter a valid amount'
-                  : null,
-            ),
-            TextField(
-              controller: notesController,
-              decoration: const InputDecoration(labelText: 'Notes (optional)'),
-            ),
-          ]),
+        content: StatefulBuilder(
+          builder: (context, setDialogState) => Form(
+            key: formKey,
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              TextFormField(
+                controller: controller,
+                autofocus: true,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(labelText: 'Amount'),
+                validator: (value) => double.tryParse(value ?? '') == null
+                    ? 'Enter a valid amount'
+                    : null,
+              ),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Payment date'),
+                subtitle: Text(
+                    '${paymentDate.day}/${paymentDate.month}/${paymentDate.year}'),
+                trailing: const Icon(Icons.calendar_today_outlined, size: 18),
+                onTap: () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: paymentDate,
+                    firstDate: item.startDate ?? DateTime(2000),
+                    lastDate: DateTime.now(),
+                  );
+                  if (picked != null) {
+                    setDialogState(() => paymentDate = picked);
+                  }
+                },
+              ),
+              TextField(
+                controller: notesController,
+                decoration:
+                    const InputDecoration(labelText: 'Notes (optional)'),
+              ),
+            ]),
+          ),
         ),
         actions: [
           TextButton(
@@ -301,7 +345,14 @@ class _LoanCard extends ConsumerWidget {
           FilledButton(
             onPressed: () {
               if (formKey.currentState!.validate()) {
-                Navigator.pop(context, double.parse(controller.text.trim()));
+                Navigator.pop(
+                  context,
+                  (
+                    amount: double.parse(controller.text.trim()),
+                    date: paymentDate,
+                    notes: notesController.text.trim(),
+                  ),
+                );
               }
             },
             child: const Text('Save payment'),
@@ -309,18 +360,17 @@ class _LoanCard extends ConsumerWidget {
         ],
       ),
     );
-    final notes = notesController.text;
     controller.dispose();
     notesController.dispose();
-    if (amount == null || !context.mounted) return;
+    if (result == null || !context.mounted) return;
     try {
       await ref.read(transactionsDaoProvider).recordDebtRepayment(
             profileId: item.profileId,
             financialItemId: item.id,
             categoryId: item.categoryId,
-            transactionDate: DateTime.now(),
-            amountPaise: FinancialPrecision.rupeesToPaise(amount),
-            notes: notes,
+            transactionDate: result.date,
+            amountPaise: FinancialPrecision.rupeesToPaise(result.amount),
+            notes: result.notes,
           );
     } catch (error) {
       if (context.mounted) {
@@ -331,46 +381,109 @@ class _LoanCard extends ConsumerWidget {
   }
 }
 
-class _PaymentHistory extends StatelessWidget {
-  final List<Transaction> transactions;
+class LoanDetailsScreen extends ConsumerWidget {
+  final FinancialItem item;
 
-  const _PaymentHistory({required this.transactions});
+  const LoanDetailsScreen({super.key, required this.item});
 
   @override
-  Widget build(BuildContext context) {
-    final payments = transactions
-        .where((transaction) => transaction.transactionType == 'debt_repayment')
-        .toList();
-    if (payments.isEmpty) {
-      return const Text('No repayments recorded yet.');
-    }
-    final monthly = <String, int>{};
-    for (final payment in payments) {
-      final key =
-          '${payment.transactionDate.year}-${payment.transactionDate.month.toString().padLeft(2, '0')}';
-      monthly[key] = (monthly[key] ?? 0) + payment.amountPaise;
-    }
-    return ExpansionTile(
-      tilePadding: EdgeInsets.zero,
-      title: Text('Payment history (${payments.length})'),
-      subtitle: Text(
-          'This month: ${CurrencyFormatter.formatPaise(_currentMonthTotal(payments))}'),
-      children: monthly.entries
-          .map((entry) => ListTile(
-                dense: true,
-                title: Text(entry.key),
-                trailing: Text(CurrencyFormatter.formatPaise(entry.value)),
-              ))
-          .toList(),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final transactionsAsync = ref.watch(transactionsByItemProvider(
+        (profileId: item.profileId, itemId: item.id)));
+    final maturity = LoanCalculator.maturityDate(item);
+    return Scaffold(
+      appBar: AppBar(title: Text(item.name)),
+      body: ListView(
+        padding: AppSpacing.screenPadding,
+        children: [
+          Text(CurrencyFormatter.formatPaiseCompact(item.currentValuationPaise),
+              style: AppTypography.heroAmount),
+          const SizedBox(height: AppSpacing.xs),
+          StatusBadge(
+            label: LoanCalculator.status(item),
+            type: item.currentValuationPaise <= 0
+                ? BadgeType.asset
+                : BadgeType.liability,
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          _detail('Loan type', categoryLabel(item.subType)),
+          _detail('Principal',
+              CurrencyFormatter.formatPaiseCompact(item.initialValuePaise)),
+          _detail('Pending',
+              CurrencyFormatter.formatPaiseCompact(item.currentValuationPaise)),
+          _detail('Start date', _date(item.startDate)),
+          _detail('Maturity date', _date(maturity)),
+          _detail(
+              'Remaining months', '${LoanCalculator.remainingMonths(item)}'),
+          if (item.lenderName?.isNotEmpty == true)
+            _detail('Lender', item.lenderName!),
+          if (item.emiPaise != null)
+            _detail(
+                'EMI', CurrencyFormatter.formatPaiseCompact(item.emiPaise!)),
+          const SizedBox(height: AppSpacing.lg),
+          Text('Monthly repayment history',
+              style: AppTypography.titleMedium
+                  .copyWith(fontWeight: FontWeight.bold)),
+          const SizedBox(height: AppSpacing.sm),
+          transactionsAsync.when(
+            loading: () => const CircularProgressIndicator(),
+            error: (error, _) => Text('Unable to load history: $error'),
+            data: (transactions) => _MonthlySchedule(
+              loan: item,
+              transactions: transactions,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
-  int _currentMonthTotal(List<Transaction> payments) {
-    final now = DateTime.now();
-    return payments
-        .where((payment) =>
-            payment.transactionDate.year == now.year &&
-            payment.transactionDate.month == now.month)
-        .fold(0, (sum, payment) => sum + payment.amountPaise);
+  Widget _detail(String label, String value) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          children: [
+            Expanded(child: Text(label)),
+            Text(value, textAlign: TextAlign.end),
+          ],
+        ),
+      );
+
+  String _date(DateTime? date) =>
+      date == null ? 'Not set' : '${date.day}/${date.month}/${date.year}';
+}
+
+class _MonthlySchedule extends StatelessWidget {
+  final FinancialItem loan;
+  final List<Transaction> transactions;
+
+  const _MonthlySchedule({required this.loan, required this.transactions});
+
+  @override
+  Widget build(BuildContext context) {
+    final payments = <String, int>{};
+    for (final transaction in transactions) {
+      if (transaction.transactionType != 'debt_repayment') continue;
+      final key =
+          '${transaction.transactionDate.year}-${transaction.transactionDate.month.toString().padLeft(2, '0')}';
+      payments[key] = (payments[key] ?? 0) + transaction.amountPaise;
+    }
+    final start = loan.startDate;
+    if (start == null) return const Text('Start date not set.');
+    final end = LoanCalculator.maturityDate(loan) ?? DateTime.now();
+    final rows = <Widget>[];
+    var month = DateTime(start.year, start.month);
+    final maturityMonth = DateTime(end.year, end.month);
+    while (month.isBefore(maturityMonth)) {
+      final key = '${month.year}-${month.month.toString().padLeft(2, '0')}';
+      rows.add(ListTile(
+        dense: true,
+        contentPadding: EdgeInsets.zero,
+        title: Text(key),
+        trailing:
+            Text(CurrencyFormatter.formatPaiseCompact(payments[key] ?? 0)),
+      ));
+      month = DateTime(month.year, month.month + 1);
+    }
+    return Column(children: rows);
   }
 }

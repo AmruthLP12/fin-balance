@@ -26,13 +26,17 @@ class ProfileSelectionScreen extends ConsumerWidget {
 
     final profilesAsync = ref.watch(allProfilesProvider);
     final householdAssetsAsync = ref.watch(householdAssetsProvider);
+    final householdLiabilitiesAsync = ref.watch(householdLiabilitiesProvider);
     final householdAssets = householdAssetsAsync.value ?? <FinancialItem>[];
+    final householdLiabilities =
+        householdLiabilitiesAsync.value ?? <FinancialItem>[];
 
     // Family-wide aggregated metrics
     final totalFamilyAssetsPaise = householdAssets
         .where((a) => a.status == 'active')
         .fold<int>(0, (sum, a) => sum + a.currentValuationPaise);
-    const totalFamilyLiabilitiesPaise = 0; // Upcoming milestone
+    final totalFamilyLiabilitiesPaise = householdLiabilities.fold<int>(
+        0, (sum, item) => sum + item.currentValuationPaise);
     final familyNetWorthPaise =
         totalFamilyAssetsPaise - totalFamilyLiabilitiesPaise;
 
@@ -61,6 +65,7 @@ class ProfileSelectionScreen extends ConsumerWidget {
               onRefresh: () async {
                 ref.invalidate(allProfilesProvider);
                 ref.invalidate(householdAssetsProvider);
+                ref.invalidate(householdLiabilitiesProvider);
               },
               child: CustomScrollView(
                 slivers: [
@@ -131,7 +136,10 @@ class ProfileSelectionScreen extends ConsumerWidget {
                                   a.status == 'active')
                               .fold<int>(
                                   0, (sum, a) => sum + a.currentValuationPaise);
-                          const profileLiabilities = 0; // Upcoming
+                          final profileLiabilities = householdLiabilities
+                              .where((a) => a.profileId == profile.id)
+                              .fold<int>(
+                                  0, (sum, a) => sum + a.currentValuationPaise);
                           final profileNetWorth =
                               profileAssets - profileLiabilities;
 
@@ -250,7 +258,7 @@ class ProfileSelectionScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      CurrencyFormatter.formatPaise(assetsPaise),
+                      CurrencyFormatter.formatPaiseCompact(assetsPaise),
                       style: AppTypography.titleMedium.copyWith(
                         fontWeight: FontWeight.bold,
                         color: AppColors.asset,
@@ -277,19 +285,11 @@ class ProfileSelectionScreen extends ConsumerWidget {
                       spacing: 4,
                       children: [
                         Text(
-                          '₹0',
+                          CurrencyFormatter.formatPaiseCompact(
+                              liabilitiesPaise),
                           style: AppTypography.titleMedium.copyWith(
                             fontWeight: FontWeight.bold,
                             color: AppColors.liability,
-                          ),
-                        ),
-                        Text(
-                          '• Upcoming',
-                          style: AppTypography.labelSmall.copyWith(
-                            fontSize: 10,
-                            color: isDark
-                                ? AppColors.darkTextMuted
-                                : AppColors.lightTextMuted,
                           ),
                         ),
                       ],
@@ -312,7 +312,7 @@ class ProfileSelectionScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 2),
           Text(
-            CurrencyFormatter.formatPaise(netWorthPaise),
+            CurrencyFormatter.formatPaiseCompact(netWorthPaise),
             style: AppTypography.headlineLarge.copyWith(
               fontWeight: FontWeight.w800,
               color:
@@ -423,7 +423,7 @@ class ProfileSelectionScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      CurrencyFormatter.formatPaise(assetsPaise),
+                      CurrencyFormatter.formatPaiseCompact(assetsPaise),
                       style: AppTypography.bodyMedium.copyWith(
                         fontWeight: FontWeight.w600,
                         color: AppColors.asset,
@@ -447,7 +447,7 @@ class ProfileSelectionScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      '₹0',
+                      CurrencyFormatter.formatPaiseCompact(liabilitiesPaise),
                       style: AppTypography.bodyMedium.copyWith(
                         fontWeight: FontWeight.w600,
                         color: isDark

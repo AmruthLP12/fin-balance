@@ -35,6 +35,21 @@ class CurrencyFormatter {
     return format(paise / 100.0, symbol: symbol);
   }
 
+  /// Format large INR values using Indian shorthand: ₹1L, ₹10L, ₹1Cr.
+  static String formatPaiseCompact(int paise, {String symbol = '₹'}) {
+    final amount = paise / 100.0;
+    final suffix = amount.abs() >= 10000000
+        ? 'Cr'
+        : amount.abs() >= 100000
+            ? 'L'
+            : null;
+    if (suffix == null) return formatPaise(paise, symbol: symbol);
+    final divisor = suffix == 'Cr' ? 10000000 : 100000;
+    final value = amount / divisor;
+    final decimals = value.abs() >= 10 ? 0 : 1;
+    return '$symbol${value.toStringAsFixed(decimals)}$suffix';
+  }
+
   /// Format as whole currency without paise: ₹1,50,000
   static String formatWhole(double amount, {String symbol = '₹'}) {
     if (symbol == '₹') {

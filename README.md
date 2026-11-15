@@ -2,10 +2,10 @@
 
 > **FinBalance** is an offline-first, multi-profile personal finance and net worth management application for Android and Web, built with Flutter and SQLite (Drift).
 
-### Current Release Focus (0.25.3)
+### Current Release Focus (0.25.4)
 
 - Loan liability tracking with lender, loan type, outstanding balance, sanctioned amount, EMI, tenure, interest rate, start date, and notes.
-- Active loan list with total outstanding debt, edit/delete/close actions, and dated repayment history.
+- Active loan list with total outstanding debt, edit/delete/close actions, compact Indian-number formatting, and dated repayment history.
 - NAV auto-refresh runs app-wide (on open, on resume, at the next due time) and handles being offline; Settings shows why a refresh failed.
 - CAS import also reads holdings-only "Consolidated Account Summary" files and lets you pick the profile to import into.
 - CAS imports confirm that a holdings-only summary creates one opening entry per investment without transaction history.
@@ -242,7 +242,7 @@ make clean
 
 - **Built by:** Amruth L P
 - **Developer Portfolio:** [https://amruthlp.vercel.app](https://amruthlp.vercel.app)
-- **Application Version:** `v0.25.3` (read from the installed app in Settings > About)
+- **Application Version:** `v0.25.4` (read from the installed app in Settings > About)
 - **Support & Inquiries:** Accessible in-app under `Settings` $\rightarrow$ `Support` (`Contact details will be provided here.`).
 - **In-App Privacy Policy:** Open `Settings` $\rightarrow$ `Support` $\rightarrow$ `Privacy Policy`.
 - **Privacy Policy Markdown File:** Located in the repository at [`docs/privacy-policy.md`](docs/privacy-policy.md).

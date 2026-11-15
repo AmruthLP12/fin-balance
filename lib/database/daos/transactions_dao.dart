@@ -216,6 +216,11 @@ class TransactionsDao extends DatabaseAccessor<AppDatabase>
         id: financialItemId,
         currentValuationPaise: updatedBalance,
       );
+      if (updatedBalance == 0) {
+        await (db.update(db.financialItems)
+              ..where((tbl) => tbl.id.equals(financialItemId)))
+            .write(const FinancialItemsCompanion(status: Value('closed')));
+      }
       return transactionId;
     });
   }
