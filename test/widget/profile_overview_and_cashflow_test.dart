@@ -1,3 +1,4 @@
+import 'package:fl_chart/fl_chart.dart';
 import 'package:drift/drift.dart' as drift;
 import 'package:drift/native.dart';
 import 'package:finbalance/app.dart';
@@ -150,7 +151,7 @@ void main() {
       expect(find.text('₹1,00,000.00'), findsWidgets);
 
       // Default unified category chart
-      expect(find.text('Assets & Liabilities by Category'), findsOneWidget);
+      expect(find.byType(PieChart), findsOneWidget);
 
       // Switch to Portfolio Assets and verify donut chart
       await tester.tap(find.text('Portfolio Assets'));

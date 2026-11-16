@@ -36,7 +36,6 @@ class SettingsScreen extends ConsumerStatefulWidget {
 }
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
-  String _selectedCurrency = AppConstants.defaultCurrencyCode;
   bool _isSyncing = false;
   PortfolioSyncSummary? _lastSyncSummary;
   String? _lastSyncError;
@@ -227,18 +226,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ),
                   trailing: const Icon(Icons.chevron_right_rounded),
                   onTap: _showThemePicker,
-                ),
-                const Divider(),
-                ListTile(
-                  leading: const Icon(Icons.currency_exchange_rounded),
-                  title: const Text('Display Currency',
-                      style: AppTypography.titleMedium),
-                  subtitle: Text(
-                    '$_selectedCurrency (₹)',
-                    style: AppTypography.bodyMedium,
-                  ),
-                  trailing: const Icon(Icons.chevron_right_rounded),
-                  onTap: _showCurrencyPicker,
                 ),
               ],
             ),
@@ -624,56 +611,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ref
                       .read(themeModeProvider.notifier)
                       .setThemeMode(ThemeMode.dark);
-                  Navigator.pop(context);
-                },
-              ),
-              const SizedBox(height: AppSpacing.md),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  void _showCurrencyPicker() {
-    showModalBottomSheet<void>(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius:
-            BorderRadius.vertical(top: Radius.circular(AppSpacing.radiusLg)),
-      ),
-      builder: (context) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: AppSpacing.md),
-              const Text('Select Currency', style: AppTypography.titleMedium),
-              const SizedBox(height: AppSpacing.sm),
-              ListTile(
-                title: const Text('Indian Rupee (₹ INR)'),
-                trailing:
-                    _selectedCurrency == 'INR' ? const Icon(Icons.check) : null,
-                onTap: () {
-                  setState(() => _selectedCurrency = 'INR');
-                  Navigator.pop(context);
-                },
-              ),
-              ListTile(
-                title: const Text('US Dollar (\$ USD)'),
-                trailing:
-                    _selectedCurrency == 'USD' ? const Icon(Icons.check) : null,
-                onTap: () {
-                  setState(() => _selectedCurrency = 'USD');
-                  Navigator.pop(context);
-                },
-              ),
-              ListTile(
-                title: const Text('Euro (€ EUR)'),
-                trailing:
-                    _selectedCurrency == 'EUR' ? const Icon(Icons.check) : null,
-                onTap: () {
-                  setState(() => _selectedCurrency = 'EUR');
                   Navigator.pop(context);
                 },
               ),

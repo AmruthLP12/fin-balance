@@ -23,35 +23,18 @@ void main() {
       'Mutual Funds',
       'Stocks & ETFs',
       'Fixed Income',
-      'PPF',
-      'NSC',
-      'KVP',
-      'SSS (Sukanya Samriddhi)',
-      'POSS (Post Office Savings)',
-      'FD (Fixed Deposit)',
-      'FRD (Flexi Recurring Deposit)',
-      'RD (Recurring Deposit)',
-      'EPF',
-      'NPS',
-      'PLI / Insurance',
       'Bonds',
       'Gold',
       'Loans',
-      'Home Loan',
-      'Car Loan',
-      'Business Loan',
-      'Loan Against Property',
-      'Term Loan',
-      'Education Loan',
-      'Other Loan',
       'Other Borrowings',
     ]) {
       expect(find.text(label), findsOneWidget);
     }
     expect(find.text('Nothing added yet'), findsWidgets);
 
-    await tester.ensureVisible(find.text('Home Loan'));
-    await tester.tap(find.text('Home Loan'));
+    expect(find.text('Home Loan'), findsNothing);
+    await tester.ensureVisible(find.text('Loans'));
+    await tester.tap(find.text('Loans'));
     expect(tapped, 'loans/true');
   });
 }

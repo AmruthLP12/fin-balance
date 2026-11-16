@@ -1,3 +1,4 @@
+import '../../../data/loan/emi_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/providers/database_provider.dart';
@@ -39,6 +40,7 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
   void initState() {
     super.initState();
     ref.read(databaseProvider).categoriesDao.repairMutualFundCategories();
+    applyDueEmis(ref.read(databaseProvider));
     // NAV refresh is handled app-wide by NavAutoRefresh.
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (mounted) await checkForUpdates(context, ref, silent: true);

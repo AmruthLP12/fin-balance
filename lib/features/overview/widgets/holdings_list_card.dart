@@ -7,8 +7,7 @@ import '../../../core/widgets/fin_card.dart';
 import '../../../core/widgets/section_header.dart';
 import '../../../database/app_database.dart';
 
-/// Category breakdown of the profile's active assets and liabilities. Every category (and
-/// every instrument inside a group such as Fixed Income or Loans) is listed, even when
+/// Category breakdown of the profile's active assets and liabilities. Every category is listed, even when
 /// empty, so gaps are visible. Rows are tappable and report their group value.
 class HoldingsListCard extends StatelessWidget {
   final List<FinancialItem> assets;
@@ -77,14 +76,6 @@ class HoldingsListCard extends StatelessWidget {
         void open() => onTap(g.value, isLiability: isLiability);
         if (rows.isNotEmpty) rows.add(const Divider(height: 1));
         rows.add(row(title: g.label, items: groupItems, onTap: open));
-        for (final (value, label) in g.children) {
-          rows.add(row(
-            title: label,
-            items: groupItems.where((i) => i.subType == value).toList(),
-            onTap: open,
-            child: true,
-          ));
-        }
       }
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,

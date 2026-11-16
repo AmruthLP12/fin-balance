@@ -1,3 +1,4 @@
+import 'package:fl_chart/fl_chart.dart';
 import 'package:drift/drift.dart' as drift;
 import 'package:drift/native.dart';
 import 'package:finbalance/core/providers/database_provider.dart';
@@ -105,7 +106,7 @@ void main() {
 
       // Core Net worth and charts remain present
       expect(find.textContaining('NET WORTH'), findsOneWidget);
-      expect(find.text('Assets & Liabilities by Category'), findsOneWidget);
+      expect(find.byType(PieChart), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());
       await tester.pumpAndSettle();

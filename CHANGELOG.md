@@ -5,6 +5,25 @@ All notable changes to the FinBalance application will be documented in this fil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.27.0] - 2026-11-16
+
+### Changed
+
+- **Overview amounts use lakh / crore** (₹1.5L, ₹2.4Cr) above one lakh, like the family overview.
+- **Assets & Liabilities chart** now shows just total assets against total liabilities (no per-category slices).
+- **Category list on Overview:** "Fixed Income" and "Loans" are single rows; the sub-categories under them are gone.
+- **Family net worth is centred** on the profile picker.
+- **Settings > Preferences:** removed the Display Currency option (the app is rupees only).
+
+### Added
+
+- **Loans deduct their EMI automatically** every month on the start-date day (not for Other Borrowings, which you record yourself with amount and date). Only EMIs falling after the loan was added to the app are deducted, because the balance you enter is already current.
+- **EMI and tenure fill each other:** leave EMI blank and it is calculated from amount, rate and tenure; leave tenure blank and it is calculated from the EMI.
+
+### Testing
+
+- EMI/tenure maths and the auto-EMI posting; widget tests updated for the simpler Overview.
+
 ## [0.26.0] - 2026-11-17
 
 ### Changed

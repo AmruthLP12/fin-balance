@@ -180,6 +180,7 @@ class TransactionsDao extends DatabaseAccessor<AppDatabase>
     required DateTime transactionDate,
     required int amountPaise,
     String? notes,
+    String source = 'manual',
   }) async {
     if (amountPaise <= 0) {
       throw ArgumentError('Repayment amount must be greater than zero.');
@@ -206,7 +207,7 @@ class TransactionsDao extends DatabaseAccessor<AppDatabase>
           transactionDate: Value(transactionDate),
           amountPaise: Value(amountPaise),
           netAmountPaise: Value(amountPaise),
-          source: const Value('manual'),
+          source: Value(source),
           notes: notes == null || notes.trim().isEmpty
               ? const Value.absent()
               : Value(notes.trim()),

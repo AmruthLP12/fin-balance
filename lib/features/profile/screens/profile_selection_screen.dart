@@ -215,7 +215,7 @@ class ProfileSelectionScreen extends ConsumerWidget {
       ),
       padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
             children: [
@@ -304,6 +304,7 @@ class ProfileSelectionScreen extends ConsumerWidget {
           const SizedBox(height: AppSpacing.md),
           Text(
             'Family Net Worth',
+            textAlign: TextAlign.center,
             style: AppTypography.bodySmall.copyWith(
               color: isDark
                   ? AppColors.darkTextSecondary
@@ -313,6 +314,7 @@ class ProfileSelectionScreen extends ConsumerWidget {
           const SizedBox(height: 2),
           Text(
             CurrencyFormatter.formatPaiseCompact(netWorthPaise),
+            textAlign: TextAlign.center,
             style: AppTypography.headlineLarge.copyWith(
               fontWeight: FontWeight.w800,
               color:

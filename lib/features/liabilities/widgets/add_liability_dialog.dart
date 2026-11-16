@@ -9,6 +9,7 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../database/app_database.dart';
 import '../../../database/precision/financial_precision.dart';
+import '../loan_calculator.dart';
 
 /// Full-screen mobile-optimized dialog for recording a new liability or debt commitment.
 class AddLiabilityDialog extends ConsumerStatefulWidget {
@@ -381,6 +382,9 @@ class _AddLiabilityDialogState extends ConsumerState<AddLiabilityDialog> {
                       prefixText: '₹ ',
                       border: OutlineInputBorder(),
                       hintText: 'Optional',
+                      helperText:
+                          'Leave blank to calculate it from the tenure. Deducted automatically every month (not for Other Borrowings).',
+                      helperMaxLines: 3,
                     ),
                   ),
                   const SizedBox(height: AppSpacing.md),
@@ -401,6 +405,10 @@ class _AddLiabilityDialogState extends ConsumerState<AddLiabilityDialog> {
                       _tenureField(_daysController, 'Days'),
                     ],
                   ),
+                  const SizedBox(height: 4),
+                  const Text(
+                      'Leave blank to calculate it from the EMI. Other Borrowings are repaid by recording payments yourself.',
+                      style: AppTypography.bodySmall),
                   const SizedBox(height: AppSpacing.md),
 
                   DropdownButtonFormField<String>(
@@ -517,9 +525,31 @@ class _AddLiabilityDialogState extends ConsumerState<AddLiabilityDialog> {
 
     final ratePct = double.tryParse(_interestRateController.text.trim()) ?? 0.0;
     final rateBps = (ratePct * 100).round();
-    final emiRupees = double.tryParse(_emiController.text.trim());
+    var emiRupees = double.tryParse(_emiController.text.trim());
     final lender = _lenderController.text.trim();
     int parseTenure(String value) => int.tryParse(value.trim()) ?? 0;
+
+    var years = parseTenure(_yearsController.text);
+    var months = parseTenure(_monthsController.text);
+    final days = parseTenure(_daysController.text);
+
+    // Work out whichever of EMI / tenure was left blank.
+    final basePaise = principalPaise > 0 ? principalPaise : outstandingPaise;
+    final tenureMonths = years * 12 + months;
+    if ((emiRupees ?? 0) <= 0 && tenureMonths > 0) {
+      final emi = LoanCalculator.emiFor(basePaise, ratePct, tenureMonths);
+      if (emi > 0) emiRupees = emi / 100;
+    } else if ((emiRupees ?? 0) > 0 && tenureMonths == 0 && days == 0) {
+      final n = LoanCalculator.tenureMonthsFor(
+          basePaise, ratePct, FinancialPrecision.rupeesToPaise(emiRupees!));
+      if (n == null) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('EMI is too low to cover the interest.')));
+        return;
+      }
+      years = n ~/ 12;
+      months = n % 12;
+    }
 
     final notes = _notesController.text.trim();
 
@@ -544,9 +574,9 @@ class _AddLiabilityDialogState extends ConsumerState<AddLiabilityDialog> {
         emiPaise: drift.Value(emiRupees == null
             ? null
             : FinancialPrecision.rupeesToPaise(emiRupees)),
-        tenureYears: drift.Value(parseTenure(_yearsController.text)),
-        tenureMonths: drift.Value(parseTenure(_monthsController.text)),
-        tenureDays: drift.Value(parseTenure(_daysController.text)),
+        tenureYears: drift.Value(years),
+        tenureMonths: drift.Value(months),
+        tenureDays: drift.Value(days),
         interestRateType: drift.Value(_interestRateType),
         startDate: drift.Value(_startDate),
         notes: drift.Value(notes.isNotEmpty ? notes : null),

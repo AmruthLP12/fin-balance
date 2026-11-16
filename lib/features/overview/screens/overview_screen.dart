@@ -44,27 +44,6 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
     Color(0xFFE11D48),
   ];
 
-  static const List<Color> _assetPalette = [
-    AppColors.brandPrimary,
-    Color(0xFF10B981),
-    Color(0xFF3B82F6),
-    Color(0xFF06B6D4),
-    Color(0xFF6366F1),
-    Color(0xFF14B8A6),
-    Color(0xFF8B5CF6),
-    Color(0xFF0EA5E9),
-    Color(0xFFF59E0B),
-  ];
-
-  static const List<Color> _liabilityPalette = [
-    Color(0xFFF43F5E),
-    Color(0xFFE11D48),
-    Color(0xFFBE123C),
-    Color(0xFFFB7185),
-    Color(0xFF9F1239),
-    Color(0xFF881337),
-  ];
-
   @override
   void initState() {
     super.initState();
@@ -206,7 +185,7 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 Text(
-                  CurrencyFormatter.formatPaise(netWorthPaise),
+                  CurrencyFormatter.formatPaiseCompact(netWorthPaise),
                   style: AppTypography.heroAmount.copyWith(
                     color: isDark
                         ? AppColors.darkTextPrimary
@@ -248,7 +227,8 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            CurrencyFormatter.formatPaise(totalAssetsPaise),
+                            CurrencyFormatter.formatPaiseCompact(
+                                totalAssetsPaise),
                             style: AppTypography.amountMedium.copyWith(
                               color: AppColors.asset,
                               fontWeight: FontWeight.w700,
@@ -287,7 +267,7 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            CurrencyFormatter.formatPaise(
+                            CurrencyFormatter.formatPaiseCompact(
                                 totalLiabilitiesPaise),
                             style: AppTypography.amountMedium.copyWith(
                               color: AppColors.liability,
@@ -455,7 +435,7 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
     );
   }
 
-  /// 1. Combined Assets & Liabilities by Category Chart Card (Default)
+  /// 1. Total assets vs total liabilities.
   Widget _buildUnifiedAssetLiabilityChartCard({
     required BuildContext context,
     required bool isDark,
@@ -465,373 +445,84 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
     required int totalAssetsPaise,
     required int totalLiabilitiesPaise,
   }) {
-    // 1. Group Assets by Canonical Category
-    final Map<String, int> assetCategoryTotals = {};
-    for (final item in activeAssets) {
-      final rawName = categoriesMap[item.categoryId] ?? item.subType;
-      final canonical = FinancialCategoryConstants.normalizeCategoryName(
-        rawName,
-        subType: item.subType,
-      );
-      assetCategoryTotals[canonical] =
-          (assetCategoryTotals[canonical] ?? 0) + item.currentValuationPaise;
-    }
-    final sortedAssetCategories = assetCategoryTotals.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
-
-    // 2. Group Liabilities by Canonical Category
-    final Map<String, int> liabilityCategoryTotals = {};
-    for (final item in activeLiabilities) {
-      final rawName = categoriesMap[item.categoryId] ?? item.subType;
-      final canonical = FinancialCategoryConstants.normalizeCategoryName(
-        rawName,
-        subType: item.subType,
-      );
-      liabilityCategoryTotals[canonical] =
-          (liabilityCategoryTotals[canonical] ?? 0) +
-              item.currentValuationPaise;
-    }
-    final sortedLiabilityCategories = liabilityCategoryTotals.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
-
-    final grandTotalPaise = totalAssetsPaise + totalLiabilitiesPaise;
-
-    if (grandTotalPaise <= 0 &&
-        sortedAssetCategories.isEmpty &&
-        sortedLiabilityCategories.isEmpty) {
+    final grand = totalAssetsPaise + totalLiabilitiesPaise;
+    if (grand <= 0) {
       return FinCard(
         child: EmptyStateView(
           icon: Icons.pie_chart_outline_rounded,
-          title: 'No Category Distribution Data',
+          title: 'No Data Yet',
           description:
-              'Add mutual fund schemes or assets to view the combined category breakdown.',
+              'Add mutual fund schemes or assets to compare assets and liabilities.',
           actionLabel: 'Search Mutual Funds',
           onAction: () => _openSearch(context),
         ),
       );
     }
-
-    // Build unified pie chart sections (only non-zero slices to avoid clutter)
-    final List<PieChartSectionData> chartSections = [];
-    int sliceIndex = 0;
-
-    for (int i = 0; i < sortedAssetCategories.length; i++) {
-      final entry = sortedAssetCategories[i];
-      if (entry.value <= 0) continue;
-      final isTouched = sliceIndex == _touchedIndex;
-      final color = _assetPalette[i % _assetPalette.length];
-      final percentage =
-          grandTotalPaise > 0 ? (entry.value / grandTotalPaise) * 100 : 0.0;
-
-      chartSections.add(
-        PieChartSectionData(
-          color: color,
-          value: entry.value.toDouble(),
-          title: percentage >= 8 ? '${percentage.toStringAsFixed(0)}%' : '',
-          radius: isTouched ? 42 : 36,
-          titleStyle: const TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
-      );
-      sliceIndex++;
-    }
-
-    for (int i = 0; i < sortedLiabilityCategories.length; i++) {
-      final entry = sortedLiabilityCategories[i];
-      if (entry.value <= 0) continue;
-      final isTouched = sliceIndex == _touchedIndex;
-      final color = _liabilityPalette[i % _liabilityPalette.length];
-      final percentage =
-          grandTotalPaise > 0 ? (entry.value / grandTotalPaise) * 100 : 0.0;
-
-      chartSections.add(
-        PieChartSectionData(
-          color: color,
-          value: entry.value.toDouble(),
-          title: percentage >= 8 ? '${percentage.toStringAsFixed(0)}%' : '',
-          radius: isTouched ? 42 : 36,
-          titleStyle: const TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
-      );
-      sliceIndex++;
-    }
-
+    final rows = [
+      ('Total Assets', totalAssetsPaise, AppColors.asset),
+      ('Total Liabilities', totalLiabilitiesPaise, AppColors.liability),
+    ];
     return FinCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Wrap(
-            alignment: WrapAlignment.spaceBetween,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: 8,
-            runSpacing: 4,
-            children: [
-              Text(
-                'Assets & Liabilities by Category',
-                style: AppTypography.titleMedium.copyWith(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 14,
+      child: SizedBox(
+        height: 150,
+        child: Row(
+          children: [
+            Expanded(
+              flex: 4,
+              child: PieChart(
+                PieChartData(
+                  sections: [
+                    for (final r in rows)
+                      if (r.$2 > 0)
+                        PieChartSectionData(
+                          color: r.$3,
+                          value: r.$2.toDouble(),
+                          title: '${(r.$2 / grand * 100).toStringAsFixed(0)}%',
+                          radius: 36,
+                          titleStyle: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white),
+                        ),
+                  ],
+                  centerSpaceRadius: 30,
+                  sectionsSpace: 2,
                 ),
               ),
-              Row(
-                mainAxisSize: MainAxisSize.min,
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              flex: 6,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(
-                      color: AppColors.asset,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    'Assets',
-                    style: AppTypography.labelSmall.copyWith(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.asset,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(
-                      color: AppColors.liability,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    'Liabilities',
-                    style: AppTypography.labelSmall.copyWith(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.liability,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.md),
-          if (chartSections.isNotEmpty)
-            SizedBox(
-              height: 190,
-              child: Row(
-                children: [
-                  Expanded(
-                    flex: 5,
-                    child: PieChart(
-                      PieChartData(
-                        pieTouchData: PieTouchData(
-                          touchCallback:
-                              (FlTouchEvent event, pieTouchResponse) {
-                            setState(() {
-                              if (!event.isInterestedForInteractions ||
-                                  pieTouchResponse == null ||
-                                  pieTouchResponse.touchedSection == null) {
-                                _touchedIndex = -1;
-                                return;
-                              }
-                              _touchedIndex = pieTouchResponse
-                                  .touchedSection!.touchedSectionIndex;
-                            });
-                          },
-                        ),
-                        sections: chartSections,
-                        centerSpaceRadius: 36,
-                        sectionsSpace: 2,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.md),
-                  Expanded(
-                    flex: 6,
-                    child: ListView.separated(
-                      shrinkWrap: true,
-                      itemCount: sortedAssetCategories.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 8),
-                      itemBuilder: (context, i) {
-                        final entry = sortedAssetCategories[i];
-                        final color = _assetPalette[i % _assetPalette.length];
-                        final pct = totalAssetsPaise > 0
-                            ? (entry.value / totalAssetsPaise) * 100
-                            : 0.0;
-
-                        return Row(
-                          children: [
-                            Container(
+                  for (final r in rows)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      child: Row(
+                        children: [
+                          Container(
                               width: 10,
                               height: 10,
                               decoration: BoxDecoration(
-                                color: color,
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                entry.key,
-                                style: AppTypography.bodySmall.copyWith(
-                                  fontWeight: FontWeight.w500,
-                                  fontSize: 12,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                Text(
-                                  CurrencyFormatter.formatPaise(entry.value),
-                                  style: AppTypography.bodySmall.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                                Text(
-                                  '${pct.toStringAsFixed(1)}%',
-                                  style: AppTypography.labelSmall.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                    color: isDark
-                                        ? AppColors.darkTextMuted
-                                        : AppColors.lightTextMuted,
-                                    fontSize: 10,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        );
-                      },
+                                  color: r.$3, shape: BoxShape.circle)),
+                          const SizedBox(width: 8),
+                          Expanded(
+                              child: Text(r.$1,
+                                  style: AppTypography.bodySmall
+                                      .copyWith(fontWeight: FontWeight.w500))),
+                          Text(CurrencyFormatter.formatPaiseCompact(r.$2),
+                              style: AppTypography.bodySmall.copyWith(
+                                  fontWeight: FontWeight.w700, color: r.$3)),
+                        ],
+                      ),
                     ),
-                  ),
                 ],
               ),
             ),
-          const SizedBox(height: AppSpacing.md),
-          const Divider(height: 1),
-          const SizedBox(height: AppSpacing.sm),
-          // Liabilities Section
-          if (sortedLiabilityCategories.isNotEmpty) ...[
-            Text(
-              'Liabilities Breakdown',
-              style: AppTypography.labelMedium.copyWith(
-                fontWeight: FontWeight.w600,
-                color:
-                    isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            ...sortedLiabilityCategories.map((entry) {
-              final pct = totalLiabilitiesPaise > 0
-                  ? (entry.value / totalLiabilitiesPaise) * 100
-                  : 0.0;
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 10,
-                      height: 10,
-                      decoration: const BoxDecoration(
-                        color: AppColors.liability,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        entry.key,
-                        style: AppTypography.bodySmall.copyWith(
-                          fontWeight: FontWeight.w500,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
-                    Text(
-                      '${CurrencyFormatter.formatPaise(entry.value)} (${pct.toStringAsFixed(1)}%)',
-                      style: AppTypography.bodySmall.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.liability,
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }),
-          ] else ...[
-            Wrap(
-              alignment: WrapAlignment.spaceBetween,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              spacing: 8,
-              runSpacing: 4,
-              children: [
-                Text(
-                  'Total Liabilities: ₹0',
-                  style: AppTypography.titleMedium.copyWith(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13,
-                    color: isDark
-                        ? AppColors.darkTextPrimary
-                        : AppColors.lightTextPrimary,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'No ongoing loans for this profile. Supported categories:',
-              style: AppTypography.bodySmall.copyWith(
-                fontSize: 11,
-                color:
-                    isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            Wrap(
-              spacing: AppSpacing.xs,
-              runSpacing: AppSpacing.xs,
-              children:
-                  FinancialCategoryConstants.liabilityCategories.map((cat) {
-                return Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: isDark
-                        ? AppColors.darkSurfaceHighlight
-                        : AppColors.lightSurfaceHighlight,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color:
-                          isDark ? AppColors.darkBorder : AppColors.lightBorder,
-                    ),
-                  ),
-                  child: Text(
-                    '$cat • ₹0',
-                    style: AppTypography.labelSmall.copyWith(
-                      color: isDark
-                          ? AppColors.darkTextMuted
-                          : AppColors.lightTextMuted,
-                      fontSize: 10,
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
           ],
-        ],
+        ),
       ),
     );
   }

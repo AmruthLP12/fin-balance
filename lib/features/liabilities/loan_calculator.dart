@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import '../../database/app_database.dart';
 
 class LoanCalculator {
@@ -40,5 +41,53 @@ class LoanCalculator {
     if (isClosed(loan)) return 'Closed';
     if (termEnded(loan)) return 'Term ended';
     return 'Ongoing';
+  }
+
+  /// Monthly instalment (paise) for a reducing-balance loan.
+  static int emiFor(int principalPaise, double annualRatePct, int months) {
+    if (principalPaise <= 0 || months <= 0) return 0;
+    final r = annualRatePct / 1200;
+    if (r == 0) return (principalPaise / months).round();
+    final f = math.pow(1 + r, months);
+    return (principalPaise * r * f / (f - 1)).round();
+  }
+
+  /// Months needed to clear [principalPaise] with [emiPaise]; null if the EMI
+  /// does not even cover the monthly interest.
+  static int? tenureMonthsFor(
+      int principalPaise, double annualRatePct, int emiPaise) {
+    if (principalPaise <= 0 || emiPaise <= 0) return null;
+    final r = annualRatePct / 1200;
+    if (r == 0) return (principalPaise / emiPaise).ceil();
+    final x = 1 - principalPaise * r / emiPaise;
+    if (x <= 0) return null;
+    return (-math.log(x) / math.log(1 + r) - 0.05).ceil(); // EMI is rounded to paise
+  }
+
+  /// Other borrowings are repaid manually; real loans auto-deduct their EMI.
+  static bool autoDeducts(FinancialItem loan) =>
+      loan.subType != 'other_liability' &&
+      loan.status == 'active' &&
+      (loan.emiPaise ?? 0) > 0 &&
+      loan.startDate != null;
+
+  /// EMI due dates on the start day of each month that fall after the loan
+  /// was recorded here (earlier ones are already in the entered balance), up
+  /// to [today] and the end of the term.
+  static List<DateTime> emiDueDates(FinancialItem loan, DateTime today) {
+    final start = loan.startDate;
+    if (start == null) return const [];
+    final end = maturityDate(loan);
+    final recorded =
+        DateTime(loan.createdAt.year, loan.createdAt.month, loan.createdAt.day);
+    final dates = <DateTime>[];
+    for (var k = 1; k < 1200; k++) {
+      final first = DateTime(start.year, start.month + k, 1);
+      final lastDay = DateTime(first.year, first.month + 1, 0).day;
+      final d = DateTime(first.year, first.month, math.min(start.day, lastDay));
+      if (d.isAfter(today) || (end != null && d.isAfter(end))) break;
+      if (d.isAfter(recorded)) dates.add(d);
+    }
+    return dates;
   }
 }
