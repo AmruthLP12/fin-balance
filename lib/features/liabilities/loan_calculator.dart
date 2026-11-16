@@ -27,9 +27,18 @@ class LoanCalculator {
     return months.clamp(0, 1200);
   }
 
+  /// Closed by the user, or nothing left to pay.
+  static bool isClosed(FinancialItem loan) =>
+      loan.status == 'closed' || loan.currentValuationPaise <= 0;
+
+  /// Still owed: active with a remaining balance (even after the term ended).
+  static bool isOngoing(FinancialItem loan) => !isClosed(loan);
+
+  /// 'Closed' only when nothing is owed. A loan whose term is over but still
+  /// has a balance stays on the books as 'Term ended' with its remaining amount.
   static String status(FinancialItem loan) {
-    if (loan.currentValuationPaise <= 0) return 'Closed';
-    if (termEnded(loan)) return 'Closed';
-    return 'Active';
+    if (isClosed(loan)) return 'Closed';
+    if (termEnded(loan)) return 'Term ended';
+    return 'Ongoing';
   }
 }

@@ -147,27 +147,51 @@ final activeProfileAssetsProvider = StreamProvider<List<FinancialItem>>((ref) {
   return ref.watch(financialItemsDaoProvider).watchAssetsByProfile(activeId);
 });
 
-/// Stream provider for the active profile's liabilities.
+/// The active profile's ongoing loans: active with an amount still owed.
+/// Closed or fully repaid loans never count towards totals.
 final activeProfileLiabilitiesProvider =
     StreamProvider<List<FinancialItem>>((ref) {
   final activeId = ref.watch(activeProfileIdProvider);
   return ref
       .watch(financialItemsDaoProvider)
-      .watchLiabilitiesByProfile(activeId);
+      .watchLiabilitiesByProfile(activeId)
+      .map((l) => l.where((i) => i.currentValuationPaise > 0).toList());
 });
 
-/// Stream provider for all active assets across all household profiles.
+/// Every loan of the active profile, closed ones included (for the filter).
+final activeProfileAllLiabilitiesProvider =
+    StreamProvider<List<FinancialItem>>((ref) {
+  final activeId = ref.watch(activeProfileIdProvider);
+  return ref
+      .watch(financialItemsDaoProvider)
+      .watchItemsByProfile(activeId, itemType: 'liability', status: '');
+});
+
+/// Keeps only items of profiles shown in the family overview (not archived).
+List<FinancialItem> visibleProfilesOnly(
+    List<FinancialItem> items, List<FinancialProfile>? profiles) {
+  if (profiles == null) return items;
+  final ids = {for (final p in profiles) p.id};
+  return items.where((i) => ids.contains(i.profileId)).toList();
+}
+
+/// Stream provider for all active assets across the household's visible profiles.
 final householdAssetsProvider = StreamProvider<List<FinancialItem>>((ref) {
+  final profiles = ref.watch(allProfilesProvider).value;
   return ref
       .watch(financialItemsDaoProvider)
-      .watchHouseholdItems(itemType: 'asset');
+      .watchHouseholdItems(itemType: 'asset')
+      .map((l) => visibleProfilesOnly(l, profiles));
 });
 
-/// Stream provider for all active liabilities across all household profiles.
+/// Ongoing loans (amount still owed) across the household's visible profiles.
 final householdLiabilitiesProvider = StreamProvider<List<FinancialItem>>((ref) {
+  final profiles = ref.watch(allProfilesProvider).value;
   return ref
       .watch(financialItemsDaoProvider)
-      .watchHouseholdItems(itemType: 'liability');
+      .watchHouseholdItems(itemType: 'liability')
+      .map((l) => visibleProfilesOnly(l, profiles))
+      .map((l) => l.where((i) => i.currentValuationPaise > 0).toList());
 });
 
 /// Stream provider for the active profile's recent transactions.

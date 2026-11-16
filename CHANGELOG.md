@@ -5,6 +5,37 @@ All notable changes to the FinBalance application will be documented in this fil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.26.0] - 2026-11-17
+
+### Changed
+
+- **Loan cards now match the SIP cards:** each card shows only the main facts (name, type and lender, EMI and months left, the remaining amount and a status badge). Tapping the card opens the details; the three-dot menu on the card is gone.
+- **Loan details match the SIP details:** actions (Edit, Close, Delete) are in the app bar menu, Record payment is the + button, and the page has **Overview**, **Payments** and **Schedule** tabs. Overview shows the remaining balance, a repaid progress bar and all loan facts; Payments lists recorded repayments; Schedule shows each month's EMI against what was paid (Paid, Partial, Not recorded, Upcoming).
+
+### Added
+
+- **Ongoing / Closed / All filter** on the Liabilities screen (Ongoing by default, with counts). Closed loans are now viewable instead of disappearing.
+
+### Fixed
+
+- **A loan whose term ended but still has a balance was labelled "Closed" and counted in full.** It is now "Term ended" and stays in the totals with its **remaining** amount only; only loans that are closed or fully repaid are labelled Closed and leave every total (home overview, profile cards, Overview, Liabilities summary).
+- **Family-wide overview included archived profiles**; totals now cover visible profiles only.
+- Removed the leftover "Upcoming Milestone" badge from the Overview liabilities block.
+
+### Testing
+
+- Loan status and total rules, archived-profile exclusion, and a widget test for the card, filter and tabbed details.
+
+## [0.25.5] - 2026-11-16
+
+### Fixed
+
+- The Liabilities header ("Loans & Borrowings" + Add Loan button) overflowed on narrow screens; the title now shrinks with an ellipsis.
+
+### Testing
+
+- Updated four stale widget tests that still expected the old liabilities placeholder, "Upcoming" labels and no Add button on Liabilities. All 197 tests pass.
+
 ## [0.25.4] - 2026-11-15
 
 ### Fixed

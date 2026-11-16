@@ -63,7 +63,7 @@ void main() {
     // Tap on Liabilities tab
     await tester.tap(find.text('Liabilities'));
     await tester.pumpAndSettle();
-    expect(find.text('Coming in Future Milestone'), findsOneWidget);
+    expect(find.text('Loans & Borrowings'), findsOneWidget);
 
     // Tap on Activity tab
     await tester.tap(find.text('Activity'));

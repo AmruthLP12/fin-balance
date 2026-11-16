@@ -88,7 +88,7 @@ void main() {
       // Family Net Worth and Total Family Assets both equal ₹80,000.00
       expect(find.text('₹80,000.00'), findsNWidgets(2));
       expect(find.text('Total Family Assets'), findsOneWidget);
-      expect(find.text('• Upcoming'), findsWidgets);
+      expect(find.text('• Upcoming'), findsNothing);
 
       // Profile cards
       expect(find.text('Alice'), findsOneWidget);

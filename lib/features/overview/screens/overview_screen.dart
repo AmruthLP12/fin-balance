@@ -788,15 +788,11 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
                         : AppColors.lightTextPrimary,
                   ),
                 ),
-                const StatusBadge(
-                  label: 'Upcoming Milestone',
-                  type: BadgeType.brand,
-                ),
               ],
             ),
             const SizedBox(height: 4),
             Text(
-              'No liabilities recorded for this profile. Supported categories:',
+              'No ongoing loans for this profile. Supported categories:',
               style: AppTypography.bodySmall.copyWith(
                 fontSize: 11,
                 color:

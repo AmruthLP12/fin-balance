@@ -52,12 +52,16 @@ void main() {
       final fabWidget1 = tester.widget<FloatingActionButton>(assetsFab);
       expect(fabWidget1.tooltip, 'Add Asset');
 
-      // 3. Liabilities Tab (Index 2) -> FAB Suppressed for milestone scope control
+      // 3. Liabilities Tab (Index 2) -> FAB adds a loan
       await tester
           .tap(find.widgetWithText(NavigationDestination, 'Liabilities'));
       await tester.pumpAndSettle();
-      expect(find.byType(FloatingActionButton), findsNothing);
-      expect(find.text('Coming in Future Milestone'), findsOneWidget);
+      expect(
+          tester
+              .widget<FloatingActionButton>(find.byType(FloatingActionButton))
+              .tooltip,
+          'Add Loan');
+      expect(find.text('Loans & Borrowings'), findsOneWidget);
 
       // 4. Activity Tab (Index 3) -> FAB Suppressed for milestone scope control
       await tester.tap(find.widgetWithText(NavigationDestination, 'Activity'));

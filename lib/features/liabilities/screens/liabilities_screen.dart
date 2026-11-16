@@ -8,22 +8,28 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/fin_card.dart';
 import '../../../core/widgets/finbalance_logo.dart';
-import '../../../core/widgets/section_header.dart';
 import '../../../core/widgets/status_badge.dart';
 import '../../../database/app_database.dart';
-import '../../../database/precision/financial_precision.dart';
 import '../../profile/widgets/profile_menu_button.dart';
 import '../loan_calculator.dart';
 import '../widgets/add_liability_dialog.dart';
+import 'loan_details_screen.dart';
 
-class LiabilitiesScreen extends ConsumerWidget {
+class LiabilitiesScreen extends ConsumerStatefulWidget {
   const LiabilitiesScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<LiabilitiesScreen> createState() => _LiabilitiesScreenState();
+}
+
+class _LiabilitiesScreenState extends ConsumerState<LiabilitiesScreen> {
+  String _filter = 'ongoing';
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final liabilities = ref.watch(activeProfileLiabilitiesProvider);
+    final liabilities = ref.watch(activeProfileAllLiabilitiesProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -48,63 +54,96 @@ class LiabilitiesScreen extends ConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) =>
             Center(child: Text('Unable to load loans: $error')),
-        data: (items) => ListView(
-          padding: AppSpacing.screenPadding,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('Loans & Borrowings',
-                    style: AppTypography.headlineMedium
-                        .copyWith(fontWeight: FontWeight.bold)),
-                FilledButton.icon(
-                  onPressed: () => AddLiabilityDialog.show(context),
-                  icon: const Icon(Icons.add, size: 18),
-                  label: const Text('Add Loan'),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.liability,
-                    visualDensity: VisualDensity.compact,
+        data: (all) {
+          final ongoing = all.where(LoanCalculator.isOngoing).toList();
+          final closed = all.where(LoanCalculator.isClosed).toList();
+          final shown = switch (_filter) {
+            'closed' => closed,
+            'all' => all,
+            _ => ongoing,
+          };
+          return ListView(
+            padding: AppSpacing.screenPadding,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text('Loans & Borrowings',
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTypography.headlineMedium
+                            .copyWith(fontWeight: FontWeight.bold)),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.md),
-            _SummaryCard(items: items, isDark: isDark),
-            const SizedBox(height: AppSpacing.lg),
-            const SectionHeader(title: 'Active Loans'),
-            const SizedBox(height: AppSpacing.sm),
-            if (items.isEmpty)
-              const FinCard(
-                child: Column(
-                  children: [
-                    Icon(Icons.account_balance_rounded,
-                        size: 42, color: AppColors.liability),
-                    SizedBox(height: AppSpacing.sm),
-                    Text('No loans added yet'),
-                    SizedBox(height: 4),
-                    Text('Add a loan to include it in your net worth.'),
-                  ],
-                ),
-              )
-            else
-              ...items.map((item) => _LoanCard(item: item)),
-          ],
-        ),
+                  const SizedBox(width: AppSpacing.sm),
+                  FilledButton.icon(
+                    onPressed: () => AddLiabilityDialog.show(context),
+                    icon: const Icon(Icons.add, size: 18),
+                    label: const Text('Add Loan'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.liability,
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.md),
+              _SummaryCard(ongoing: ongoing, isDark: isDark),
+              const SizedBox(height: AppSpacing.md),
+              Wrap(
+                spacing: AppSpacing.sm,
+                children: [
+                  for (final (value, label, count) in [
+                    ('ongoing', 'Ongoing', ongoing.length),
+                    ('closed', 'Closed', closed.length),
+                    ('all', 'All', all.length),
+                  ])
+                    ChoiceChip(
+                      label: Text('$label ($count)'),
+                      selected: _filter == value,
+                      onSelected: (_) => setState(() => _filter = value),
+                    ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.md),
+              if (shown.isEmpty)
+                FinCard(
+                  child: Column(
+                    children: [
+                      const Icon(Icons.account_balance_rounded,
+                          size: 42, color: AppColors.liability),
+                      const SizedBox(height: AppSpacing.sm),
+                      Text(switch (_filter) {
+                        'closed' => 'No closed loans',
+                        'all' => 'No loans added yet',
+                        _ => 'No ongoing loans',
+                      }),
+                      const SizedBox(height: 4),
+                      const Text(
+                          'Only loans that still have an amount to pay count towards your net worth.',
+                          textAlign: TextAlign.center),
+                    ],
+                  ),
+                )
+              else
+                ...shown.map((item) => _LoanCard(item: item)),
+            ],
+          );
+        },
       ),
     );
   }
 }
 
 class _SummaryCard extends StatelessWidget {
-  final List<FinancialItem> items;
+  final List<FinancialItem> ongoing;
   final bool isDark;
 
-  const _SummaryCard({required this.items, required this.isDark});
+  const _SummaryCard({required this.ongoing, required this.isDark});
 
   @override
   Widget build(BuildContext context) {
     final total =
-        items.fold<int>(0, (sum, item) => sum + item.currentValuationPaise);
+        ongoing.fold<int>(0, (sum, item) => sum + item.currentValuationPaise);
     return FinCard(
       backgroundColor:
           isDark ? AppColors.darkSurfaceElevated : AppColors.lightSurface,
@@ -120,370 +159,108 @@ class _SummaryCard extends StatelessWidget {
                 color: AppColors.liability),
           ),
           const SizedBox(width: AppSpacing.md),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Total outstanding',
-                  style: AppTypography.bodySmall.copyWith(
-                      color: isDark
-                          ? AppColors.darkTextSecondary
-                          : AppColors.lightTextSecondary)),
-              const SizedBox(height: 2),
-              Text(CurrencyFormatter.formatPaiseCompact(total),
-                  style: AppTypography.titleLarge
-                      .copyWith(fontWeight: FontWeight.bold)),
-            ],
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Total remaining',
+                    style: AppTypography.bodySmall.copyWith(
+                        color: isDark
+                            ? AppColors.darkTextSecondary
+                            : AppColors.lightTextSecondary)),
+                const SizedBox(height: 2),
+                Text(CurrencyFormatter.formatPaiseCompact(total),
+                    style: AppTypography.titleLarge
+                        .copyWith(fontWeight: FontWeight.bold)),
+              ],
+            ),
           ),
+          Text('${ongoing.length} ongoing', style: AppTypography.labelSmall),
         ],
       ),
     );
   }
 }
 
-class _LoanCard extends ConsumerWidget {
+/// Minimal loan row (like the SIP card): the main facts only. Tap for details.
+class _LoanCard extends StatelessWidget {
   final FinancialItem item;
 
   const _LoanCard({required this.item});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final muted = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
     final lender = item.lenderName;
-    final tenure = [
-      if ((item.tenureYears ?? 0) > 0) '${item.tenureYears} yrs',
-      if ((item.tenureMonths ?? 0) > 0) '${item.tenureMonths} mths',
-      if ((item.tenureDays ?? 0) > 0) '${item.tenureDays} days',
-    ].join(' ');
+    final closed = LoanCalculator.isClosed(item);
+    final months = LoanCalculator.remainingMonths(item);
+    final line = <String>[
+      if (!closed && item.emiPaise != null)
+        'EMI ${CurrencyFormatter.formatPaiseCompact(item.emiPaise!)}',
+      if (!closed && LoanCalculator.termEnded(item))
+        'Term ended'
+      else if (!closed && months > 0)
+        '$months months left',
+      if (closed) 'Fully repaid / closed',
+    ].join(' · ');
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: FinCard(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.account_balance_wallet_rounded,
-                    color: AppColors.liability),
-                const SizedBox(width: AppSpacing.sm),
-                Expanded(
-                  child: Text(item.name,
-                      style: AppTypography.titleMedium
-                          .copyWith(fontWeight: FontWeight.bold)),
-                ),
-                Text(
-                    CurrencyFormatter.formatPaiseCompact(
-                        item.currentValuationPaise),
-                    style: AppTypography.titleMedium.copyWith(
-                        color: AppColors.liability,
-                        fontWeight: FontWeight.bold)),
-                PopupMenuButton<String>(
-                  tooltip: 'Loan actions',
-                  onSelected: (action) => _handleAction(context, ref, action),
-                  itemBuilder: (_) => const [
-                    PopupMenuItem(value: 'edit', child: Text('Edit loan')),
-                    PopupMenuItem(
-                        value: 'repay', child: Text('Record repayment')),
-                    PopupMenuItem(
-                        value: 'details', child: Text('View details')),
-                    PopupMenuItem(value: 'close', child: Text('Close loan')),
-                    PopupMenuItem(value: 'delete', child: Text('Delete loan')),
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Wrap(
-              spacing: AppSpacing.md,
-              runSpacing: AppSpacing.xs,
-              children: [
-                Text(categoryLabel(item.subType)),
-                if (lender != null && lender.isNotEmpty) Text(lender),
-                if (item.interestRateBasisPoints != null)
-                  Text(
-                      '${(item.interestRateBasisPoints! / 100).toStringAsFixed(2)}% ${item.interestRateType ?? ''}'),
-                if (item.emiPaise != null)
-                  Text(
-                      'EMI ${CurrencyFormatter.formatPaiseCompact(item.emiPaise!)}'),
-                if (tenure.isNotEmpty) Text(tenure),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Row(
-              children: [
-                StatusBadge(
-                  label: LoanCalculator.status(item),
-                  type: item.currentValuationPaise <= 0
-                      ? BadgeType.asset
-                      : LoanCalculator.termEnded(item)
-                          ? BadgeType.liability
-                          : BadgeType.scheduled,
-                ),
-                const SizedBox(width: AppSpacing.sm),
-                if (LoanCalculator.remainingMonths(item) > 0)
-                  Text('${LoanCalculator.remainingMonths(item)} months left'),
-                if (LoanCalculator.termEnded(item) &&
-                    item.currentValuationPaise > 0)
-                  Text(
-                      ' ${CurrencyFormatter.formatPaiseCompact(item.currentValuationPaise)} pending'),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _handleAction(
-      BuildContext context, WidgetRef ref, String action) async {
-    final db = ref.read(databaseProvider);
-    if (action == 'details') {
-      await Navigator.of(context).push<void>(MaterialPageRoute(
-        builder: (_) => LoanDetailsScreen(item: item),
-      ));
-    } else if (action == 'edit') {
-      await AddLiabilityDialog.show(context, liability: item);
-    } else if (action == 'repay') {
-      await _showRepaymentDialog(context, ref);
-    } else if (action == 'close') {
-      final confirmed = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Close loan?'),
-          content:
-              Text('Close "${item.name}" and remove it from active balances?'),
-          actions: [
-            TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: const Text('Cancel')),
-            FilledButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: const Text('Close loan')),
-          ],
-        ),
-      );
-      if (confirmed == true) {
-        await db.financialItemsDao.updateItem(
-          item.copyWith(status: 'closed', updatedAt: DateTime.now().toUtc()),
-        );
-      }
-    } else if (action == 'delete') {
-      final confirmed = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Delete loan?'),
-          content: const Text(
-              'This permanently deletes the loan. Its payment history is kept as unlinked transactions.'),
-          actions: [
-            TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: const Text('Cancel')),
-            FilledButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: const Text('Delete')),
-          ],
-        ),
-      );
-      if (confirmed == true) {
-        await db.financialItemsDao.deleteItem(item.id);
-      }
-    }
-  }
-
-  Future<void> _showRepaymentDialog(BuildContext context, WidgetRef ref) async {
-    final controller = TextEditingController();
-    final notesController = TextEditingController();
-    final formKey = GlobalKey<FormState>();
-    DateTime paymentDate = DateTime.now();
-    final result =
-        await showDialog<({double amount, DateTime date, String notes})>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Record payment for ${item.name}'),
-        content: StatefulBuilder(
-          builder: (context, setDialogState) => Form(
-            key: formKey,
-            child: Column(mainAxisSize: MainAxisSize.min, children: [
-              TextFormField(
-                controller: controller,
-                autofocus: true,
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(labelText: 'Amount'),
-                validator: (value) => double.tryParse(value ?? '') == null
-                    ? 'Enter a valid amount'
-                    : null,
-              ),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Payment date'),
-                subtitle: Text(
-                    '${paymentDate.day}/${paymentDate.month}/${paymentDate.year}'),
-                trailing: const Icon(Icons.calendar_today_outlined, size: 18),
-                onTap: () async {
-                  final picked = await showDatePicker(
-                    context: context,
-                    initialDate: paymentDate,
-                    firstDate: item.startDate ?? DateTime(2000),
-                    lastDate: DateTime.now(),
-                  );
-                  if (picked != null) {
-                    setDialogState(() => paymentDate = picked);
-                  }
-                },
-              ),
-              TextField(
-                controller: notesController,
-                decoration:
-                    const InputDecoration(labelText: 'Notes (optional)'),
-              ),
-            ]),
-          ),
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel')),
-          FilledButton(
-            onPressed: () {
-              if (formKey.currentState!.validate()) {
-                Navigator.pop(
-                  context,
-                  (
-                    amount: double.parse(controller.text.trim()),
-                    date: paymentDate,
-                    notes: notesController.text.trim(),
-                  ),
-                );
-              }
-            },
-            child: const Text('Save payment'),
-          ),
-        ],
-      ),
-    );
-    controller.dispose();
-    notesController.dispose();
-    if (result == null || !context.mounted) return;
-    try {
-      await ref.read(transactionsDaoProvider).recordDebtRepayment(
-            profileId: item.profileId,
-            financialItemId: item.id,
-            categoryId: item.categoryId,
-            transactionDate: result.date,
-            amountPaise: FinancialPrecision.rupeesToPaise(result.amount),
-            notes: result.notes,
-          );
-    } catch (error) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Payment failed: $error')));
-      }
-    }
-  }
-}
-
-class LoanDetailsScreen extends ConsumerWidget {
-  final FinancialItem item;
-
-  const LoanDetailsScreen({super.key, required this.item});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final transactionsAsync = ref.watch(transactionsByItemProvider(
-        (profileId: item.profileId, itemId: item.id)));
-    final maturity = LoanCalculator.maturityDate(item);
-    return Scaffold(
-      appBar: AppBar(title: Text(item.name)),
-      body: ListView(
-        padding: AppSpacing.screenPadding,
-        children: [
-          Text(CurrencyFormatter.formatPaiseCompact(item.currentValuationPaise),
-              style: AppTypography.heroAmount),
-          const SizedBox(height: AppSpacing.xs),
-          StatusBadge(
-            label: LoanCalculator.status(item),
-            type: item.currentValuationPaise <= 0
-                ? BadgeType.asset
-                : BadgeType.liability,
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          _detail('Loan type', categoryLabel(item.subType)),
-          _detail('Principal',
-              CurrencyFormatter.formatPaiseCompact(item.initialValuePaise)),
-          _detail('Pending',
-              CurrencyFormatter.formatPaiseCompact(item.currentValuationPaise)),
-          _detail('Start date', _date(item.startDate)),
-          _detail('Maturity date', _date(maturity)),
-          _detail(
-              'Remaining months', '${LoanCalculator.remainingMonths(item)}'),
-          if (item.lenderName?.isNotEmpty == true)
-            _detail('Lender', item.lenderName!),
-          if (item.emiPaise != null)
-            _detail(
-                'EMI', CurrencyFormatter.formatPaiseCompact(item.emiPaise!)),
-          const SizedBox(height: AppSpacing.lg),
-          Text('Monthly repayment history',
-              style: AppTypography.titleMedium
-                  .copyWith(fontWeight: FontWeight.bold)),
-          const SizedBox(height: AppSpacing.sm),
-          transactionsAsync.when(
-            loading: () => const CircularProgressIndicator(),
-            error: (error, _) => Text('Unable to load history: $error'),
-            data: (transactions) => _MonthlySchedule(
-              loan: item,
-              transactions: transactions,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _detail(String label, String value) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4),
+        onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
+            builder: (_) => LoanDetailsScreen(item: item))),
         child: Row(
           children: [
-            Expanded(child: Text(label)),
-            Text(value, textAlign: TextAlign.end),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(item.name,
+                      style: AppTypography.titleMedium
+                          .copyWith(fontWeight: FontWeight.bold),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis),
+                  const SizedBox(height: 2),
+                  Text(
+                      [
+                        categoryLabel(item.subType),
+                        if (lender != null && lender.isNotEmpty) lender,
+                      ].join(' · '),
+                      style: AppTypography.labelSmall.copyWith(color: muted),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis),
+                  if (line.isNotEmpty) ...[
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(line,
+                        style: AppTypography.bodyMedium
+                            .copyWith(fontWeight: FontWeight.w600)),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                if (!closed)
+                  Text(
+                      CurrencyFormatter.formatPaiseCompact(
+                          item.currentValuationPaise),
+                      style: AppTypography.titleMedium.copyWith(
+                          color: AppColors.liability,
+                          fontWeight: FontWeight.bold)),
+                if (!closed)
+                  Text('remaining',
+                      style: AppTypography.labelSmall.copyWith(color: muted)),
+                const SizedBox(height: 4),
+                StatusBadge(
+                    label: LoanCalculator.status(item).toUpperCase(),
+                    type: loanBadgeType(item)),
+              ],
+            ),
           ],
         ),
-      );
-
-  String _date(DateTime? date) =>
-      date == null ? 'Not set' : '${date.day}/${date.month}/${date.year}';
-}
-
-class _MonthlySchedule extends StatelessWidget {
-  final FinancialItem loan;
-  final List<Transaction> transactions;
-
-  const _MonthlySchedule({required this.loan, required this.transactions});
-
-  @override
-  Widget build(BuildContext context) {
-    final payments = <String, int>{};
-    for (final transaction in transactions) {
-      if (transaction.transactionType != 'debt_repayment') continue;
-      final key =
-          '${transaction.transactionDate.year}-${transaction.transactionDate.month.toString().padLeft(2, '0')}';
-      payments[key] = (payments[key] ?? 0) + transaction.amountPaise;
-    }
-    final start = loan.startDate;
-    if (start == null) return const Text('Start date not set.');
-    final end = LoanCalculator.maturityDate(loan) ?? DateTime.now();
-    final rows = <Widget>[];
-    var month = DateTime(start.year, start.month);
-    final maturityMonth = DateTime(end.year, end.month);
-    while (month.isBefore(maturityMonth)) {
-      final key = '${month.year}-${month.month.toString().padLeft(2, '0')}';
-      rows.add(ListTile(
-        dense: true,
-        contentPadding: EdgeInsets.zero,
-        title: Text(key),
-        trailing:
-            Text(CurrencyFormatter.formatPaiseCompact(payments[key] ?? 0)),
-      ));
-      month = DateTime(month.year, month.month + 1);
-    }
-    return Column(children: rows);
+      ),
+    );
   }
 }
