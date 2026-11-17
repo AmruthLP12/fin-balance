@@ -80,6 +80,7 @@ final hasSelectedInitialProfileProvider = StateProvider<bool>((ref) => false);
 /// StateNotifier to manage active profile selection and persistence.
 class ActiveProfileNotifier extends StateNotifier<int> {
   final Ref _ref;
+  bool _chosen = false;
 
   ActiveProfileNotifier(this._ref) : super(1) {
     _loadPersistedProfile();
@@ -87,24 +88,26 @@ class ActiveProfileNotifier extends StateNotifier<int> {
 
   Future<void> _loadPersistedProfile() async {
     final settingsDao = _ref.read(appSettingsDaoProvider);
-    final persistedIdStr = await settingsDao.getSetting('active_profile_id');
-    if (persistedIdStr != null) {
-      final parsedId = int.tryParse(persistedIdStr);
-      if (parsedId != null) {
-        state = parsedId;
-        return;
-      }
-    }
-
-    final defaultProfile =
-        await _ref.read(profilesDaoProvider).getDefaultProfile();
-    if (defaultProfile != null) {
-      state = defaultProfile.id;
+    final profilesDao = _ref.read(profilesDaoProvider);
+    final persisted =
+        int.tryParse(await settingsDao.getSetting('active_profile_id') ?? '');
+    final saved =
+        persisted == null ? null : await profilesDao.getProfileById(persisted);
+    final fallback = saved != null && !saved.isArchived
+        ? null
+        : await profilesDao.getDefaultProfile();
+    // A profile picked while this was loading wins over the stored one.
+    if (_chosen) return;
+    if (fallback != null) {
+      state = fallback.id;
+    } else if (saved != null && !saved.isArchived) {
+      state = saved.id;
     }
   }
 
   /// Switch the active financial profile and persist in AppSettings.
   Future<void> switchProfile(int newProfileId) async {
+    _chosen = true;
     state = newProfileId;
     final settingsDao = _ref.read(appSettingsDaoProvider);
     await settingsDao.setSetting('active_profile_id', newProfileId.toString());

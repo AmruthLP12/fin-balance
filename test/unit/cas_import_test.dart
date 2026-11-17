@@ -29,8 +29,44 @@ Opening Unit Balance: 0.000
 Closing Unit Balance: 9.000 Total Cost Value: 500.00 Market Value on 29-Jun-2026: INR 1.00
 ''';
 
+const _twin = '''
+Consolidated Account Statement
+01-Jan-2026 To 30-Jun-2026
+Sample Mutual Fund
+Folio No: 4444 / 0
+Twin SIP Fund - Regular Growth (Non Demat) - ISIN: INF000C03033
+Opening Unit Balance: 0.000
+02-Feb-2026 Systematic Investment (1) 999.95 10.000 99.9950 10.000 ive- L
+02-Feb-2026 Systematic Investment (1) 999.95 10.000 99.9950 20.000 .5
+05-Mar-2026 Systematic Investment (1) 999.95 10.000 99.9950 30.000 8 1
+Closing Unit Balance: 30.000 NAV on 29-Jun-2026: INR 12.0000 Total Cost Value: 3,000.00 Market Value on 29-Jun-2026: INR 360.00
+''';
+
 void main() {
   summaryTests();
+  test('rows with stray watermark text still parse; twin SIPs both import',
+      () async {
+    final f = parseCasText(_twin);
+    expect(f.single.txns, hasLength(3));
+    expect(f.single.reconciles, isTrue);
+    final db = AppDatabase.forTesting(NativeDatabase.memory());
+    addTearDown(db.close);
+    final pid = await db.profilesDao.createProfile(
+        const FinancialProfilesCompanion(
+            name: drift.Value('A'), relationship: drift.Value('Self')));
+    final svc = CasImportService(db);
+    Future<CasImportResult> run() => svc.importFolios(
+        profileId: pid,
+        folios: f,
+        schemes: {'INF000C03033': const AmfiScheme(9, 'Twin', 12)},
+        periodStart: DateTime(2026, 1, 1));
+    expect((await run()).imported, 3);
+    expect((await run()).imported, 0);
+    expect(
+        (await db.select(db.financialItems).get()).single.unitCountMicroUnits,
+        30 * 1000000);
+  });
+
   test('parser reads folios, charges, signs and reconciles units', () {
     final f = parseCasText(_cas);
     expect(f.map((x) => x.folio), ['1111 / 0', '2222', '3333']);

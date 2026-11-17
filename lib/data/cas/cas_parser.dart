@@ -74,10 +74,12 @@ bool _isOut(String type) =>
 
 const _num = r'\(?-?[\d,]+\.\d+\)?';
 const _date0 = r'(\d{2}-[A-Za-z]{3}-\d{4})';
+// The page watermark ("...Live") can leak a few stray letters after a row.
+const _junk = r'(?:\s+(?![\d,]+\.\d)\S{1,6}){0,3}';
 final _txnRe = RegExp(
-    '^$_date0\\s+(.+?)\\s+($_num)\\s+($_num)\\s+($_num)\\s+($_num)\\s*\$');
+    '^$_date0\\s+(.+?)\\s+($_num)\\s+($_num)\\s+($_num)\\s+($_num)$_junk\\s*\$');
 final _chargeRe = RegExp(
-    '^$_date0\\s+\\*{3}\\s*(?:Stamp Duty|STT[^*]*)\\s*\\*{3}\\s+($_num)\\s*\$',
+    '^$_date0\\s+\\*{3}\\s*(?:Stamp Duty|STT[^*]*)\\s*\\*{3}\\s+($_num)$_junk\\s*\$',
     caseSensitive: false);
 final _folioRe = RegExp(r'^Folio No:\s*(\d+(?:\s*/\s*\d+)?)');
 final _isinRe = RegExp(r'ISIN\s*:\s*((?:[A-Z0-9]\s*){12})');

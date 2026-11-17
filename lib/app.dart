@@ -14,6 +14,8 @@ class FinBalanceApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Start loading the saved profile at launch, not on first use.
+    ref.read(activeProfileIdProvider);
     final themeMode = ref.watch(themeModeProvider);
     final hasSelectedProfile = ref.watch(hasSelectedInitialProfileProvider);
 

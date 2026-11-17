@@ -27,6 +27,13 @@ class OverviewScreen extends ConsumerStatefulWidget {
 }
 
 class _OverviewScreenState extends ConsumerState<OverviewScreen> {
+  /// Show exact rupees instead of lakh / crore shorthand.
+  bool _fullAmounts = false;
+
+  String _money(int paise) => _fullAmounts
+      ? CurrencyFormatter.formatPaise(paise)
+      : CurrencyFormatter.formatPaiseCompact(paise);
+
   int _selectedChartIndex =
       0; // 0: Assets & Liabilities (Default), 1: Cash Flow, 2: Portfolio Assets
   int _touchedIndex = -1;
@@ -186,11 +193,23 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
                       type: BadgeType.neutral,
                       icon: Icons.shield_outlined,
                     ),
+                    IconButton(
+                      tooltip: _fullAmounts
+                          ? 'Show in lakh / crore'
+                          : 'Show full amounts',
+                      visualDensity: VisualDensity.compact,
+                      iconSize: 20,
+                      icon: Icon(_fullAmounts
+                          ? Icons.unfold_less_rounded
+                          : Icons.unfold_more_rounded),
+                      onPressed: () =>
+                          setState(() => _fullAmounts = !_fullAmounts),
+                    ),
                   ],
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 Text(
-                  CurrencyFormatter.formatPaiseCompact(netWorthPaise),
+                  _money(netWorthPaise),
                   style: AppTypography.heroAmount.copyWith(
                     color: isDark
                         ? AppColors.darkTextPrimary
@@ -232,8 +251,7 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            CurrencyFormatter.formatPaiseCompact(
-                                totalAssetsPaise),
+                            _money(totalAssetsPaise),
                             style: AppTypography.amountMedium.copyWith(
                               color: AppColors.asset,
                               fontWeight: FontWeight.w700,
@@ -272,8 +290,7 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            CurrencyFormatter.formatPaiseCompact(
-                                totalLiabilitiesPaise),
+                            _money(totalLiabilitiesPaise),
                             style: AppTypography.amountMedium.copyWith(
                               color: AppColors.liability,
                               fontWeight: FontWeight.w700,
@@ -517,7 +534,7 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
                               child: Text(r.$1,
                                   style: AppTypography.bodySmall
                                       .copyWith(fontWeight: FontWeight.w500))),
-                          Text(CurrencyFormatter.formatPaiseCompact(r.$2),
+                          Text(_money(r.$2),
                               style: AppTypography.bodySmall.copyWith(
                                   fontWeight: FontWeight.w700, color: r.$3)),
                         ],

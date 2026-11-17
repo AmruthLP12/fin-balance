@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/calculations/financial_calculator.dart';
+import '../../../core/providers/daily_pnl.dart';
 import '../../../core/formatting/currency_formatter.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
@@ -7,8 +9,8 @@ import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/fin_card.dart';
 import '../../../database/app_database.dart';
 
-/// One-glance totals for every active asset of the profile: invested, current, P&L, return, XIRR.
-class PortfolioSummaryCard extends StatelessWidget {
+/// One-glance totals for every active asset of the profile: invested, current, P&L and today's change.
+class PortfolioSummaryCard extends ConsumerWidget {
   final List<FinancialItem> activeAssets;
   final List<Transaction> transactions;
 
@@ -23,7 +25,7 @@ class PortfolioSummaryCard extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     if (activeAssets.isEmpty) return const SizedBox.shrink();
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final muted = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
@@ -34,16 +36,7 @@ class PortfolioSummaryCard extends StatelessWidget {
         activeAssets.fold<int>(0, (s, a) => s + a.currentValuationPaise);
     final pnl = FinancialCalculator.calculateProfitLossPaise(
         investedPaise: invested, currentValuationPaise: current);
-    final returnPct = FinancialCalculator.calculateAbsoluteReturn(
-        investedPaise: invested, currentValuationPaise: current);
-    final ids = activeAssets.map((a) => a.id).toSet();
-    final xirr = FinancialCalculator.calculatePortfolioXirr(
-      transactions: transactions
-          .where((t) =>
-              t.financialItemId != null && ids.contains(t.financialItemId))
-          .toList(),
-      totalValuationPaise: current,
-    );
+    final today = ref.watch(dailyPnlProvider).value;
 
     final color = pnl >= 0 ? AppColors.asset : AppColors.liability;
     final sign = pnl >= 0 ? '+' : '-';
@@ -77,12 +70,14 @@ class PortfolioSummaryCard extends StatelessWidget {
           stat('Profit / Loss',
               '$sign${CurrencyFormatter.formatPaise(pnl.abs())}',
               valueColor: color),
-          stat('Return', '$sign${returnPct.abs().toStringAsFixed(2)}%',
-              valueColor: color),
-          stat('XIRR', xirr == null ? '—' : '${xirr.toStringAsFixed(2)}%',
-              valueColor: xirr == null
+          stat(
+              "Today's P&L",
+              today == null
+                  ? '—'
+                  : '${today >= 0 ? '+' : '-'}${CurrencyFormatter.formatPaise(today.abs())}',
+              valueColor: today == null
                   ? null
-                  : (xirr >= 0 ? AppColors.asset : AppColors.liability)),
+                  : (today >= 0 ? AppColors.asset : AppColors.liability)),
         ]),
       ],
     );

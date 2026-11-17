@@ -105,10 +105,14 @@ class CasImportService {
 
       final existing =
           await _db.transactionsDao.getTransactionsByItem(profileId, holdingId);
-      final seen = {
-        for (final t in existing)
-          '${_day(t.transactionDate)}|${t.unitsMicroUnits ?? 0}'
-      };
+      // Already-saved rows, counted: two genuine same-day, same-unit rows
+      // in one statement (two SIPs) must both import, while a repeat import
+      // still skips each row it already has.
+      final have = <String, int>{};
+      for (final t in existing) {
+        final k = '${_day(t.transactionDate)}|${t.unitsMicroUnits ?? 0}';
+        have[k] = (have[k] ?? 0) + 1;
+      }
       final hadEarlierHistory =
           existing.any((t) => t.transactionDate.isBefore(periodStart));
 
@@ -141,7 +145,9 @@ class CasImportService {
 
       for (final r in rows) {
         final units = FinancialPrecision.unitsToMicroUnits(r.units);
-        if (!seen.add('${_day(r.date)}|$units')) {
+        final key = '${_day(r.date)}|$units';
+        if ((have[key] ?? 0) > 0) {
+          have[key] = have[key]! - 1;
           result.duplicates++;
           continue;
         }

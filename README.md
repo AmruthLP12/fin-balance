@@ -2,7 +2,7 @@
 
 > **FinBalance** is an offline-first, multi-profile personal finance and net worth management application for Android and Web, built with Flutter and SQLite (Drift).
 
-### Current Release Focus (0.27.2)
+### Current Release Focus (0.28.0)
 
 - Loan liability tracking with lender, loan type, outstanding balance, sanctioned amount, EMI, tenure, interest rate, start date, and notes.
 - Active loan list with total outstanding debt, edit/delete/close actions, compact Indian-number formatting, and dated repayment history.
@@ -229,6 +229,7 @@ make clean
 - [x] **Stable Release Signing ([0.22.1]):** releases signed with one key so updates install over the existing app on any build machine.
 - [x] **Backup/Restore & Fixes ([0.23.0]):** JSON export/import of all data, waving Indian flag, mutual funds filed under the right category, SIPs counted in cash flow, context-aware + button.
 - [x] **NAV Auto-Refresh, CAS Summary & Profile Menu ([0.24.0]):** refresh on open/resume/due time with offline retry, holdings-only CAS summaries, profile choice for CAS import, in-menu profile switching.
+- [x] **CAS Import Fixes & Daily P&L ([0.28.0]):** watermark-tolerant CAS rows, twin SIPs imported, lakh/crore toggle, Today's P&L instead of Return/XIRR, stable active profile.
 - [x] **Loan Schedule & Cash Flow Fixes ([0.27.2]):** first EMI on the start date, months left from balance/EMI, Preclosed status, loan repayments in cash flow.
 - [x] **Loan Backfill & Support Shortcut ([0.27.1]):** past EMIs of a new loan are marked paid, Support the Developer moved to the top of Settings with a heart shortcut on both overviews.
 - [x] **Overview Cleanup & Auto EMI ([0.27.0]):** lakh/crore amounts, simple assets-vs-liabilities chart, single Fixed Income/Loans rows, EMI auto-deduction and EMI/tenure calculation, centred family net worth, no currency setting.
@@ -246,7 +247,7 @@ make clean
 
 - **Built by:** Amruth L P
 - **Developer Portfolio:** [https://amruthlp.vercel.app](https://amruthlp.vercel.app)
-- **Application Version:** `v0.27.2` (read from the installed app in Settings > About)
+- **Application Version:** `v0.28.0` (read from the installed app in Settings > About)
 - **Support & Inquiries:** Accessible in-app under `Settings` $\rightarrow$ `Support` (`Contact details will be provided here.`).
 - **In-App Privacy Policy:** Open `Settings` $\rightarrow$ `Support` $\rightarrow$ `Privacy Policy`.
 - **Privacy Policy Markdown File:** Located in the repository at [`docs/privacy-policy.md`](docs/privacy-policy.md).

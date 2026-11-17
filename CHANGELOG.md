@@ -5,6 +5,23 @@ All notable changes to the FinBalance application will be documented in this fil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.28.0] - 2026-11-17
+
+### Fixed
+
+- **CAS import: "Units do not match the statement closing balance, skipped".** The statement's page watermark leaks stray characters onto some rows (for example "ive- L" or ".5" after the balance), so those rows were not read and the units no longer added up. Such rows are now read, and every folio in the 13-page CAMS statement reconciles.
+- **CAS import dropped genuine twin rows.** Two SIPs on the same day with the same units (common when two SIPs share a date) were treated as duplicates; both are now imported, while re-importing the same file still skips what you already have.
+- **Active profile no longer jumps to another account.** The saved profile is loaded at launch (not on first use), a profile you pick while it loads is not overwritten, and an archived or missing saved profile falls back to the default. The CAS import screen now imports into exactly the profile it shows.
+
+### Changed
+
+- **Personal Overview:** the totals show in lakh / crore with a toggle (arrows icon on the net worth card) to show full amounts.
+- **Return and XIRR are replaced by Today's P&L** (units x the change between the latest and previous NAV of each fund).
+
+### Testing
+
+- Rows with watermark text, twin SIPs, and the daily P&L calculation.
+
 ## [0.27.2] - 2026-11-17
 
 ### Fixed

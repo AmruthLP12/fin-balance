@@ -108,14 +108,23 @@ class _CasImportScreenState extends ConsumerState<CasImportScreen> {
     );
   }
 
+  /// The profile shown in the picker, and the one the import goes into
+  /// (falls back to the first profile if the chosen/active one is not listed).
+  int _targetProfile() {
+    final profiles = ref.read(allProfilesProvider).value ?? const [];
+    final int wanted = _profileId ?? ref.read(activeProfileIdProvider);
+    return profiles.any((p) => p.id == wanted) || profiles.isEmpty
+        ? wanted
+        : profiles.first.id;
+  }
+
   Widget _profilePicker() {
     final profiles = ref.watch(allProfilesProvider).value ?? const [];
     if (profiles.isEmpty) return const SizedBox.shrink();
     final activeId = ref.watch(activeProfileIdProvider);
-    final value = profiles.any((p) => p.id == (_profileId ?? activeId))
-        ? (_profileId ?? activeId)
-        : profiles.first.id;
+    final value = _targetProfile();
     return DropdownButtonFormField<int>(
+      key: ValueKey(value),
       initialValue: value,
       decoration: const InputDecoration(
         labelText: 'Import into profile',
@@ -142,7 +151,7 @@ class _CasImportScreenState extends ConsumerState<CasImportScreen> {
     setState(() => _busy = true);
     try {
       final r = await CasImportService(ref.read(databaseProvider)).importFolios(
-        profileId: _profileId ?? ref.read(activeProfileIdProvider),
+        profileId: _targetProfile(),
         folios: folios.where(_ok).toList(),
         schemes: _schemes,
         periodStart: _periodStart!,
