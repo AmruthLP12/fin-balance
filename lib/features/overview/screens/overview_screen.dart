@@ -143,9 +143,14 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
             ),
           ),
         ),
-        actions: const [
-          ProfileMenuButton(radius: 16),
-          SizedBox(width: AppSpacing.xs),
+        actions: [
+          IconButton(
+            tooltip: 'Support',
+            icon: const Icon(Icons.favorite_border_rounded),
+            onPressed: () => ref.read(mainTabProvider.notifier).state = 4,
+          ),
+          const ProfileMenuButton(radius: 16),
+          const SizedBox(width: AppSpacing.xs),
         ],
       ),
       body: ListView(

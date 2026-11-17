@@ -9,6 +9,7 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../database/app_database.dart';
 import '../../../database/precision/financial_precision.dart';
+import '../../../data/loan/emi_service.dart';
 import '../loan_calculator.dart';
 
 /// Full-screen mobile-optimized dialog for recording a new liability or debt commitment.
@@ -293,7 +294,8 @@ class _AddLiabilityDialogState extends ConsumerState<AddLiabilityDialog> {
                       border: OutlineInputBorder(),
                       hintText: 'e.g. 2500000',
                       helperText:
-                          'Current principal debt remaining to be repaid',
+                          'Principal still owed. For a new loan, enter the full amount: EMIs since the start date are marked paid automatically.',
+                      helperMaxLines: 3,
                     ),
                     validator: (val) {
                       if (val == null || val.trim().isEmpty) {
@@ -579,10 +581,19 @@ class _AddLiabilityDialogState extends ConsumerState<AddLiabilityDialog> {
         tenureDays: drift.Value(days),
         interestRateType: drift.Value(_interestRateType),
         startDate: drift.Value(_startDate),
+        // A new loan not yet repaid counts its EMIs from the start date, so
+        // past instalments are backfilled as paid.
+        createdAt: widget.liability == null &&
+                _subType != 'other_liability' &&
+                outstandingPaise >= principalPaise &&
+                _startDate.isBefore(DateTime.now())
+            ? drift.Value(_startDate)
+            : const drift.Value.absent(),
         notes: drift.Value(notes.isNotEmpty ? notes : null),
       );
       if (widget.liability == null) {
         await db.financialItemsDao.insertItem(values);
+        await applyDueEmis(db);
       } else {
         await db.financialItemsDao.updateItem(
           widget.liability!.copyWith(

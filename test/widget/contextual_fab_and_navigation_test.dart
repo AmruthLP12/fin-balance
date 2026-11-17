@@ -140,6 +140,7 @@ void main() {
       await tester.tap(find.widgetWithText(NavigationDestination, 'Settings'));
       await tester.pumpAndSettle();
 
+      await tester.scrollUntilVisible(find.text('Data Synchronization'), 300);
       expect(find.text('Data Synchronization'), findsOneWidget);
       expect(find.text('NAV Refresh Policy'), findsOneWidget);
       expect(find.text('Sync Schedule Status'), findsOneWidget);

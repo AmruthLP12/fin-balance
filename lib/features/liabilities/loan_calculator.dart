@@ -61,7 +61,8 @@ class LoanCalculator {
     if (r == 0) return (principalPaise / emiPaise).ceil();
     final x = 1 - principalPaise * r / emiPaise;
     if (x <= 0) return null;
-    return (-math.log(x) / math.log(1 + r) - 0.05).ceil(); // EMI is rounded to paise
+    return (-math.log(x) / math.log(1 + r) - 0.05)
+        .ceil(); // EMI is rounded to paise
   }
 
   /// Other borrowings are repaid manually; real loans auto-deduct their EMI.

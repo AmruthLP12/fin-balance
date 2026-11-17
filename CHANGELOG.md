@@ -5,6 +5,18 @@ All notable changes to the FinBalance application will be documented in this fil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.27.1] - 2026-11-17
+
+### Changed
+
+- **New loans backfill their past EMIs.** Add a loan with a start date in the past (e.g. 1 Jan 2026, ₹30,000, ₹2,500 a month) and every EMI since then is marked paid in Payments and Schedule, the balance is reduced to match, and the EMI keeps deducting automatically on the same day each month. Enter the full amount as the balance for a new loan. If you enter a balance lower than the sanctioned amount it is treated as already current and only future EMIs are deducted.
+- **Other Borrowings** (money lent to a friend and the like) are never auto-deducted; use Record payment.
+- **Support the Developer is now at the top of Settings.**
+
+### Added
+
+- **Support button** (heart icon) on the personal Overview and the family overview; it opens Settings, where the support card is first.
+
 ## [0.27.0] - 2026-11-16
 
 ### Changed

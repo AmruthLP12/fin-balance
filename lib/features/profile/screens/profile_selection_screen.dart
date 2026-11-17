@@ -49,6 +49,13 @@ class ProfileSelectionScreen extends ConsumerWidget {
         toolbarHeight: 44,
         actions: [
           IconButton(
+            tooltip: 'Support',
+            icon: const Icon(Icons.favorite_border_rounded),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => const SettingsScreen()),
+            ),
+          ),
+          IconButton(
             tooltip: 'Settings',
             icon: const Icon(Icons.settings_outlined),
             onPressed: () => Navigator.of(context).push(

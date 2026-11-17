@@ -139,6 +139,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       body: ListView(
         padding: AppSpacing.screenPadding,
         children: [
+          const SectionHeader(title: 'Support the Developer'),
+          const SupportDeveloperCard(),
+          const SizedBox(height: AppSpacing.lg),
+
           // Privacy Banner
           FinCard(
             backgroundColor: isDark
@@ -416,10 +420,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ),
             ),
           ),
-          const SizedBox(height: AppSpacing.lg),
-
-          const SectionHeader(title: 'Support the Developer'),
-          const SupportDeveloperCard(),
           const SizedBox(height: AppSpacing.lg),
 
           // Support Section
