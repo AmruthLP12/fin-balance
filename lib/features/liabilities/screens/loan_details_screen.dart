@@ -270,10 +270,9 @@ class _OverviewTab extends StatelessWidget {
                           style: AppTypography.labelSmall
                               .copyWith(color: AppColors.liability)),
                     ] else if (ongoing &&
-                        LoanCalculator.remainingMonths(loan) > 0) ...[
+                        LoanCalculator.monthsLeft(loan) > 0) ...[
                       const SizedBox(height: 2),
-                      Text(
-                          '${LoanCalculator.remainingMonths(loan)} months left',
+                      Text('${LoanCalculator.monthsLeft(loan)} months left',
                           style:
                               AppTypography.labelSmall.copyWith(color: muted)),
                     ],
@@ -412,6 +411,13 @@ class _ScheduleTab extends StatelessWidget {
     final now = DateTime.now();
     final thisMonth = DateTime(now.year, now.month);
     final emi = loan.emiPaise;
+    final closed = LoanCalculator.isClosed(loan);
+    final lastPaid = payments.isEmpty
+        ? null
+        : payments
+            .map((t) =>
+                DateTime(t.transactionDate.year, t.transactionDate.month))
+            .reduce((a, b) => a.isAfter(b) ? a : b);
     final months = <DateTime>[];
     for (var m = DateTime(start.year, start.month);
         !m.isAfter(DateTime(end.year, end.month)) && months.length < 1200;
@@ -431,9 +437,11 @@ class _ScheduleTab extends StatelessWidget {
             ? ('PAID', BadgeType.asset)
             : p > 0
                 ? ('PARTIAL', BadgeType.scheduled)
-                : due && m.isBefore(thisMonth)
-                    ? ('NOT RECORDED', BadgeType.neutral)
-                    : ('UPCOMING', BadgeType.scheduled);
+                : closed && (lastPaid == null || m.isAfter(lastPaid))
+                    ? ('PRECLOSED', BadgeType.neutral)
+                    : due && m.isBefore(thisMonth)
+                        ? ('NOT RECORDED', BadgeType.neutral)
+                        : ('UPCOMING', BadgeType.scheduled);
         return FinCard(
           child: Row(
             children: [

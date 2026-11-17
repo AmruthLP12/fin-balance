@@ -5,7 +5,7 @@ import '../../features/liabilities/loan_calculator.dart';
 const autoEmiSource = 'auto_emi';
 
 /// Posts every EMI that has fallen due since the last run, once per due date
-/// (counted by the 'auto_emi' transactions already on the loan).
+/// (tracked by the dates of the 'auto_emi' transactions already on the loan).
 Future<int> applyDueEmis(AppDatabase db, {DateTime? today}) async {
   final now = today ?? DateTime.now();
   final day = DateTime(now.year, now.month, now.day);
@@ -20,7 +20,13 @@ Future<int> applyDueEmis(AppDatabase db, {DateTime? today}) async {
               t.source.equals(autoEmiSource)))
         .get();
     var balance = loan.currentValuationPaise;
-    for (final due in LoanCalculator.emiDueDates(loan, day).skip(done.length)) {
+    final doneDates = {
+      for (final t in done)
+        DateTime(t.transactionDate.year, t.transactionDate.month,
+            t.transactionDate.day)
+    };
+    for (final due in LoanCalculator.emiDueDates(loan, day)) {
+      if (doneDates.contains(due)) continue;
       if (balance <= 0) break;
       final amount = balance < loan.emiPaise! ? balance : loan.emiPaise!;
       await db.transactionsDao.recordDebtRepayment(

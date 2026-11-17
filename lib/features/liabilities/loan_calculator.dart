@@ -28,6 +28,19 @@ class LoanCalculator {
     return months.clamp(0, 1200);
   }
 
+  /// Months still to pay: from the balance and EMI when known, otherwise
+  /// from the end of the term.
+  static int monthsLeft(FinancialItem loan, {DateTime? today}) {
+    final emi = loan.emiPaise ?? 0;
+    if (isClosed(loan)) return 0;
+    if (emi > 0) {
+      final rate = (loan.interestRateBasisPoints ?? 0) / 100;
+      return tenureMonthsFor(loan.currentValuationPaise, rate, emi) ??
+          (loan.currentValuationPaise / emi).ceil();
+    }
+    return remainingMonths(loan, today: today);
+  }
+
   /// Closed by the user, or nothing left to pay.
   static bool isClosed(FinancialItem loan) =>
       loan.status == 'closed' || loan.currentValuationPaise <= 0;
@@ -72,22 +85,26 @@ class LoanCalculator {
       (loan.emiPaise ?? 0) > 0 &&
       loan.startDate != null;
 
-  /// EMI due dates on the start day of each month that fall after the loan
-  /// was recorded here (earlier ones are already in the entered balance), up
-  /// to [today] and the end of the term.
+  /// EMI due dates, on the start day of each month from the start date (the
+  /// first EMI is due on it) up to [today] and the end of the term. Dates
+  /// before the loan was recorded here are skipped (already in the balance),
+  /// except for a new loan recorded as of its start date.
   static List<DateTime> emiDueDates(FinancialItem loan, DateTime today) {
     final start = loan.startDate;
     if (start == null) return const [];
     final end = maturityDate(loan);
-    final recorded =
-        DateTime(loan.createdAt.year, loan.createdAt.month, loan.createdAt.day);
+    final startDay = DateTime(start.year, start.month, start.day);
+    final c = loan.createdAt;
+    final recorded = DateTime(c.year, c.month, c.day);
     final dates = <DateTime>[];
-    for (var k = 1; k < 1200; k++) {
+    for (var k = 0; k < 1200; k++) {
       final first = DateTime(start.year, start.month + k, 1);
       final lastDay = DateTime(first.year, first.month + 1, 0).day;
       final d = DateTime(first.year, first.month, math.min(start.day, lastDay));
-      if (d.isAfter(today) || (end != null && d.isAfter(end))) break;
-      if (d.isAfter(recorded)) dates.add(d);
+      if (d.isAfter(today) || (end != null && !d.isBefore(end))) break;
+      final counts =
+          recorded == startDay ? !d.isBefore(recorded) : d.isAfter(recorded);
+      if (counts) dates.add(d);
     }
     return dates;
   }

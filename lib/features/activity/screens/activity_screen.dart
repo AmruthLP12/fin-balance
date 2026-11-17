@@ -131,7 +131,8 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen>
               return false;
             }
             if (_selectedType == 'expense' &&
-                txn.transactionType != 'expense') {
+                txn.transactionType != 'expense' &&
+                txn.transactionType != 'debt_repayment') {
               return false;
             }
             if (_selectedType == 'investment' &&
@@ -188,7 +189,8 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen>
         for (final txn in filteredTxns) {
           if (txn.transactionType == 'income') {
             totalIncomePaise += txn.amountPaise;
-          } else if (txn.transactionType == 'expense') {
+          } else if (txn.transactionType == 'expense' ||
+              txn.transactionType == 'debt_repayment') {
             totalExpensePaise += txn.amountPaise;
           } else if (txn.transactionType.contains('investment')) {
             totalInvestmentPaise += txn.amountPaise;
@@ -507,7 +509,8 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen>
     bool isDark,
   ) {
     final isIncome = txn.transactionType == 'income';
-    final isExpense = txn.transactionType == 'expense';
+    final isExpense = txn.transactionType == 'expense' ||
+        txn.transactionType == 'debt_repayment';
     final isInvestment = txn.transactionType.contains('investment');
 
     Color color;
@@ -532,8 +535,10 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen>
       prefix = '';
     }
 
-    final categoryName = category?.name ??
-        txn.transactionType.replaceAll('_', ' ').toUpperCase();
+    final categoryName = txn.transactionType == 'debt_repayment'
+        ? 'Loan Repayment'
+        : category?.name ??
+            txn.transactionType.replaceAll('_', ' ').toUpperCase();
 
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
@@ -852,10 +857,14 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen>
             incomePaise += txn.amountPaise;
             incomeByCategory[txn.categoryId] =
                 (incomeByCategory[txn.categoryId] ?? 0) + txn.amountPaise;
-          } else if (txn.transactionType == 'expense') {
+          } else if (txn.transactionType == 'expense' ||
+              txn.transactionType == 'debt_repayment') {
             expensePaise += txn.amountPaise;
-            expenseByCategory[txn.categoryId] =
-                (expenseByCategory[txn.categoryId] ?? 0) + txn.amountPaise;
+            // -1 groups all loan repayments under one "Loan Repayments" row.
+            final key =
+                txn.transactionType == 'debt_repayment' ? -1 : txn.categoryId;
+            expenseByCategory[key] =
+                (expenseByCategory[key] ?? 0) + txn.amountPaise;
           } else if (txn.transactionType == 'investment_purchase' ||
               txn.transactionType == 'sip_investment') {
             investmentOutflowPaise += txn.amountPaise;
@@ -1205,7 +1214,9 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen>
           const SizedBox(height: AppSpacing.md),
           ...sortedEntries.map((entry) {
             final category = categoriesMap[entry.key];
-            final name = category?.name ?? 'General';
+            final name = entry.key == -1
+                ? 'Loan Repayments'
+                : category?.name ?? 'General';
             final amount = entry.value;
             final percentage = totalPaise > 0 ? (amount / totalPaise) : 0.0;
 

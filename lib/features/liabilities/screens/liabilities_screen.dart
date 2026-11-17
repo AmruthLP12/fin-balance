@@ -194,7 +194,7 @@ class _LoanCard extends StatelessWidget {
     final muted = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
     final lender = item.lenderName;
     final closed = LoanCalculator.isClosed(item);
-    final months = LoanCalculator.remainingMonths(item);
+    final months = LoanCalculator.monthsLeft(item);
     final line = <String>[
       if (!closed && item.emiPaise != null)
         'EMI ${CurrencyFormatter.formatPaiseCompact(item.emiPaise!)}',

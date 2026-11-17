@@ -34,12 +34,12 @@ void main() {
     final home = await add('home_loan');
     final other = await add('other_liability');
 
-    // Due: 28 Feb, 31 Mar (month-end clamped).
-    expect(await applyDueEmis(db, today: DateTime(2026, 3, 31)), 2);
+    // Due: 31 Jan (the start date), 28 Feb, 31 Mar (month-end clamped).
+    expect(await applyDueEmis(db, today: DateTime(2026, 3, 31)), 3);
     expect(await applyDueEmis(db, today: DateTime(2026, 3, 31)), 0);
     expect(
         (await db.financialItemsDao.getItemById(home))!.currentValuationPaise,
-        800000);
+        700000);
     expect(
         (await db.financialItemsDao.getItemById(other))!.currentValuationPaise,
         1000000);

@@ -5,6 +5,19 @@ All notable changes to the FinBalance application will be documented in this fil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.27.2] - 2026-11-17
+
+### Fixed
+
+- **The first EMI is due on the loan's start date.** A loan starting 3 Jan 2026 now shows January as paid (it used to start a month late and show "Not recorded"). Existing auto-deducting loans pick up the missing first month on the next launch.
+- **Months left follows the balance and EMI:** ₹5,000 left at ₹2,500 a month shows 2 months, not the months to the end of the term.
+- **Loan repayments count in Cash Flow and Activity.** They are outflows (listed as "Loan Repayments" in the expense breakdown, in Total Outflow and in the Overview cash flow chart) and are listed as "Loan Repayment", not "Credit Card Dues". They also show under the Expenses filter.
+- **Schedule months after an early payoff** show **Preclosed** instead of "Upcoming" or "Not recorded".
+
+### Testing
+
+- First EMI on the start date, month-end clamping and months left.
+
 ## [0.27.1] - 2026-11-17
 
 ### Changed

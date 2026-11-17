@@ -545,7 +545,8 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
     for (final txn in transactions) {
       if (txn.transactionType == 'income') {
         incomePaise += txn.amountPaise;
-      } else if (txn.transactionType == 'expense') {
+      } else if (txn.transactionType == 'expense' ||
+          txn.transactionType == 'debt_repayment') {
         expensePaise += txn.amountPaise;
       } else if (txn.transactionType == 'investment_purchase' ||
           txn.transactionType == 'sip_investment') {
