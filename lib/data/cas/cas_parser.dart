@@ -84,11 +84,11 @@ final _txnRe = RegExp(
 final _chargeRe = RegExp(
     '^$_date0\\s+\\*{3}\\s*(?:Stamp Duty|STT[^*]*)\\s*\\*{3}\\s+($_num)$_junk\\s*\$',
     caseSensitive: false);
-final _folioRe = RegExp(r'^Folio No:\s*(\d+(?:\s*/\s*\d+)?)');
+final _folioRe = RegExp(r'^Folio No\s*:\s*(\d+(?:\s*/\s*\d+)?)');
 final _isinRe = RegExp(r'ISIN\s*:\s*((?:[A-Z0-9]\s*){12})');
-final _openRe = RegExp('Opening Unit Balance:\\s*($_num)');
-final _closeRe = RegExp('Closing Unit Balance:\\s*($_num)');
-final _costRe = RegExp('Total Cost Value:\\s*($_num)');
+final _openRe = RegExp('Opening Unit Balance\\s*:?\\s*($_num)');
+final _closeRe = RegExp('Closing (?:\\d{2}-[A-Za-z]{3}-\\d{4} )?Unit Balance\\s*:?\\s*($_num)');
+final _costRe = RegExp('Total Cost Value\\s*:\\s*(?:INR\\s*)?($_num)');
 final _mvRe = RegExp('Market Value on [^:]+:\\s*INR\\s*($_num)');
 final _amcRe = RegExp(r'^[A-Za-z][A-Za-z .&-]*(?:Mutual Fund|MUTUAL FUND)\s*$');
 
@@ -187,12 +187,14 @@ List<CasFolio> _parseDetailed(String text) {
 
   for (final raw in text.split('\n')) {
     // Extractors differ in spacing; normalise before matching.
-    final line = raw
+    var line = raw
         .replaceAll(RegExp(r'\s+'), ' ')
         .replaceAll('( ', '(')
         .replaceAll(' )', ')')
         .trim();
     if (line.isEmpty) continue;
+    // Some statements print the previous row's date in front of a row.
+    line = line.replaceFirst(RegExp(r'^\d{2}-[A-Za-z]{3}-\d{4} (?=\d{2}-[A-Za-z]{3}-\d{4} )'), '');
 
     if (_amcRe.hasMatch(line) && !line.startsWith('Page')) {
       amc = line;

@@ -5,6 +5,16 @@ All notable changes to the FinBalance application will be documented in this fil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.29.1] - 2026-11-18
+
+### Fixed
+
+- **CAS import** now reads the KFintech statement layout (`Folio No : …`, `Opening Unit Balance` without a colon, `Closing <date> Unit Balance`, `Total Cost Value : INR …`, and a previous row's date printed in front of the next row). All folios of the failing statement now reconcile.
+
+### Added
+
+- Links to the KFintech and CAMS statement request pages on the CAS import screen.
+
 ## [0.29.0] - 2026-11-18
 
 ### Added

@@ -9,6 +9,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/fin_card.dart';
+import '../../../core/widgets/open_link.dart';
 import '../../../data/cas/cas_import_service.dart';
 import '../../../data/cas/cas_parser.dart';
 import '../../../data/cas/cas_pdf_text.dart';
@@ -210,6 +211,25 @@ class _CasImportScreenState extends ConsumerState<CasImportScreen> {
             'is read on this device. Folios of the same fund are combined into '
             'one holding.',
             style: AppTypography.bodyMedium,
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          const Text('Get your statement:', style: AppTypography.labelSmall),
+          Wrap(
+            spacing: AppSpacing.sm,
+            children: [
+              ActionChip(
+                avatar: const Icon(Icons.open_in_new_rounded, size: 16),
+                label: const Text('KFintech'),
+                onPressed: () => openLink(context,
+                    'https://mfs.kfintech.com/investor/General/ConsolidatedAccountStatement'),
+              ),
+              ActionChip(
+                avatar: const Icon(Icons.open_in_new_rounded, size: 16),
+                label: const Text('CAMS'),
+                onPressed: () => openLink(context,
+                    'https://www.camsonline.com/Investors/Statements/Consolidated-Account-Statement'),
+              ),
+            ],
           ),
           const SizedBox(height: AppSpacing.md),
           _profilePicker(),

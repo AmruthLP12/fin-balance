@@ -167,4 +167,26 @@ void summaryTests() {
       ..sort();
     expect(units, [301271000, 500000000]);
   });
+
+  test('reads the KFintech layout (spaced colons, dated closing, glued dates)',
+      () {
+    const t = '''
+AXIS Mutual Fund
+Folio No : 90420306983 PAN: ABCDE1234F KYC : OK PAN : OK
+128MTGPG-Axis Multicap Fund Regular Growth (Non Demat) (Advisor:ARN-0010) - ISIN:INF846K016E3 Registrar : KFINTECH
+Opening Unit Balance 0.000
+10-Jul-2020 Systematic Investment (1) 999.95 81.695 12.24 81.695
+10-Jul-2020 *** Stamp Duty *** 0.05
+10-Jul-2020 10-Aug-2020 Systematic Investment (1) 999.95 81.496 12.27 163.191
+10-Aug-2020 *** Stamp Duty *** 0.05
+Closing 10-Aug-2020 Unit Balance: 163.191 NAV on 17-NOV-2026 : INR 20.32 Total Cost Value : INR 2,000.00 Market Value on 17-NOV-2026 : INR 3,315.82
+''';
+    final f = parseCasText(t);
+    expect(f, hasLength(1));
+    expect(f.first.folio, '90420306983');
+    expect(f.first.txns, hasLength(2));
+    expect(f.first.closing, 163.191);
+    expect(f.first.totalCost, 2000);
+    expect(f.first.reconciles, isTrue);
+  });
 }
