@@ -226,6 +226,105 @@ class TransactionsDao extends DatabaseAccessor<AppDatabase>
     });
   }
 
+  /// Starts an informal debt with a person: money you lent (an asset) or
+  /// borrowed (a liability). No EMI or tenure. [ratePeriod] is 'monthly' or
+  /// 'yearly' and [rateBasisPoints] the rate as entered (2% = 200).
+  Future<int> openPersonalDebt({
+    required int profileId,
+    required bool lent,
+    required String person,
+    required int amountPaise,
+    required DateTime date,
+    int? rateBasisPoints,
+    String ratePeriod = 'yearly',
+    String? notes,
+  }) async {
+    if (amountPaise <= 0) throw ArgumentError('Amount must be above zero.');
+    return transaction(() async {
+      final cats = await db.categoriesDao
+          .getCategoriesByClassification(lent ? 'asset' : 'liability');
+      final categoryId = cats.isNotEmpty ? cats.first.id : 1;
+      final itemId = await db.financialItemsDao.insertItem(
+        FinancialItemsCompanion(
+          profileId: Value(profileId),
+          name: Value(person),
+          itemType: Value(lent ? 'asset' : 'liability'),
+          subType: Value(lent ? 'money_lent' : 'other_liability'),
+          categoryId: Value(categoryId),
+          initialValuePaise: Value(amountPaise),
+          currentValuationPaise: Value(amountPaise),
+          lenderName: Value(person),
+          interestRateBasisPoints: Value(rateBasisPoints),
+          interestRateType: Value(ratePeriod),
+          startDate: Value(date),
+          notes: notes == null || notes.trim().isEmpty
+              ? const Value.absent()
+              : Value(notes.trim()),
+        ),
+      );
+      await insertTransaction(TransactionsCompanion(
+        profileId: Value(profileId),
+        financialItemId: Value(itemId),
+        transactionType: Value(lent ? 'lend_given' : 'borrowing_received'),
+        categoryId: Value(categoryId),
+        transactionDate: Value(date),
+        amountPaise: Value(amountPaise),
+        netAmountPaise: Value(amountPaise),
+        notes: Value(lent ? 'Lent to $person' : 'Borrowed from $person'),
+      ));
+      return itemId;
+    });
+  }
+
+  /// A payment on an informal debt. Principal reduces what is outstanding
+  /// (and closes the debt at zero); interest is only recorded.
+  Future<int> recordPersonalEntry({
+    required int itemId,
+    required bool interest,
+    required int amountPaise,
+    required DateTime date,
+    String? notes,
+  }) async {
+    if (amountPaise <= 0) throw ArgumentError('Amount must be above zero.');
+    return transaction(() async {
+      final item = await db.financialItemsDao.getItemById(itemId);
+      if (item == null || item.status != 'active') {
+        throw ArgumentError('This entry is closed.');
+      }
+      final lent = item.itemType == 'asset';
+      final type = interest
+          ? (lent ? 'interest_received' : 'interest_paid')
+          : (lent ? 'lend_repaid' : 'debt_repayment');
+      final amount = interest
+          ? amountPaise
+          : amountPaise.clamp(0, item.currentValuationPaise).toInt();
+      if (amount <= 0) throw ArgumentError('Nothing left to repay.');
+      final id = await insertTransaction(TransactionsCompanion(
+        profileId: Value(item.profileId),
+        financialItemId: Value(itemId),
+        transactionType: Value(type),
+        categoryId: Value(item.categoryId),
+        transactionDate: Value(date),
+        amountPaise: Value(amount),
+        netAmountPaise: Value(amount),
+        notes: notes == null || notes.trim().isEmpty
+            ? const Value.absent()
+            : Value(notes.trim()),
+      ));
+      if (!interest) {
+        final left = item.currentValuationPaise - amount;
+        await db.financialItemsDao
+            .updateValuation(id: itemId, currentValuationPaise: left);
+        if (left == 0) {
+          await (db.update(db.financialItems)
+                ..where((t) => t.id.equals(itemId)))
+              .write(const FinancialItemsCompanion(status: Value('closed')));
+        }
+      }
+      return id;
+    });
+  }
+
   /// Record an investment transaction with atomic unit, valuation, and cost basis updates.
   Future<int> recordInvestmentTransaction({
     required int profileId,

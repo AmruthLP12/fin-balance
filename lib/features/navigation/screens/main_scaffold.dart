@@ -1,3 +1,4 @@
+import '../../personal_debt/personal_debt_form.dart';
 import '../../../data/loan/emi_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -229,14 +230,28 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
         shape: const CircleBorder(),
         backgroundColor: AppColors.liability,
         foregroundColor: Colors.white,
-        tooltip: 'Add Loan',
-        onPressed: () => AddLiabilityDialog.show(context),
+        tooltip: ref.watch(liabilitiesActiveCategoryProvider) == 'loans'
+            ? 'Add Loan'
+            : 'Add Borrowing',
+        onPressed: () => ref.read(liabilitiesActiveCategoryProvider) == 'loans'
+            ? AddLiabilityDialog.show(context)
+            : PersonalDebtForm.show(context, lent: false),
         child: const Icon(Icons.add_rounded, size: 28),
       );
     }
     // Only mutual funds can be added so far; other categories have no add flow.
     if (_currentIndex == 1) {
       final tab = ref.watch(assetsActiveCategoryProvider);
+      if (tab == 'money_lent') {
+        return FloatingActionButton(
+          shape: const CircleBorder(),
+          backgroundColor: AppColors.asset,
+          foregroundColor: Colors.white,
+          tooltip: 'Lend Money',
+          onPressed: () => PersonalDebtForm.show(context, lent: true),
+          child: const Icon(Icons.add_rounded, size: 28),
+        );
+      }
       if (tab != 'mutual_fund' && tab != 'all') return null;
     }
 

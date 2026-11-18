@@ -1,3 +1,4 @@
+import '../../../core/cash_flow.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -27,8 +28,7 @@ class OverviewScreen extends ConsumerStatefulWidget {
 }
 
 class _OverviewScreenState extends ConsumerState<OverviewScreen> {
-  /// Show exact rupees instead of lakh / crore shorthand.
-  bool _fullAmounts = false;
+  bool get _fullAmounts => ref.watch(fullAmountsProvider);
 
   String _money(int paise) => _fullAmounts
       ? CurrencyFormatter.formatPaise(paise)
@@ -195,15 +195,16 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
                     ),
                     IconButton(
                       tooltip: _fullAmounts
-                          ? 'Show in lakh / crore'
+                          ? 'Show in K / lakh / crore'
                           : 'Show full amounts',
                       visualDensity: VisualDensity.compact,
                       iconSize: 20,
                       icon: Icon(_fullAmounts
                           ? Icons.unfold_less_rounded
                           : Icons.unfold_more_rounded),
-                      onPressed: () =>
-                          setState(() => _fullAmounts = !_fullAmounts),
+                      onPressed: () => ref
+                          .read(fullAmountsProvider.notifier)
+                          .state = !_fullAmounts,
                     ),
                   ],
                 ),
@@ -333,6 +334,8 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
             liabilities: activeLiabilities,
             onTap: (groupValue, {required isLiability}) {
               if (isLiability) {
+                ref.read(liabilitiesActiveCategoryProvider.notifier).state =
+                    groupValue;
                 ref.read(mainTabProvider.notifier).state = 2;
               } else {
                 ref.read(assetsCategoryRequestProvider.notifier).state =
@@ -560,14 +563,15 @@ class _OverviewScreenState extends ConsumerState<OverviewScreen> {
     int investmentOutflowPaise = 0;
 
     for (final txn in transactions) {
-      if (txn.transactionType == 'income') {
-        incomePaise += txn.amountPaise;
-      } else if (txn.transactionType == 'expense' ||
-          txn.transactionType == 'debt_repayment') {
-        expensePaise += txn.amountPaise;
-      } else if (txn.transactionType == 'investment_purchase' ||
-          txn.transactionType == 'sip_investment') {
-        investmentOutflowPaise += txn.amountPaise;
+      switch (flowOf(txn.transactionType)) {
+        case MoneyFlow.income:
+          incomePaise += txn.amountPaise;
+        case MoneyFlow.expense:
+          expensePaise += txn.amountPaise;
+        case MoneyFlow.investment:
+          investmentOutflowPaise += txn.amountPaise;
+        case MoneyFlow.none:
+          break;
       }
     }
 

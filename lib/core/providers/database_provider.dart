@@ -64,6 +64,21 @@ final swpsDaoProvider = Provider<SwpsDao>((ref) {
   return ref.watch(databaseProvider).swpsDao;
 });
 
+/// Category tab shown on the Liabilities screen ('loans' or 'other_liability').
+final liabilitiesActiveCategoryProvider =
+    StateProvider<String>((ref) => 'loans');
+
+/// Show exact rupees instead of K / L / Cr shorthand (Overview toggle).
+final fullAmountsProvider = StateProvider<bool>((ref) => false);
+
+/// One item, live (also after it is closed).
+final financialItemByIdProvider =
+    StreamProvider.family<FinancialItem?, int>((ref, id) {
+  final db = ref.watch(databaseProvider);
+  return (db.select(db.financialItems)..where((t) => t.id.equals(id)))
+      .watchSingleOrNull();
+});
+
 /// Tracks whether the user has picked a profile during this session's startup flow.
 /// Selected main tab (0 Overview, 1 Assets, 2 Liabilities, 3 Activity, 4 Settings).
 final mainTabProvider = StateProvider<int>((ref) => 0);

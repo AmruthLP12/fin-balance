@@ -86,8 +86,8 @@ void main() {
       // Top Family Overview verification
       expect(find.text('Family-Wide Financial Overview'), findsOneWidget);
       expect(find.text('Family Net Worth'), findsOneWidget);
-      // Family Net Worth and Total Family Assets both equal ₹80,000.00
-      expect(find.text('₹80,000.00'), findsNWidgets(2));
+      // Family Net Worth and Total Family Assets both equal ₹80K
+      expect(find.text('₹80K'), findsNWidgets(2));
       expect(find.text('Total Family Assets'), findsOneWidget);
       expect(find.text('• Upcoming'), findsNothing);
 

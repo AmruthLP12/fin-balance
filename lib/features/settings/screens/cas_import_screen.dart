@@ -259,7 +259,7 @@ class _CasImportScreenState extends ConsumerState<CasImportScreen> {
       if (matched == null)
         'Scheme not found in AMFI list (ISIN ${f.isin}), skipped',
       if (!f.reconciles)
-        'Units do not match the statement closing balance, skipped',
+        'Units do not match the statement: the rows add up to ${f.rowsClosing.toStringAsFixed(3)} but the statement says ${f.closing.toStringAsFixed(3)} (${(f.closing - f.rowsClosing).abs().toStringAsFixed(3)} off, some rows were not read), skipped',
     ];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

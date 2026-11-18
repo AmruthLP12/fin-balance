@@ -1,3 +1,4 @@
+import '../../../core/cash_flow.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/formatting/currency_formatter.dart';
@@ -127,16 +128,16 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen>
         final filteredTxns = allTxns.where((txn) {
           // Type filter
           if (_selectedType != 'all') {
-            if (_selectedType == 'income' && txn.transactionType != 'income') {
+            final flow = flowOf(txn.transactionType);
+            if (_selectedType == 'income' && flow != MoneyFlow.income) {
               return false;
             }
-            if (_selectedType == 'expense' &&
-                txn.transactionType != 'expense' &&
-                txn.transactionType != 'debt_repayment') {
+            if (_selectedType == 'expense' && flow != MoneyFlow.expense) {
               return false;
             }
             if (_selectedType == 'investment' &&
-                !txn.transactionType.contains('investment')) {
+                !txn.transactionType.contains('investment') &&
+                flow != MoneyFlow.investment) {
               return false;
             }
             if (_selectedType == 'transfer' &&
@@ -187,12 +188,13 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen>
         int totalInvestmentPaise = 0;
 
         for (final txn in filteredTxns) {
-          if (txn.transactionType == 'income') {
+          final flow = flowOf(txn.transactionType);
+          if (flow == MoneyFlow.income) {
             totalIncomePaise += txn.amountPaise;
-          } else if (txn.transactionType == 'expense' ||
-              txn.transactionType == 'debt_repayment') {
+          } else if (flow == MoneyFlow.expense) {
             totalExpensePaise += txn.amountPaise;
-          } else if (txn.transactionType.contains('investment')) {
+          } else if (txn.transactionType.contains('investment') ||
+              flow == MoneyFlow.investment) {
             totalInvestmentPaise += txn.amountPaise;
           }
         }
@@ -508,10 +510,11 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen>
     FinancialCategory? category,
     bool isDark,
   ) {
-    final isIncome = txn.transactionType == 'income';
-    final isExpense = txn.transactionType == 'expense' ||
-        txn.transactionType == 'debt_repayment';
-    final isInvestment = txn.transactionType.contains('investment');
+    final flow = flowOf(txn.transactionType);
+    final isIncome = flow == MoneyFlow.income;
+    final isExpense = flow == MoneyFlow.expense;
+    final isInvestment = txn.transactionType.contains('investment') ||
+        flow == MoneyFlow.investment;
 
     Color color;
     IconData icon;
@@ -535,10 +538,9 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen>
       prefix = '';
     }
 
-    final categoryName = txn.transactionType == 'debt_repayment'
-        ? 'Loan Repayment'
-        : category?.name ??
-            txn.transactionType.replaceAll('_', ' ').toUpperCase();
+    final categoryName = personalFlowLabel(txn.transactionType) ??
+        category?.name ??
+        txn.transactionType.replaceAll('_', ' ').toUpperCase();
 
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
@@ -853,23 +855,22 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen>
         final investmentByCategory = <int, int>{};
 
         for (final txn in cashFlowTxns) {
-          if (txn.transactionType == 'income') {
-            incomePaise += txn.amountPaise;
-            incomeByCategory[txn.categoryId] =
-                (incomeByCategory[txn.categoryId] ?? 0) + txn.amountPaise;
-          } else if (txn.transactionType == 'expense' ||
-              txn.transactionType == 'debt_repayment') {
-            expensePaise += txn.amountPaise;
-            // -1 groups all loan repayments under one "Loan Repayments" row.
-            final key =
-                txn.transactionType == 'debt_repayment' ? -1 : txn.categoryId;
-            expenseByCategory[key] =
-                (expenseByCategory[key] ?? 0) + txn.amountPaise;
-          } else if (txn.transactionType == 'investment_purchase' ||
-              txn.transactionType == 'sip_investment') {
-            investmentOutflowPaise += txn.amountPaise;
-            investmentByCategory[txn.categoryId] =
-                (investmentByCategory[txn.categoryId] ?? 0) + txn.amountPaise;
+          final key = categoryKeyFor(txn.transactionType, txn.categoryId);
+          switch (flowOf(txn.transactionType)) {
+            case MoneyFlow.income:
+              incomePaise += txn.amountPaise;
+              incomeByCategory[key] =
+                  (incomeByCategory[key] ?? 0) + txn.amountPaise;
+            case MoneyFlow.expense:
+              expensePaise += txn.amountPaise;
+              expenseByCategory[key] =
+                  (expenseByCategory[key] ?? 0) + txn.amountPaise;
+            case MoneyFlow.investment:
+              investmentOutflowPaise += txn.amountPaise;
+              investmentByCategory[key] =
+                  (investmentByCategory[key] ?? 0) + txn.amountPaise;
+            case MoneyFlow.none:
+              break;
           }
         }
 

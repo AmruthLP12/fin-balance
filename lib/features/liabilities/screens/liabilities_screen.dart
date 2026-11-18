@@ -11,6 +11,8 @@ import '../../../core/widgets/finbalance_logo.dart';
 import '../../../core/widgets/status_badge.dart';
 import '../../../database/app_database.dart';
 import '../../profile/widgets/profile_menu_button.dart';
+import '../../personal_debt/personal_debt_card.dart';
+import '../../personal_debt/personal_debt_form.dart';
 import '../loan_calculator.dart';
 import '../widgets/add_liability_dialog.dart';
 import 'loan_details_screen.dart';
@@ -30,6 +32,8 @@ class _LiabilitiesScreenState extends ConsumerState<LiabilitiesScreen> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final liabilities = ref.watch(activeProfileAllLiabilitiesProvider);
+    final tab = ref.watch(liabilitiesActiveCategoryProvider);
+    final isLoans = tab == 'loans';
 
     return Scaffold(
       appBar: AppBar(
@@ -54,7 +58,10 @@ class _LiabilitiesScreenState extends ConsumerState<LiabilitiesScreen> {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) =>
             Center(child: Text('Unable to load loans: $error')),
-        data: (all) {
+        data: (everything) {
+          final all = everything
+              .where((i) => groupOf(i.subType, liabilityGroups).value == tab)
+              .toList();
           final ongoing = all.where(LoanCalculator.isOngoing).toList();
           final closed = all.where(LoanCalculator.isClosed).toList();
           final shown = switch (_filter) {
@@ -62,72 +69,105 @@ class _LiabilitiesScreenState extends ConsumerState<LiabilitiesScreen> {
             'all' => all,
             _ => ongoing,
           };
-          return ListView(
-            padding: AppSpacing.screenPadding,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          return GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onHorizontalDragEnd: (d) {
+                final v = d.primaryVelocity ?? 0;
+                if (v.abs() < 300) return;
+                ref.read(liabilitiesActiveCategoryProvider.notifier).state =
+                    v < 0 ? 'other_liability' : 'loans';
+              },
+              child: ListView(
+                padding: AppSpacing.screenPadding,
                 children: [
-                  Expanded(
-                    child: Text('Loans & Borrowings',
-                        overflow: TextOverflow.ellipsis,
-                        style: AppTypography.headlineMedium
-                            .copyWith(fontWeight: FontWeight.bold)),
-                  ),
-                  const SizedBox(width: AppSpacing.sm),
-                  FilledButton.icon(
-                    onPressed: () => AddLiabilityDialog.show(context),
-                    icon: const Icon(Icons.add, size: 18),
-                    label: const Text('Add Loan'),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.liability,
-                      visualDensity: VisualDensity.compact,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.md),
-              _SummaryCard(ongoing: ongoing, isDark: isDark),
-              const SizedBox(height: AppSpacing.md),
-              Wrap(
-                spacing: AppSpacing.sm,
-                children: [
-                  for (final (value, label, count) in [
-                    ('ongoing', 'Ongoing', ongoing.length),
-                    ('closed', 'Closed', closed.length),
-                    ('all', 'All', all.length),
-                  ])
-                    ChoiceChip(
-                      label: Text('$label ($count)'),
-                      selected: _filter == value,
-                      onSelected: (_) => setState(() => _filter = value),
-                    ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.md),
-              if (shown.isEmpty)
-                FinCard(
-                  child: Column(
+                  Row(
                     children: [
-                      const Icon(Icons.account_balance_rounded,
-                          size: 42, color: AppColors.liability),
-                      const SizedBox(height: AppSpacing.sm),
-                      Text(switch (_filter) {
-                        'closed' => 'No closed loans',
-                        'all' => 'No loans added yet',
-                        _ => 'No ongoing loans',
-                      }),
-                      const SizedBox(height: 4),
-                      const Text(
-                          'Only loans that still have an amount to pay count towards your net worth.',
-                          textAlign: TextAlign.center),
+                      for (final g in liabilityGroups) ...[
+                        ChoiceChip(
+                          label: Text(g.label),
+                          selected: tab == g.value,
+                          onSelected: (_) => ref
+                              .read(liabilitiesActiveCategoryProvider.notifier)
+                              .state = g.value,
+                        ),
+                        const SizedBox(width: AppSpacing.sm),
+                      ],
                     ],
                   ),
-                )
-              else
-                ...shown.map((item) => _LoanCard(item: item)),
-            ],
-          );
+                  const SizedBox(height: AppSpacing.sm),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text('Loans & Borrowings',
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTypography.headlineMedium
+                                .copyWith(fontWeight: FontWeight.bold)),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      FilledButton.icon(
+                        onPressed: () => isLoans
+                            ? AddLiabilityDialog.show(context)
+                            : PersonalDebtForm.show(context, lent: false),
+                        icon: const Icon(Icons.add, size: 18),
+                        label: Text(isLoans ? 'Add Loan' : 'Add Borrowing'),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppColors.liability,
+                          visualDensity: VisualDensity.compact,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  _SummaryCard(ongoing: ongoing, isDark: isDark),
+                  const SizedBox(height: AppSpacing.md),
+                  Wrap(
+                    spacing: AppSpacing.sm,
+                    children: [
+                      for (final (value, label, count) in [
+                        ('ongoing', 'Ongoing', ongoing.length),
+                        ('closed', 'Closed', closed.length),
+                        ('all', 'All', all.length),
+                      ])
+                        ChoiceChip(
+                          label: Text('$label ($count)'),
+                          selected: _filter == value,
+                          onSelected: (_) => setState(() => _filter = value),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  if (shown.isEmpty)
+                    FinCard(
+                      child: Column(
+                        children: [
+                          const Icon(Icons.account_balance_rounded,
+                              size: 42, color: AppColors.liability),
+                          const SizedBox(height: AppSpacing.sm),
+                          Text(switch (_filter) {
+                            'closed' => 'Nothing closed yet',
+                            'all' => isLoans
+                                ? 'No loans added yet'
+                                : 'No borrowings added yet',
+                            _ => isLoans
+                                ? 'No ongoing loans'
+                                : 'No ongoing borrowings',
+                          }),
+                          const SizedBox(height: 4),
+                          Text(
+                              isLoans
+                                  ? 'Only loans that still have an amount to pay count towards your net worth.'
+                                  : 'Money you borrowed from someone, with or without interest.',
+                              textAlign: TextAlign.center),
+                        ],
+                      ),
+                    )
+                  else
+                    ...shown.map((item) => isLoans
+                        ? _LoanCard(item: item)
+                        : PersonalDebtCard(item: item)),
+                ],
+              ));
         },
       ),
     );

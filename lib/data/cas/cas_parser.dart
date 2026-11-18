@@ -54,6 +54,9 @@ class CasFolio {
   double get _signedUnits =>
       txns.fold(0.0, (s, t) => s + (_isOut(t.type) ? -t.units : t.units));
 
+  /// Closing balance implied by the opening balance and the rows read.
+  double get rowsClosing => opening + _signedUnits;
+
   /// Opening + statement movements must equal the printed closing balance.
   bool get reconciles => (opening + _signedUnits - closing).abs() < 0.0015;
 

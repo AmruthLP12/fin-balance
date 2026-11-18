@@ -27,9 +27,9 @@ const assetGroups = <CategoryGroup>[
   ]),
   CategoryGroup('epf', 'EPF'),
   CategoryGroup('nps', 'NPS'),
-  CategoryGroup('pli', 'PLI / Insurance'),
   CategoryGroup('bond', 'Bonds'),
   CategoryGroup('gold', 'Gold'),
+  CategoryGroup('money_lent', 'Lent to Others'),
   CategoryGroup('other_asset', 'Other Assets'),
 ];
 
@@ -52,11 +52,9 @@ CategoryGroup groupOf(String subType, List<CategoryGroup> groups) =>
     groups.firstWhere((g) => g.value == subType || g.contains(subType),
         orElse: () => groups.last);
 
-/// Instruments offered when adding a liability (loan types, then other borrowings).
-List<(String, String)> get liabilityTypeOptions => [
-      ...liabilityGroups.first.children,
-      (liabilityGroups.last.value, liabilityGroups.last.label),
-    ];
+/// Loan types offered in the loan form (other borrowings have their own simple form).
+List<(String, String)> get liabilityTypeOptions =>
+    liabilityGroups.first.children;
 
 String categoryLabel(String value) {
   for (final g in [...assetGroups, ...liabilityGroups]) {

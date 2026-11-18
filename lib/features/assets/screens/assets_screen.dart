@@ -1,3 +1,5 @@
+import '../../personal_debt/personal_debt_card.dart';
+import '../../personal_debt/personal_debt_form.dart';
 import 'package:flutter/material.dart';
 import '../../../core/constants/asset_categories.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -305,11 +307,15 @@ class _AssetsScreenState extends ConsumerState<AssetsScreen> {
                 SectionHeader(
                   title:
                       '${_categoryDisplayName(_selectedCategoryFilter)} (${filteredItems.length})',
-                  actionLabel: _selectedCategoryFilter == 'mutual_fund' ||
-                          _selectedCategoryFilter == 'all'
-                      ? 'Search Schemes'
-                      : null,
-                  onActionTap: () => _openSearchScreen(context),
+                  actionLabel: _selectedCategoryFilter == 'money_lent'
+                      ? '+ Lend Money'
+                      : _selectedCategoryFilter == 'mutual_fund' ||
+                              _selectedCategoryFilter == 'all'
+                          ? 'Search Schemes'
+                          : null,
+                  onActionTap: () => _selectedCategoryFilter == 'money_lent'
+                      ? PersonalDebtForm.show(context, lent: true)
+                      : _openSearchScreen(context),
                 ),
                 const SizedBox(height: AppSpacing.sm),
 
@@ -320,11 +326,14 @@ class _AssetsScreenState extends ConsumerState<AssetsScreen> {
                   )
                 else
                   ...filteredItems.map(
-                    (item) => HoldingCard(
-                      item: item,
-                      onTap: () => _openHoldingDetails(context, item),
-                      onDelete: () => _confirmDeleteHolding(context, item),
-                    ),
+                    (item) => item.subType == 'money_lent'
+                        ? PersonalDebtCard(item: item)
+                        : HoldingCard(
+                            item: item,
+                            onTap: () => _openHoldingDetails(context, item),
+                            onDelete: () =>
+                                _confirmDeleteHolding(context, item),
+                          ),
                   ),
 
                 // 4. SIP Schedules Section (visible when viewing Mutual Funds or All)
@@ -515,6 +524,13 @@ class _AssetsScreenState extends ConsumerState<AssetsScreen> {
           title: 'No Fixed Income Added',
           description:
               'PPF, NSC, KVP, SSS, POSS, FD, FRD and RD for $profileName will appear here.',
+        );
+      case 'money_lent':
+        return const EmptyStateView(
+          icon: Icons.handshake_outlined,
+          title: 'No Money Lent',
+          description:
+              'Money you lent to a friend or relative, with or without interest, is tracked here.',
         );
       case 'gold':
         return const EmptyStateView(

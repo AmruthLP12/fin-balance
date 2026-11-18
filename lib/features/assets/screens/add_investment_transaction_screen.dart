@@ -405,6 +405,7 @@ class _AddInvestmentTransactionScreenState
   }
 
   Future<void> _save() async {
+    var plannedOnly = false;
     if (!_formKey.currentState!.validate()) return;
 
     if (_selectedType == 'switch_in' || _selectedType == 'switch_out') {
@@ -570,6 +571,12 @@ class _AddInvestmentTransactionScreenState
         final day = DateTime.utc(_transactionDate.year, _transactionDate.month,
             _transactionDate.day);
         final schemeCode = int.tryParse(widget.holding.externalCode ?? '') ?? 0;
+        // A schedule starting in the future only plans installments; nothing
+        // is deducted or recorded until each date arrives.
+        final now = DateTime.now();
+        plannedOnly = count > 1 &&
+            (isSip || isSwp) &&
+            day.isAfter(DateTime.utc(now.year, now.month, now.day));
         if (count > 1 && schemeCode <= 0) {
           throw ArgumentError(
               'This holding has no scheme code, so a schedule cannot be created.');
@@ -636,6 +643,7 @@ class _AddInvestmentTransactionScreenState
             }
           }
 
+          if (plannedOnly) return;
           final txId = await txDao.recordInvestmentTransaction(
             profileId: widget.holding.profileId,
             financialItemId: widget.holding.id,
@@ -677,9 +685,11 @@ class _AddInvestmentTransactionScreenState
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(_isRecurringType && _installmentCount > 1
-                ? 'Recorded and planned ${_installmentCount - 1} more installments.'
-                : 'Transaction recorded successfully.'),
+            content: Text(plannedOnly
+                ? 'Planned $_installmentCount installments from the start date.'
+                : _isRecurringType && _installmentCount > 1
+                    ? 'Recorded and planned ${_installmentCount - 1} more installments.'
+                    : 'Transaction recorded successfully.'),
           ),
         );
         Navigator.of(context).pop(true);

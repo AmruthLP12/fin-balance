@@ -5,6 +5,30 @@ All notable changes to the FinBalance application will be documented in this fil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.29.0] - 2026-11-18
+
+### Added
+
+- **Money you borrowed from or lent to a person**, with a simple form (name, amount, date, optional interest) and no EMI, maturity or tenure. Interest can be per month or per year and is worked out on the amount still outstanding, so after a part payment it drops. The details page lets you record money returned / repaid (reduces the amount) and interest paid / received (does not), and shows the monthly interest and the interest paid so far. Interest-only payments with the principal untouched are supported for as long as you like.
+- **Liabilities has two swipeable tabs, Loans and Other Borrowings**, each with its own Ongoing / Closed / All filter and Add button; tapping a row of the Overview category list opens the matching tab.
+- **Assets has a new "Lent to Others" tab** (with its own + button) for money you gave to someone.
+- **All of these appear in Activity and Cash Flow:** money borrowed and interest/principal received count as inflow, repayments and interest paid as expenses, and money lent as an outflow, each with a readable name.
+
+### Changed
+
+- **Amounts show as K / L / Cr from ten thousand** (₹10K, ₹1.5L, ₹2.4Cr) by default everywhere they were compact, including the profile's invested and current values; the arrows button on the Overview shows full amounts for all of them.
+- **PLI / Insurance category removed** (existing PLI items appear under Other Assets).
+- The loan form is for loans only; Other Borrowings use the new simple form.
+
+### Fixed
+
+- **A SIP starting in the future no longer deducts this month.** Entering a SIP with a future start date (for example 3 Dec while it is November) now only plans the installments; nothing is recorded until each date arrives.
+- **CAS import:** a folio that does not reconcile now says how many units were read against the statement, so a missing row is easy to spot.
+
+### Testing
+
+- Lending and borrowing flows, cash flow classification, K / L / Cr formatting.
+
 ## [0.28.0] - 2026-11-17
 
 ### Fixed

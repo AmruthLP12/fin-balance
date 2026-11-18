@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/calculations/financial_calculator.dart';
 import '../../../core/providers/daily_pnl.dart';
+import '../../../core/providers/database_provider.dart';
 import '../../../core/formatting/currency_formatter.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
@@ -37,6 +38,10 @@ class PortfolioSummaryCard extends ConsumerWidget {
     final pnl = FinancialCalculator.calculateProfitLossPaise(
         investedPaise: invested, currentValuationPaise: current);
     final today = ref.watch(dailyPnlProvider).value;
+    final full = ref.watch(fullAmountsProvider);
+    String money(int p) => full
+        ? CurrencyFormatter.formatPaise(p)
+        : CurrencyFormatter.formatPaiseCompact(p);
 
     final color = pnl >= 0 ? AppColors.asset : AppColors.liability;
     final sign = pnl >= 0 ? '+' : '-';
@@ -62,19 +67,17 @@ class PortfolioSummaryCard extends ConsumerWidget {
     final content = Column(
       children: [
         Row(children: [
-          stat('Invested', CurrencyFormatter.formatPaise(invested)),
-          stat('Current value', CurrencyFormatter.formatPaise(current)),
+          stat('Invested', money(invested)),
+          stat('Current value', money(current)),
         ]),
         const SizedBox(height: AppSpacing.md),
         Row(children: [
-          stat('Profit / Loss',
-              '$sign${CurrencyFormatter.formatPaise(pnl.abs())}',
-              valueColor: color),
+          stat('Profit / Loss', '$sign${money(pnl.abs())}', valueColor: color),
           stat(
               "Today's P&L",
               today == null
                   ? '—'
-                  : '${today >= 0 ? '+' : '-'}${CurrencyFormatter.formatPaise(today.abs())}',
+                  : '${today >= 0 ? '+' : '-'}${money(today.abs())}',
               valueColor: today == null
                   ? null
                   : (today >= 0 ? AppColors.asset : AppColors.liability)),
