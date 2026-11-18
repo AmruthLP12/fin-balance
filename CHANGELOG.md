@@ -5,6 +5,18 @@ All notable changes to the FinBalance application will be documented in this fil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.29.2] - 2026-11-18
+
+### Changed
+
+- **CAS import**: the Import button is pinned at the bottom of the screen, and while a file is being read or imported the whole screen dims with a loader in the centre.
+- **Overview**: the Assets list shows EPF, NPS, Bonds, Gold, Lent to Others and Other Assets as a single "Other Assets" row (categories elsewhere are unchanged).
+- **Lent / borrowed money**: optional end date ("Expected back by" / "To be repaid by"), and a clearer interest choice (None / % per month / % per year, then the rate).
+
+### Added
+
+- Edit for lent / borrowed money records (name, amount, date, end date, interest, notes), from the details page menu.
+
 ## [0.29.1] - 2026-11-18
 
 ### Fixed

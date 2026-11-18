@@ -23,8 +23,7 @@ void main() {
       'Mutual Funds',
       'Stocks & ETFs',
       'Fixed Income',
-      'Bonds',
-      'Gold',
+      'Other Assets',
       'Loans',
       'Other Borrowings',
     ]) {
@@ -32,6 +31,9 @@ void main() {
     }
     expect(find.text('Nothing added yet'), findsWidgets);
 
+    for (final gone in ['EPF', 'NPS', 'Bonds', 'Gold', 'Lent to Others']) {
+      expect(find.text(gone), findsNothing);
+    }
     expect(find.text('Home Loan'), findsNothing);
     await tester.ensureVisible(find.text('Loans'));
     await tester.tap(find.text('Loans'));

@@ -202,74 +202,87 @@ class _CasImportScreenState extends ConsumerState<CasImportScreen> {
     final okCount = folios?.where(_ok).length ?? 0;
     return Scaffold(
       appBar: AppBar(title: const Text('Import from CAS PDF')),
-      body: ListView(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        children: [
-          const Text(
-            'Pick your CAMS + KFintech Consolidated Account Statement (with '
-            'transactions) or Consolidated Account Summary (holdings only). It '
-            'is read on this device. Folios of the same fund are combined into '
-            'one holding.',
-            style: AppTypography.bodyMedium,
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          const Text('Get your statement:', style: AppTypography.labelSmall),
-          Wrap(
-            spacing: AppSpacing.sm,
-            children: [
-              ActionChip(
-                avatar: const Icon(Icons.open_in_new_rounded, size: 16),
-                label: const Text('KFintech'),
-                onPressed: () => openLink(context,
-                    'https://mfs.kfintech.com/investor/General/ConsolidatedAccountStatement'),
+      // Pinned so the import button is always visible, however long the list.
+      bottomNavigationBar: folios == null
+          ? null
+          : SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                child: FilledButton(
+                  onPressed: _busy || okCount == 0 ? null : _import,
+                  child: Text('Import $okCount of ${folios.length} folios'),
+                ),
               ),
-              ActionChip(
-                avatar: const Icon(Icons.open_in_new_rounded, size: 16),
-                label: const Text('CAMS'),
-                onPressed: () => openLink(context,
-                    'https://www.camsonline.com/Investors/Statements/Consolidated-Account-Statement'),
-              ),
-            ],
+            ),
+      body: Stack(children: [
+        _content(folios, okCount),
+        if (_busy)
+          const Positioned.fill(
+            child: ModalBarrier(color: Colors.black54, dismissible: false),
           ),
-          const SizedBox(height: AppSpacing.md),
-          _profilePicker(),
-          const SizedBox(height: AppSpacing.md),
-          FilledButton.icon(
-            onPressed: _busy ? null : _pick,
-            icon: const Icon(Icons.picture_as_pdf_rounded),
-            label: const Text('Select CAS PDF'),
-          ),
-          if (_busy)
-            const Padding(
-              padding: EdgeInsets.all(AppSpacing.md),
-              child: Center(child: CircularProgressIndicator()),
+        if (_busy) const Center(child: CircularProgressIndicator()),
+      ]),
+    );
+  }
+
+  Widget _content(List<CasFolio>? folios, int okCount) {
+    return ListView(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      children: [
+        const Text(
+          'Pick your CAMS + KFintech Consolidated Account Statement (with '
+          'transactions) or Consolidated Account Summary (holdings only). It '
+          'is read on this device. Folios of the same fund are combined into '
+          'one holding.',
+          style: AppTypography.bodyMedium,
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        const Text('Get your statement:', style: AppTypography.labelSmall),
+        Wrap(
+          spacing: AppSpacing.sm,
+          children: [
+            ActionChip(
+              avatar: const Icon(Icons.open_in_new_rounded, size: 16),
+              label: const Text('KFintech'),
+              onPressed: () => openLink(context,
+                  'https://mfs.kfintech.com/investor/General/ConsolidatedAccountStatement'),
             ),
-          if (_error != null)
-            Padding(
-              padding: const EdgeInsets.only(top: AppSpacing.md),
-              child: Text(_error!,
-                  style: const TextStyle(color: AppColors.liability)),
-            ),
-          if (_done != null)
-            Padding(
-              padding: const EdgeInsets.only(top: AppSpacing.md),
-              child:
-                  Text(_done!, style: const TextStyle(color: AppColors.asset)),
-            ),
-          if (folios != null) ...[
-            const SizedBox(height: AppSpacing.md),
-            for (final f in folios)
-              Padding(
-                padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                child: FinCard(child: _folioTile(f)),
-              ),
-            FilledButton(
-              onPressed: _busy || okCount == 0 ? null : _import,
-              child: Text('Import $okCount of ${folios.length} folios'),
+            ActionChip(
+              avatar: const Icon(Icons.open_in_new_rounded, size: 16),
+              label: const Text('CAMS'),
+              onPressed: () => openLink(context,
+                  'https://www.camsonline.com/Investors/Statements/Consolidated-Account-Statement'),
             ),
           ],
+        ),
+        const SizedBox(height: AppSpacing.md),
+        _profilePicker(),
+        const SizedBox(height: AppSpacing.md),
+        FilledButton.icon(
+          onPressed: _busy ? null : _pick,
+          icon: const Icon(Icons.picture_as_pdf_rounded),
+          label: const Text('Select CAS PDF'),
+        ),
+        if (_error != null)
+          Padding(
+            padding: const EdgeInsets.only(top: AppSpacing.md),
+            child: Text(_error!,
+                style: const TextStyle(color: AppColors.liability)),
+          ),
+        if (_done != null)
+          Padding(
+            padding: const EdgeInsets.only(top: AppSpacing.md),
+            child: Text(_done!, style: const TextStyle(color: AppColors.asset)),
+          ),
+        if (folios != null) ...[
+          const SizedBox(height: AppSpacing.md),
+          for (final f in folios)
+            Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+              child: FinCard(child: _folioTile(f)),
+            ),
         ],
-      ),
+      ],
     );
   }
 

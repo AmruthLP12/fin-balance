@@ -66,12 +66,24 @@ class HoldingsListCard extends StatelessWidget {
 
     Widget section(String title, List<FinancialItem> items, Color color,
         bool isLiability, List<CategoryGroup> groups) {
+      // Assets: EPF, NPS, Bonds, Gold, Lent to Others and Other Assets share
+      // one "Other Assets" row here (the Assets tab keeps them separate).
+      final mergeFrom =
+          isLiability ? -1 : groups.indexWhere((g) => g.value == 'epf');
+      final merged = mergeFrom < 0
+          ? <String>{}
+          : groups.sublist(mergeFrom).map((g) => g.value).toSet();
+      final shown = mergeFrom < 0
+          ? groups
+          : [...groups.sublist(0, mergeFrom), groups.last];
       final byGroup = <String, List<FinancialItem>>{};
       for (final i in items) {
-        byGroup.putIfAbsent(groupOf(i.subType, groups).value, () => []).add(i);
+        var key = groupOf(i.subType, groups).value;
+        if (merged.contains(key)) key = groups.last.value;
+        byGroup.putIfAbsent(key, () => []).add(i);
       }
       final rows = <Widget>[];
-      for (final g in groups) {
+      for (final g in shown) {
         final groupItems = byGroup[g.value] ?? [];
         void open() => onTap(g.value, isLiability: isLiability);
         if (rows.isNotEmpty) rows.add(const Divider(height: 1));

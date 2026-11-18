@@ -2,8 +2,9 @@
 
 > **FinBalance** is an offline-first, multi-profile personal finance and net worth management application for Android and Web, built with Flutter and SQLite (Drift).
 
-### Current Release Focus (0.29.1)
+### Current Release Focus (0.29.2)
 
+- Lent / borrowed records can be edited and have an optional end date; the CAS import button stays pinned and a dimmed loader shows progress.
 - CAS import reads the KFintech statement layout; the import screen links to the KFintech and CAMS statement pages.
 
 - Loan liability tracking with lender, loan type, outstanding balance, sanctioned amount, EMI, tenure, interest rate, start date, and notes.

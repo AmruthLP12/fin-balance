@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'personal_debt_form.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/cash_flow.dart';
 import '../../core/formatting/currency_formatter.dart';
@@ -63,6 +64,7 @@ class PersonalDebtDetailsScreen extends ConsumerWidget {
           PopupMenuButton<String>(
             onSelected: (v) => _menu(context, ref, item, v),
             itemBuilder: (_) => [
+              const PopupMenuItem(value: 'edit', child: Text('Edit')),
               if (active)
                 const PopupMenuItem(
                     value: 'close', child: Text('Mark as settled')),
@@ -89,6 +91,9 @@ class PersonalDebtDetailsScreen extends ConsumerWidget {
                     CurrencyFormatter.formatPaise(item.initialValuePaise)),
                 if (item.startDate != null)
                   _row('Date', DateFormatter.formatDate(item.startDate!)),
+                if (item.maturityDate != null)
+                  _row(lent ? 'Expected back by' : 'To be repaid by',
+                      DateFormatter.formatDate(item.maturityDate!)),
                 _row('Interest', personalRateLabel(item)),
                 if (monthly != null && active)
                   _row('Interest on the remaining amount',
@@ -245,6 +250,10 @@ class PersonalDebtDetailsScreen extends ConsumerWidget {
 
   Future<void> _menu(BuildContext context, WidgetRef ref, FinancialItem item,
       String action) async {
+    if (action == 'edit') {
+      return PersonalDebtForm.show(context,
+          lent: item.itemType == 'asset', item: item);
+    }
     final db = ref.read(databaseProvider);
     final ok = await showDialog<bool>(
       context: context,

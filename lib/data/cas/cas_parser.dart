@@ -87,7 +87,8 @@ final _chargeRe = RegExp(
 final _folioRe = RegExp(r'^Folio No\s*:\s*(\d+(?:\s*/\s*\d+)?)');
 final _isinRe = RegExp(r'ISIN\s*:\s*((?:[A-Z0-9]\s*){12})');
 final _openRe = RegExp('Opening Unit Balance\\s*:?\\s*($_num)');
-final _closeRe = RegExp('Closing (?:\\d{2}-[A-Za-z]{3}-\\d{4} )?Unit Balance\\s*:?\\s*($_num)');
+final _closeRe = RegExp(
+    'Closing (?:\\d{2}-[A-Za-z]{3}-\\d{4} )?Unit Balance\\s*:?\\s*($_num)');
 final _costRe = RegExp('Total Cost Value\\s*:\\s*(?:INR\\s*)?($_num)');
 final _mvRe = RegExp('Market Value on [^:]+:\\s*INR\\s*($_num)');
 final _amcRe = RegExp(r'^[A-Za-z][A-Za-z .&-]*(?:Mutual Fund|MUTUAL FUND)\s*$');
@@ -194,7 +195,8 @@ List<CasFolio> _parseDetailed(String text) {
         .trim();
     if (line.isEmpty) continue;
     // Some statements print the previous row's date in front of a row.
-    line = line.replaceFirst(RegExp(r'^\d{2}-[A-Za-z]{3}-\d{4} (?=\d{2}-[A-Za-z]{3}-\d{4} )'), '');
+    line = line.replaceFirst(
+        RegExp(r'^\d{2}-[A-Za-z]{3}-\d{4} (?=\d{2}-[A-Za-z]{3}-\d{4} )'), '');
 
     if (_amcRe.hasMatch(line) && !line.startsWith('Page')) {
       amc = line;

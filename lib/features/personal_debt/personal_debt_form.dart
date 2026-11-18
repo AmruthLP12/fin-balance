@@ -1,21 +1,27 @@
+import 'package:drift/drift.dart' as drift;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/formatting/date_formatter.dart';
 import '../../core/providers/database_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../database/app_database.dart';
 import '../../database/precision/financial_precision.dart';
 
 /// Simple form for money you lent to someone or borrowed from someone:
 /// who, how much, when, and an optional interest rate. No EMI, no tenure.
 class PersonalDebtForm extends ConsumerStatefulWidget {
   final bool lent;
-  const PersonalDebtForm({super.key, required this.lent});
 
-  static Future<void> show(BuildContext context, {required bool lent}) =>
+  /// Set to edit an existing record instead of adding one.
+  final FinancialItem? item;
+  const PersonalDebtForm({super.key, required this.lent, this.item});
+
+  static Future<void> show(BuildContext context,
+          {required bool lent, FinancialItem? item}) =>
       Navigator.of(context).push<void>(MaterialPageRoute(
           fullscreenDialog: true,
-          builder: (_) => PersonalDebtForm(lent: lent)));
+          builder: (_) => PersonalDebtForm(lent: lent, item: item)));
 
   @override
   ConsumerState<PersonalDebtForm> createState() => _PersonalDebtFormState();
@@ -28,8 +34,28 @@ class _PersonalDebtFormState extends ConsumerState<PersonalDebtForm> {
   final _rate = TextEditingController();
   final _notes = TextEditingController();
   String _period = 'monthly';
+  bool _interest = false;
   DateTime _date = DateTime.now();
+  DateTime? _endDate;
   bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final i = widget.item;
+    if (i == null) return;
+    _person.text = i.name;
+    _amount.text = (i.initialValuePaise / 100).toString();
+    _notes.text = i.notes ?? '';
+    _date = i.startDate ?? DateTime.now();
+    _endDate = i.maturityDate;
+    final bps = i.interestRateBasisPoints;
+    if (bps != null && bps > 0) {
+      _interest = true;
+      _rate.text = (bps / 100).toString();
+      _period = i.interestRateType == 'yearly' ? 'yearly' : 'monthly';
+    }
+  }
 
   @override
   void dispose() {
@@ -44,13 +70,41 @@ class _PersonalDebtFormState extends ConsumerState<PersonalDebtForm> {
     if (!_key.currentState!.validate()) return;
     setState(() => _saving = true);
     try {
-      final rate = double.tryParse(_rate.text.trim());
+      final rate = _interest ? double.tryParse(_rate.text.trim()) : null;
+      final amountPaise =
+          FinancialPrecision.rupeesToPaise(double.parse(_amount.text.trim()));
+      final old = widget.item;
+      if (old != null) {
+        // Changing the amount moves what is outstanding by the same difference.
+        final outstanding =
+            (old.currentValuationPaise + amountPaise - old.initialValuePaise)
+                .clamp(0, 1 << 62);
+        await ref.read(databaseProvider).financialItemsDao.updateItem(
+              old.copyWith(
+                name: _person.text.trim(),
+                lenderName: drift.Value(_person.text.trim()),
+                initialValuePaise: amountPaise,
+                currentValuationPaise: outstanding,
+                interestRateBasisPoints: drift.Value(
+                    rate == null || rate <= 0 ? null : (rate * 100).round()),
+                interestRateType: drift.Value(_period),
+                startDate:
+                    drift.Value(DateTime(_date.year, _date.month, _date.day)),
+                maturityDate: drift.Value(_endDate),
+                notes: drift.Value(
+                    _notes.text.trim().isEmpty ? null : _notes.text.trim()),
+                updatedAt: DateTime.now().toUtc(),
+              ),
+            );
+        if (mounted) Navigator.of(context).pop();
+        return;
+      }
       await ref.read(transactionsDaoProvider).openPersonalDebt(
             profileId: ref.read(activeProfileIdProvider),
             lent: widget.lent,
             person: _person.text.trim(),
-            amountPaise: FinancialPrecision.rupeesToPaise(
-                double.parse(_amount.text.trim())),
+            amountPaise: amountPaise,
+            endDate: _endDate,
             date: DateTime(_date.year, _date.month, _date.day),
             rateBasisPoints:
                 rate == null || rate <= 0 ? null : (rate * 100).round(),
@@ -76,7 +130,9 @@ class _PersonalDebtFormState extends ConsumerState<PersonalDebtForm> {
         leading: IconButton(
             icon: const Icon(Icons.close_rounded),
             onPressed: _saving ? null : () => Navigator.of(context).pop()),
-        title: Text(lent ? 'Lend Money' : 'Borrowed Money'),
+        title: Text(widget.item != null
+            ? 'Edit'
+            : (lent ? 'Lend Money' : 'Borrowed Money')),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: AppSpacing.sm),
@@ -133,36 +189,68 @@ class _PersonalDebtFormState extends ConsumerState<PersonalDebtForm> {
               ),
             ),
             const SizedBox(height: AppSpacing.md),
-            Row(
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    controller: _rate,
-                    keyboardType:
-                        const TextInputType.numberWithOptions(decimal: true),
-                    decoration: const InputDecoration(
-                        labelText: 'Interest (optional)',
-                        suffixText: '%',
-                        border: OutlineInputBorder()),
-                  ),
+            InkWell(
+              onTap: () async {
+                final d = await showDatePicker(
+                    context: context,
+                    initialDate: _endDate ?? _date,
+                    firstDate: DateTime(1990),
+                    lastDate: DateTime(2100));
+                if (d != null) setState(() => _endDate = d);
+              },
+              child: InputDecorator(
+                decoration: InputDecoration(
+                  labelText: lent
+                      ? 'Expected back by (optional)'
+                      : 'To be repaid by (optional)',
+                  border: const OutlineInputBorder(),
+                  suffixIcon: _endDate == null
+                      ? const Icon(Icons.calendar_today_rounded, size: 18)
+                      : IconButton(
+                          icon: const Icon(Icons.close_rounded, size: 18),
+                          onPressed: () => setState(() => _endDate = null)),
                 ),
-                const SizedBox(width: AppSpacing.sm),
-                DropdownButton<String>(
-                  value: _period,
-                  items: const [
-                    DropdownMenuItem(
-                        value: 'monthly', child: Text('per month')),
-                    DropdownMenuItem(value: 'yearly', child: Text('per year')),
-                  ],
-                  onChanged: (v) => setState(() => _period = v ?? _period),
-                ),
-              ],
+                child: Text(_endDate == null
+                    ? 'No end date'
+                    : DateFormatter.formatDate(_endDate!)),
+              ),
             ),
+            const SizedBox(height: AppSpacing.md),
+            const Text('Interest'),
+            const SizedBox(height: 6),
+            SegmentedButton<String>(
+              showSelectedIcon: false,
+              segments: const [
+                ButtonSegment(value: 'none', label: Text('None')),
+                ButtonSegment(value: 'monthly', label: Text('% per month')),
+                ButtonSegment(value: 'yearly', label: Text('% per year')),
+              ],
+              selected: {_interest ? _period : 'none'},
+              onSelectionChanged: (v) => setState(() {
+                _interest = v.first != 'none';
+                if (_interest) _period = v.first;
+              }),
+            ),
+            if (_interest) ...[
+              const SizedBox(height: AppSpacing.sm),
+              TextFormField(
+                controller: _rate,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(
+                    labelText:
+                        'Rate (% ${_period == 'monthly' ? 'per month' : 'per year'})',
+                    suffixText: '%',
+                    border: const OutlineInputBorder()),
+                validator: (v) {
+                  final n = double.tryParse((v ?? '').trim());
+                  return n == null || n <= 0 ? 'Enter the rate in %' : null;
+                },
+              ),
+            ],
             const SizedBox(height: 4),
             Text(
-                lent
-                    ? 'Leave interest empty for a plain record. With interest, it is worked out on the amount still outstanding. There is no end date: record interest and part payments whenever they happen.'
-                    : 'Leave interest empty for a plain record. With interest, it is worked out on the amount still outstanding. There is no end date: record interest and part payments whenever you pay.',
+                'Interest is worked out on the amount still outstanding. The end date is only a reminder for you; the record stays open until it is settled.',
                 style: Theme.of(context).textTheme.bodySmall),
             const SizedBox(height: AppSpacing.md),
             TextFormField(
