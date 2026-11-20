@@ -96,6 +96,28 @@ class _PersonalDebtFormState extends ConsumerState<PersonalDebtForm> {
                 updatedAt: DateTime.now().toUtc(),
               ),
             );
+        final transactions =
+            await ref.read(transactionsDaoProvider).getTransactionsByItem(
+                  old.profileId,
+                  old.id,
+                );
+        final opening = transactions.where((t) =>
+            t.transactionType == 'lend_given' ||
+            t.transactionType == 'borrowing_received');
+        if (opening.isNotEmpty) {
+          final tx = opening.first;
+          await ref.read(transactionsDaoProvider).updateTransaction(
+                tx.copyWith(
+                  transactionDate: DateTime(_date.year, _date.month, _date.day),
+                  amountPaise: amountPaise,
+                  netAmountPaise: drift.Value(amountPaise),
+                  notes: drift.Value(widget.lent
+                      ? 'Lent to ${_person.text.trim()}'
+                      : 'Borrowed from ${_person.text.trim()}'),
+                  updatedAt: DateTime.now().toUtc(),
+                ),
+              );
+        }
         if (mounted) Navigator.of(context).pop();
         return;
       }

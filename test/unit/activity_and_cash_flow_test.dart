@@ -28,6 +28,51 @@ void main() {
   });
 
   group('Activity & Cash Flow Ledger Tests', () {
+    test('Personal debt entries support interest edits and cascade deletion',
+        () async {
+      final itemId = await db.transactionsDao.openPersonalDebt(
+        profileId: profileId,
+        lent: true,
+        person: 'Arjun',
+        amountPaise: 1000000,
+        date: DateTime(2026, 11, 1),
+        rateBasisPoints: 1200,
+        ratePeriod: 'monthly',
+      );
+
+      final interestId = await db.transactionsDao.recordPersonalEntry(
+        itemId: itemId,
+        interest: true,
+        amountPaise: 10000,
+        date: DateTime(2026, 11, 5),
+        notes: 'November interest',
+      );
+
+      await db.transactionsDao.updatePersonalEntry(
+        transactionId: interestId,
+        amountPaise: 12500,
+        date: DateTime(2026, 11, 6),
+        notes: 'Updated interest',
+      );
+
+      var entries =
+          await db.transactionsDao.getTransactionsByItem(profileId, itemId);
+      final interest = entries.firstWhere((t) => t.id == interestId);
+      expect(interest.amountPaise, 12500);
+      expect(interest.transactionDate, DateTime(2026, 11, 6));
+      expect(interest.notes, 'Updated interest');
+
+      await db.transactionsDao.deletePersonalDebt(itemId);
+
+      entries =
+          await db.transactionsDao.getTransactionsByItem(profileId, itemId);
+      expect(entries, isEmpty);
+      expect(await db.financialItemsDao.getItemById(itemId), isNull);
+      final activity =
+          await db.transactionsDao.getRecentTransactionsForProfile(profileId);
+      expect(activity.where((t) => t.financialItemId == itemId), isEmpty);
+    });
+
     test('Records income and expense transactions and computes net cash flow',
         () async {
       // 1. Record Income: ₹50,000 (5,000,000 paise)

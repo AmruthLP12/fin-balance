@@ -48,7 +48,13 @@ class PersonalDebtDetailsScreen extends ConsumerWidget {
                 .value ??
             const <Transaction>[])
         .toList()
-      ..sort((a, b) => b.transactionDate.compareTo(a.transactionDate));
+      ..sort((a, b) {
+        final date = b.transactionDate.compareTo(a.transactionDate);
+        if (date != 0) return date;
+        final created = b.createdAt.compareTo(a.createdAt);
+        if (created != 0) return created;
+        return b.id.compareTo(a.id);
+      });
     final interestTotal = entries
         .where((t) =>
             t.transactionType == 'interest_paid' ||
@@ -141,12 +147,133 @@ class PersonalDebtDetailsScreen extends ConsumerWidget {
                     personalFlowLabel(t.transactionType) ?? t.transactionType),
                 subtitle: Text(DateFormatter.formatDate(t.transactionDate) +
                     ((t.notes ?? '').isEmpty ? '' : ' · ${t.notes}')),
-                trailing: Text(CurrencyFormatter.formatPaise(t.amountPaise),
-                    style: AppTypography.titleMedium),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(CurrencyFormatter.formatPaise(t.amountPaise),
+                        style: AppTypography.titleMedium),
+                    if (t.transactionType == 'interest_paid' ||
+                        t.transactionType == 'interest_received' ||
+                        t.transactionType == 'lend_repaid' ||
+                        t.transactionType == 'debt_repayment')
+                      PopupMenuButton<String>(
+                        icon: const Icon(Icons.more_vert_rounded, size: 18),
+                        padding: EdgeInsets.zero,
+                        onSelected: (action) {
+                          if (action == 'edit') {
+                            _editEntry(context, ref, t);
+                          } else if (action == 'delete') {
+                            _deleteEntry(context, ref, t);
+                          }
+                        },
+                        itemBuilder: (_) => const [
+                          PopupMenuItem(
+                              value: 'edit', child: Text('Edit entry')),
+                          PopupMenuItem(
+                              value: 'delete', child: Text('Delete entry')),
+                        ],
+                      ),
+                  ],
+                ),
               ),
         ],
       ),
     );
+  }
+
+  Future<void> _editEntry(
+      BuildContext context, WidgetRef ref, Transaction entry) async {
+    final amount = TextEditingController(
+        text: (entry.amountPaise / 100)
+            .toStringAsFixed(entry.amountPaise % 100 == 0 ? 0 : 2));
+    final notes = TextEditingController(text: entry.notes ?? '');
+    var date = entry.transactionDate;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (c) => StatefulBuilder(
+        builder: (c, setState) => AlertDialog(
+          title: const Text('Edit entry'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: amount,
+                autofocus: true,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(
+                    labelText: 'Amount', prefixText: '₹ '),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              TextButton.icon(
+                icon: const Icon(Icons.calendar_today_rounded, size: 16),
+                label: Text(DateFormatter.formatDate(date)),
+                onPressed: () async {
+                  final d = await showDatePicker(
+                      context: c,
+                      initialDate: date,
+                      firstDate: DateTime(1990),
+                      lastDate: DateTime(2100));
+                  if (d != null) setState(() => date = d);
+                },
+              ),
+              TextField(
+                  controller: notes,
+                  decoration:
+                      const InputDecoration(labelText: 'Note (optional)')),
+            ],
+          ),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(c, false),
+                child: const Text('Cancel')),
+            FilledButton(
+                onPressed: () => Navigator.pop(c, true),
+                child: const Text('Save')),
+          ],
+        ),
+      ),
+    );
+    final value = double.tryParse(amount.text.trim());
+    final note = notes.text;
+    amount.dispose();
+    notes.dispose();
+    if (ok != true || value == null || value <= 0) return;
+    try {
+      await ref.read(transactionsDaoProvider).updatePersonalEntry(
+            transactionId: entry.id,
+            amountPaise: FinancialPrecision.rupeesToPaise(value),
+            date: DateTime(date.year, date.month, date.day),
+            notes: note,
+          );
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Could not update: $e')));
+      }
+    }
+  }
+
+  Future<void> _deleteEntry(
+      BuildContext context, WidgetRef ref, Transaction entry) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: const Text('Delete entry?'),
+        content: const Text(
+            'This removes the entry. Repayment entries also restore the outstanding amount.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(c, false),
+              child: const Text('Cancel')),
+          FilledButton(
+              onPressed: () => Navigator.pop(c, true),
+              child: const Text('Delete')),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    await ref.read(transactionsDaoProvider).deletePersonalEntry(entry.id);
   }
 
   Widget _row(String k, String v) => Padding(
@@ -261,7 +388,7 @@ class PersonalDebtDetailsScreen extends ConsumerWidget {
         title: Text(action == 'close' ? 'Mark as settled?' : 'Delete?'),
         content: Text(action == 'close'
             ? 'It moves out of your totals. History is kept.'
-            : 'This deletes "${item.name}". Its entries stay in the ledger as unlinked transactions.'),
+            : 'This deletes "${item.name}" and removes all of its entries from the Activity ledger.'),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(c, false),
@@ -277,7 +404,7 @@ class PersonalDebtDetailsScreen extends ConsumerWidget {
       await db.financialItemsDao.updateItem(
           item.copyWith(status: 'closed', updatedAt: DateTime.now().toUtc()));
     } else {
-      await db.financialItemsDao.deleteItem(item.id);
+      await ref.read(transactionsDaoProvider).deletePersonalDebt(item.id);
       if (context.mounted) Navigator.of(context).pop();
     }
   }

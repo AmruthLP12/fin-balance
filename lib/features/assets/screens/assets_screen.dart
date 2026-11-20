@@ -111,6 +111,12 @@ class _AssetsScreenState extends ConsumerState<AssetsScreen> {
                   tx.financialItemId != null &&
                   filteredItemIds.contains(tx.financialItemId))
               .toList();
+          final isMoneyLentCategory = _selectedCategoryFilter == 'money_lent';
+          final interestRecordedPaise = matchingTransactions
+              .where((tx) =>
+                  tx.transactionType == 'interest_received' ||
+                  tx.transactionType == 'interest_paid')
+              .fold<int>(0, (sum, tx) => sum + tx.amountPaise);
 
           final overallXirr = FinancialCalculator.calculatePortfolioXirr(
             transactions: matchingTransactions,
@@ -167,8 +173,9 @@ class _AssetsScreenState extends ConsumerState<AssetsScreen> {
                             ),
                           ),
                           StatusBadge(
-                            label:
-                                '${filteredItems.length} ${filteredItems.length == 1 ? 'Holding' : 'Holdings'}',
+                            label: isMoneyLentCategory
+                                ? '${filteredItems.length} ${filteredItems.length == 1 ? 'Person' : 'People'}'
+                                : '${filteredItems.length} ${filteredItems.length == 1 ? 'Holding' : 'Holdings'}',
                             type: BadgeType.neutral,
                           ),
                         ],
@@ -210,7 +217,9 @@ class _AssetsScreenState extends ConsumerState<AssetsScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'OVERALL P&L',
+                                isMoneyLentCategory
+                                    ? 'INTEREST RECORDED'
+                                    : 'OVERALL P&L',
                                 style: AppTypography.labelSmall.copyWith(
                                   color: isDark
                                       ? AppColors.darkTextMuted
@@ -221,12 +230,17 @@ class _AssetsScreenState extends ConsumerState<AssetsScreen> {
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                '${isProfit ? '+' : ''}${CurrencyFormatter.formatPaise(totalPnlPaise)} (${totalPnlPercent >= 0 ? '+' : ''}${totalPnlPercent.toStringAsFixed(1)}%)',
+                                isMoneyLentCategory
+                                    ? CurrencyFormatter.formatPaise(
+                                        interestRecordedPaise)
+                                    : '${isProfit ? '+' : ''}${CurrencyFormatter.formatPaise(totalPnlPaise)} (${totalPnlPercent >= 0 ? '+' : ''}${totalPnlPercent.toStringAsFixed(1)}%)',
                                 style: AppTypography.titleMedium.copyWith(
                                   fontWeight: FontWeight.bold,
-                                  color: isProfit
+                                  color: isMoneyLentCategory
                                       ? AppColors.asset
-                                      : AppColors.liability,
+                                      : (isProfit
+                                          ? AppColors.asset
+                                          : AppColors.liability),
                                   fontSize: 14,
                                 ),
                               ),
@@ -247,7 +261,9 @@ class _AssetsScreenState extends ConsumerState<AssetsScreen> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
-                                'Invested: ',
+                                isMoneyLentCategory
+                                    ? 'Lent in total: '
+                                    : 'Invested: ',
                                 style: AppTypography.labelSmall.copyWith(
                                   color: isDark
                                       ? AppColors.darkTextMuted
@@ -270,7 +286,9 @@ class _AssetsScreenState extends ConsumerState<AssetsScreen> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
-                                'Overall IRR: ',
+                                isMoneyLentCategory
+                                    ? 'Outstanding: '
+                                    : 'Overall IRR: ',
                                 style: AppTypography.labelSmall.copyWith(
                                   color: isDark
                                       ? AppColors.darkTextMuted
@@ -278,9 +296,12 @@ class _AssetsScreenState extends ConsumerState<AssetsScreen> {
                                 ),
                               ),
                               Text(
-                                overallXirr != null
-                                    ? '${overallXirr.toStringAsFixed(1)}%'
-                                    : '—',
+                                isMoneyLentCategory
+                                    ? CurrencyFormatter.formatPaise(
+                                        totalCurrentPaise)
+                                    : (overallXirr != null
+                                        ? '${overallXirr.toStringAsFixed(1)}%'
+                                        : '—'),
                                 style: AppTypography.labelSmall.copyWith(
                                   fontWeight: FontWeight.bold,
                                   color: (overallXirr != null &&

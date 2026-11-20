@@ -327,6 +327,93 @@ class TransactionsDao extends DatabaseAccessor<AppDatabase>
     });
   }
 
+  /// Updates an existing principal or interest entry for an informal debt.
+  /// Principal edits move the outstanding balance by the change in the entry.
+  Future<void> updatePersonalEntry({
+    required int transactionId,
+    required int amountPaise,
+    required DateTime date,
+    String? notes,
+  }) async {
+    if (amountPaise <= 0) {
+      throw ArgumentError('Amount must be greater than zero.');
+    }
+    return transaction(() async {
+      final entry = await getTransactionById(transactionId);
+      if (entry == null || entry.financialItemId == null) {
+        throw ArgumentError('Personal debt entry does not exist.');
+      }
+      final item =
+          await db.financialItemsDao.getItemById(entry.financialItemId!);
+      if (item == null) throw ArgumentError('Personal debt does not exist.');
+
+      final principalTypes = {'lend_repaid', 'debt_repayment'};
+      if (principalTypes.contains(entry.transactionType)) {
+        final delta = amountPaise - entry.amountPaise;
+        final left = (item.currentValuationPaise - delta)
+            .clamp(0, item.initialValuePaise)
+            .toInt();
+        await db.financialItemsDao.updateValuation(
+          id: item.id,
+          currentValuationPaise: left,
+        );
+        await (db.update(db.financialItems)
+              ..where((tbl) => tbl.id.equals(item.id)))
+            .write(FinancialItemsCompanion(
+          status: Value(left == 0 ? 'closed' : 'active'),
+          updatedAt: Value(DateTime.now().toUtc()),
+        ));
+      }
+
+      await updateTransaction(entry.copyWith(
+        transactionDate: date,
+        amountPaise: amountPaise,
+        netAmountPaise: Value(amountPaise),
+        notes:
+            Value(notes == null || notes.trim().isEmpty ? null : notes.trim()),
+        updatedAt: DateTime.now().toUtc(),
+      ));
+    });
+  }
+
+  /// Deletes an existing principal or interest entry and reverses principal
+  /// impact on the outstanding debt balance.
+  Future<void> deletePersonalEntry(int transactionId) async {
+    return transaction(() async {
+      final entry = await getTransactionById(transactionId);
+      if (entry == null || entry.financialItemId == null) return;
+      final item =
+          await db.financialItemsDao.getItemById(entry.financialItemId!);
+      if (item != null &&
+          {'lend_repaid', 'debt_repayment'}.contains(entry.transactionType)) {
+        final left = (item.currentValuationPaise + entry.amountPaise)
+            .clamp(0, item.initialValuePaise)
+            .toInt();
+        await db.financialItemsDao.updateValuation(
+          id: item.id,
+          currentValuationPaise: left,
+        );
+        await (db.update(db.financialItems)
+              ..where((tbl) => tbl.id.equals(item.id)))
+            .write(FinancialItemsCompanion(
+          status: const Value('active'),
+          updatedAt: Value(DateTime.now().toUtc()),
+        ));
+      }
+      await deleteTransaction(transactionId);
+    });
+  }
+
+  /// Deletes an informal debt and every ledger entry belonging to it.
+  Future<void> deletePersonalDebt(int itemId) async {
+    return transaction(() async {
+      await (delete(transactions)
+            ..where((tbl) => tbl.financialItemId.equals(itemId)))
+          .go();
+      await db.financialItemsDao.deleteItem(itemId);
+    });
+  }
+
   /// Record an investment transaction with atomic unit, valuation, and cost basis updates.
   Future<int> recordInvestmentTransaction({
     required int profileId,

@@ -5,6 +5,15 @@ All notable changes to the FinBalance application will be documented in this fil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.29.3] - 2026-11-20
+
+### Fixed
+
+- **Lent / borrowed money history**: interest and principal entries can now be edited or deleted; LIFO history puts the newest record first.
+- **Opening amount updates**: editing a lent or borrowed amount now updates the original Activity ledger entry as well as the outstanding balance.
+- **Deleting records**: deleting a lent or borrowed record removes all of its linked entries from Activity, instead of leaving unlinked transactions behind.
+- **Lent-to-others summary**: the Assets category now shows interest recorded, outstanding amount and total lent, instead of investment P&L / IRR cards.
+
 ## [0.29.2] - 2026-11-18
 
 ### Changed
