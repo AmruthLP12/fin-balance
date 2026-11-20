@@ -16,9 +16,7 @@ import '../../../core/widgets/section_header.dart';
 import '../../../core/widgets/status_badge.dart';
 import '../../../database/app_database.dart';
 import '../../profile/widgets/profile_menu_button.dart';
-import '../widgets/add_sip_dialog.dart';
 import '../widgets/holding_card.dart';
-import '../widgets/sip_card.dart';
 import 'mutual_fund_search_screen.dart';
 import 'sip_details_screen.dart';
 
@@ -45,11 +43,9 @@ class _AssetsScreenState extends ConsumerState<AssetsScreen> {
     final isDark = theme.brightness == Brightness.dark;
     final activeProfileAsync = ref.watch(activeProfileProvider);
     final assetsAsync = ref.watch(activeProfileAssetsProvider);
-    final sipsAsync = ref.watch(activeProfileSipPlansProvider);
     final transactionsAsync = ref.watch(activeProfileTransactionsProvider);
 
     final profileName = activeProfileAsync.value?.name ?? 'Profile';
-    final sips = sipsAsync.value ?? [];
     final allTransactions = transactionsAsync.value ?? [];
 
     return Scaffold(
@@ -357,54 +353,6 @@ class _AssetsScreenState extends ConsumerState<AssetsScreen> {
                           ),
                   ),
 
-                // 4. SIP Schedules Section (visible when viewing Mutual Funds or All)
-                if (_selectedCategoryFilter == 'mutual_fund' ||
-                    _selectedCategoryFilter == 'all') ...[
-                  const SizedBox(height: AppSpacing.xl),
-                  SectionHeader(
-                    title: 'SIP Schedules (${sips.length})',
-                    actionLabel: '+ Add SIP',
-                    onActionTap: () => _openAddSipDialog(context),
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  if (sips.isEmpty)
-                    FinCard(
-                      child: Row(
-                        children: [
-                          const Icon(Icons.calendar_today_rounded,
-                              color: AppColors.scheduled),
-                          const SizedBox(width: AppSpacing.md),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text('No Active SIPs',
-                                    style: AppTypography.titleMedium),
-                                Text(
-                                  'Set up ongoing or bulk historical SIP investments for $profileName.',
-                                  style: AppTypography.labelSmall.copyWith(
-                                    color: isDark
-                                        ? AppColors.darkTextSecondary
-                                        : AppColors.lightTextSecondary,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          TextButton(
-                            onPressed: () => _openAddSipDialog(context),
-                            child: const Text('Add SIP'),
-                          ),
-                        ],
-                      ),
-                    )
-                  else
-                    ...sips.map((sip) => Padding(
-                          padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                          child: SipCard(sip: sip),
-                        )),
-                ],
-
                 const SizedBox(height: 80), // FAB clearance
               ],
             ),
@@ -450,10 +398,21 @@ class _AssetsScreenState extends ConsumerState<AssetsScreen> {
   }
 
   List<FinancialItem> _filterItems(List<FinancialItem> items, String filter) {
-    if (filter == 'all') return items;
-    return items
-        .where((i) => groupOf(i.subType, assetGroups).value == filter)
-        .toList();
+    final filtered = filter == 'all'
+        ? items
+        : items
+            .where((i) => groupOf(i.subType, assetGroups).value == filter)
+            .toList();
+    filtered.sort((a, b) {
+      final activeA = a.status == 'active' && a.currentValuationPaise > 0;
+      final activeB = b.status == 'active' && b.currentValuationPaise > 0;
+      if (activeA != activeB) return activeA ? -1 : 1;
+      if (a.currentValuationPaise != b.currentValuationPaise) {
+        return b.currentValuationPaise.compareTo(a.currentValuationPaise);
+      }
+      return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+    });
+    return filtered;
   }
 
   Widget _buildCategoryPill({
@@ -539,12 +498,12 @@ class _AssetsScreenState extends ConsumerState<AssetsScreen> {
           description:
               'Equity holdings for $profileName will be tracked here. Stock portfolio management is planned for upcoming milestones.',
         );
-      case 'fixed_income':
+      case 'other_deposit':
         return EmptyStateView(
           icon: Icons.account_balance_rounded,
-          title: 'No Fixed Income Added',
+          title: 'No Other Deposits Added',
           description:
-              'PPF, NSC, KVP, SSS, POSS, FD, FRD and RD for $profileName will appear here.',
+              'FD, RD, FRD and other deposit records for $profileName will appear here.',
         );
       case 'money_lent':
         return const EmptyStateView(
@@ -597,13 +556,6 @@ class _AssetsScreenState extends ConsumerState<AssetsScreen> {
       MaterialPageRoute<void>(
         builder: (_) => SipDetailsScreen(holding: item),
       ),
-    );
-  }
-
-  void _openAddSipDialog(BuildContext context) {
-    showDialog<void>(
-      context: context,
-      builder: (_) => const AddSipDialog(),
     );
   }
 

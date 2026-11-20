@@ -22,7 +22,7 @@ void main() {
     for (final label in [
       'Mutual Funds',
       'Stocks & ETFs',
-      'Fixed Income',
+      'Other Deposits',
       'Other Assets',
       'Loans',
       'Other Borrowings',

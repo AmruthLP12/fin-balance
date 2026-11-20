@@ -62,6 +62,15 @@ class _LiabilitiesScreenState extends ConsumerState<LiabilitiesScreen> {
           final all = everything
               .where((i) => groupOf(i.subType, liabilityGroups).value == tab)
               .toList();
+          all.sort((a, b) {
+            final activeA = a.status == 'active' && a.currentValuationPaise > 0;
+            final activeB = b.status == 'active' && b.currentValuationPaise > 0;
+            if (activeA != activeB) return activeA ? -1 : 1;
+            if (a.currentValuationPaise != b.currentValuationPaise) {
+              return b.currentValuationPaise.compareTo(a.currentValuationPaise);
+            }
+            return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+          });
           final ongoing = all.where(LoanCalculator.isOngoing).toList();
           final closed = all.where(LoanCalculator.isClosed).toList();
           final shown = switch (_filter) {

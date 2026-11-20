@@ -234,6 +234,7 @@ make clean
 - [x] **NAV Auto-Refresh, CAS Summary & Profile Menu ([0.24.0]):** refresh on open/resume/due time with offline retry, holdings-only CAS summaries, profile choice for CAS import, in-menu profile switching.
 - [x] **Borrowed & Lent Money ([0.29.0]):** simple person-to-person borrowing and lending with optional interest on the remaining amount, swipeable Loans / Other Borrowings tabs, a Lent to Others asset tab, K/L/Cr amounts, future-dated SIPs only planned, PLI removed.
 - [x] **Personal Debt History Fixes ([0.29.3]):** editable and deletable interest/principal entries, LIFO history, opening amounts synchronized into Activity, complete removal of deleted debt records, and category-specific Lent to Others summaries.
+- [x] **Category and Ledger Fixes ([0.29.4]):** overview uses Other Deposits, zero/closed assets and liabilities sort last, Mutual Funds hides SIP schedules, and lent/borrowed amount edits stay synchronized with Activity.
 - [x] **CAS Import Fixes & Daily P&L ([0.28.0]):** watermark-tolerant CAS rows, twin SIPs imported, lakh/crore toggle, Today's P&L instead of Return/XIRR, stable active profile.
 - [x] **Loan Schedule & Cash Flow Fixes ([0.27.2]):** first EMI on the start date, months left from balance/EMI, Preclosed status, loan repayments in cash flow.
 - [x] **Loan Backfill & Support Shortcut ([0.27.1]):** past EMIs of a new loan are marked paid, Support the Developer moved to the top of Settings with a heart shortcut on both overviews.

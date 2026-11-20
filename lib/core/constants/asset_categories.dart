@@ -15,7 +15,7 @@ class CategoryGroup {
 const assetGroups = <CategoryGroup>[
   CategoryGroup('mutual_fund', 'Mutual Funds'),
   CategoryGroup('stock', 'Stocks & ETFs'),
-  CategoryGroup('fixed_income', 'Fixed Income', [
+  CategoryGroup('other_deposit', 'Other Deposits', [
     ('ppf', 'PPF'),
     ('nsc', 'NSC'),
     ('kvp', 'KVP'),
