@@ -63,6 +63,12 @@ class HoldingCard extends ConsumerWidget {
     );
 
     final subtitle = scheme?.fundHouse ?? _formatSubType(item.subType);
+    final linkedSips = ref.watch(sipsByHoldingProvider(item.id)).value ??
+        const <SipPlan>[];
+    final now = DateTime.now();
+    final futureSip = linkedSips
+        .where((s) => s.startDate.isAfter(now) && item.currentValuationPaise == 0)
+        .firstOrNull;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
@@ -109,11 +115,17 @@ class HoldingCard extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(width: AppSpacing.sm),
-                StatusBadge(
-                  label:
-                      '${isProfit ? '+' : ''}${absoluteReturn.toStringAsFixed(1)}%',
-                  type: isProfit ? BadgeType.asset : BadgeType.liability,
-                ),
+                futureSip != null
+                    ? const StatusBadge(
+                        label: 'PLANNED',
+                        type: BadgeType.scheduled,
+                      )
+                    : StatusBadge(
+                        label:
+                            '${isProfit ? '+' : ''}${absoluteReturn.toStringAsFixed(1)}%',
+                        type:
+                            isProfit ? BadgeType.asset : BadgeType.liability,
+                      ),
                 if (onDelete != null)
                   PopupMenuButton<String>(
                     icon: const Icon(Icons.more_vert_rounded, size: 18),

@@ -5,6 +5,7 @@ import '../../core/cash_flow.dart';
 import '../../core/formatting/currency_formatter.dart';
 import '../../core/formatting/date_formatter.dart';
 import '../../core/providers/database_provider.dart';
+import '../../core/notifications/personal_debt_reminder_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
@@ -101,6 +102,12 @@ class PersonalDebtDetailsScreen extends ConsumerWidget {
                   _row(lent ? 'Expected back by' : 'To be repaid by',
                       DateFormatter.formatDate(item.maturityDate!)),
                 _row('Interest', personalRateLabel(item)),
+                if (item.interestDueDate != null)
+                  _row(lent ? 'Interest due date' : 'Interest payable date',
+                      DateFormatter.formatDate(item.interestDueDate!)),
+                if (item.interestDueAmountPaise != null)
+                  _row('Interest amount',
+                      CurrencyFormatter.formatPaise(item.interestDueAmountPaise!)),
                 if (monthly != null && active)
                   _row('Interest on the remaining amount',
                       '${CurrencyFormatter.formatPaise(monthly)} / month'),
@@ -295,9 +302,16 @@ class PersonalDebtDetailsScreen extends ConsumerWidget {
 
   Future<void> _entry(BuildContext context, WidgetRef ref, FinancialItem item,
       {required bool interest}) async {
-    final amount = TextEditingController();
+    final dueAmount = interest ? item.interestDueAmountPaise : null;
+    final amount = TextEditingController(
+        text: dueAmount == null
+            ? ''
+            : (dueAmount / 100)
+                .toStringAsFixed(dueAmount % 100 == 0 ? 0 : 2));
     final notes = TextEditingController();
-    var date = DateTime.now();
+    var date = interest && item.interestDueDate != null
+        ? item.interestDueDate!
+        : DateTime.now();
     final lent = item.itemType == 'asset';
     final title = interest
         ? (lent ? 'Interest received' : 'Interest paid')
@@ -403,8 +417,10 @@ class PersonalDebtDetailsScreen extends ConsumerWidget {
     if (action == 'close') {
       await db.financialItemsDao.updateItem(
           item.copyWith(status: 'closed', updatedAt: DateTime.now().toUtc()));
+      await PersonalDebtReminderService.cancel(item.id);
     } else {
       await ref.read(transactionsDaoProvider).deletePersonalDebt(item.id);
+      await PersonalDebtReminderService.cancel(item.id);
       if (context.mounted) Navigator.of(context).pop();
     }
   }

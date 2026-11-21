@@ -238,6 +238,8 @@ class TransactionsDao extends DatabaseAccessor<AppDatabase>
     int? rateBasisPoints,
     String ratePeriod = 'yearly',
     DateTime? endDate,
+    DateTime? interestDueDate,
+    int? interestDueAmountPaise,
     String? notes,
   }) async {
     if (amountPaise <= 0) throw ArgumentError('Amount must be above zero.');
@@ -257,6 +259,8 @@ class TransactionsDao extends DatabaseAccessor<AppDatabase>
           lenderName: Value(person),
           interestRateBasisPoints: Value(rateBasisPoints),
           interestRateType: Value(ratePeriod),
+          interestDueDate: Value(interestDueDate),
+          interestDueAmountPaise: Value(interestDueAmountPaise),
           startDate: Value(date),
           maturityDate: Value(endDate),
           notes: notes == null || notes.trim().isEmpty

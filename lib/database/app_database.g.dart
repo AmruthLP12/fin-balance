@@ -1900,6 +1900,18 @@ class $FinancialItemsTable extends FinancialItems
   late final GeneratedColumn<String> interestRateType = GeneratedColumn<String>(
       'interest_rate_type', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _interestDueDateMeta =
+      const VerificationMeta('interestDueDate');
+  @override
+  late final GeneratedColumn<DateTime> interestDueDate =
+      GeneratedColumn<DateTime>('interest_due_date', aliasedName, true,
+          type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _interestDueAmountPaiseMeta =
+      const VerificationMeta('interestDueAmountPaise');
+  @override
+  late final GeneratedColumn<int> interestDueAmountPaise = GeneratedColumn<int>(
+      'interest_due_amount_paise', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
   static const VerificationMeta _startDateMeta =
       const VerificationMeta('startDate');
   @override
@@ -1954,6 +1966,8 @@ class $FinancialItemsTable extends FinancialItems
         tenureMonths,
         tenureDays,
         interestRateType,
+        interestDueDate,
+        interestDueAmountPaise,
         startDate,
         maturityDate,
         notes,
@@ -2078,6 +2092,18 @@ class $FinancialItemsTable extends FinancialItems
           interestRateType.isAcceptableOrUnknown(
               data['interest_rate_type']!, _interestRateTypeMeta));
     }
+    if (data.containsKey('interest_due_date')) {
+      context.handle(
+          _interestDueDateMeta,
+          interestDueDate.isAcceptableOrUnknown(
+              data['interest_due_date']!, _interestDueDateMeta));
+    }
+    if (data.containsKey('interest_due_amount_paise')) {
+      context.handle(
+          _interestDueAmountPaiseMeta,
+          interestDueAmountPaise.isAcceptableOrUnknown(
+              data['interest_due_amount_paise']!, _interestDueAmountPaiseMeta));
+    }
     if (data.containsKey('start_date')) {
       context.handle(_startDateMeta,
           startDate.isAcceptableOrUnknown(data['start_date']!, _startDateMeta));
@@ -2148,6 +2174,11 @@ class $FinancialItemsTable extends FinancialItems
           .read(DriftSqlType.int, data['${effectivePrefix}tenure_days']),
       interestRateType: attachedDatabase.typeMapping.read(
           DriftSqlType.string, data['${effectivePrefix}interest_rate_type']),
+      interestDueDate: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime, data['${effectivePrefix}interest_due_date']),
+      interestDueAmountPaise: attachedDatabase.typeMapping.read(
+          DriftSqlType.int,
+          data['${effectivePrefix}interest_due_amount_paise']),
       startDate: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}start_date']),
       maturityDate: attachedDatabase.typeMapping
@@ -2209,6 +2240,8 @@ class FinancialItem extends DataClass implements Insertable<FinancialItem> {
   final int? tenureMonths;
   final int? tenureDays;
   final String? interestRateType;
+  final DateTime? interestDueDate;
+  final int? interestDueAmountPaise;
   final DateTime? startDate;
   final DateTime? maturityDate;
   final String? notes;
@@ -2234,6 +2267,8 @@ class FinancialItem extends DataClass implements Insertable<FinancialItem> {
       this.tenureMonths,
       this.tenureDays,
       this.interestRateType,
+      this.interestDueDate,
+      this.interestDueAmountPaise,
       this.startDate,
       this.maturityDate,
       this.notes,
@@ -2279,6 +2314,12 @@ class FinancialItem extends DataClass implements Insertable<FinancialItem> {
     }
     if (!nullToAbsent || interestRateType != null) {
       map['interest_rate_type'] = Variable<String>(interestRateType);
+    }
+    if (!nullToAbsent || interestDueDate != null) {
+      map['interest_due_date'] = Variable<DateTime>(interestDueDate);
+    }
+    if (!nullToAbsent || interestDueAmountPaise != null) {
+      map['interest_due_amount_paise'] = Variable<int>(interestDueAmountPaise);
     }
     if (!nullToAbsent || startDate != null) {
       map['start_date'] = Variable<DateTime>(startDate);
@@ -2333,6 +2374,12 @@ class FinancialItem extends DataClass implements Insertable<FinancialItem> {
       interestRateType: interestRateType == null && nullToAbsent
           ? const Value.absent()
           : Value(interestRateType),
+      interestDueDate: interestDueDate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(interestDueDate),
+      interestDueAmountPaise: interestDueAmountPaise == null && nullToAbsent
+          ? const Value.absent()
+          : Value(interestDueAmountPaise),
       startDate: startDate == null && nullToAbsent
           ? const Value.absent()
           : Value(startDate),
@@ -2372,6 +2419,9 @@ class FinancialItem extends DataClass implements Insertable<FinancialItem> {
       tenureMonths: serializer.fromJson<int?>(json['tenureMonths']),
       tenureDays: serializer.fromJson<int?>(json['tenureDays']),
       interestRateType: serializer.fromJson<String?>(json['interestRateType']),
+      interestDueDate: serializer.fromJson<DateTime?>(json['interestDueDate']),
+      interestDueAmountPaise:
+          serializer.fromJson<int?>(json['interestDueAmountPaise']),
       startDate: serializer.fromJson<DateTime?>(json['startDate']),
       maturityDate: serializer.fromJson<DateTime?>(json['maturityDate']),
       notes: serializer.fromJson<String?>(json['notes']),
@@ -2403,6 +2453,8 @@ class FinancialItem extends DataClass implements Insertable<FinancialItem> {
       'tenureMonths': serializer.toJson<int?>(tenureMonths),
       'tenureDays': serializer.toJson<int?>(tenureDays),
       'interestRateType': serializer.toJson<String?>(interestRateType),
+      'interestDueDate': serializer.toJson<DateTime?>(interestDueDate),
+      'interestDueAmountPaise': serializer.toJson<int?>(interestDueAmountPaise),
       'startDate': serializer.toJson<DateTime?>(startDate),
       'maturityDate': serializer.toJson<DateTime?>(maturityDate),
       'notes': serializer.toJson<String?>(notes),
@@ -2431,6 +2483,8 @@ class FinancialItem extends DataClass implements Insertable<FinancialItem> {
           Value<int?> tenureMonths = const Value.absent(),
           Value<int?> tenureDays = const Value.absent(),
           Value<String?> interestRateType = const Value.absent(),
+          Value<DateTime?> interestDueDate = const Value.absent(),
+          Value<int?> interestDueAmountPaise = const Value.absent(),
           Value<DateTime?> startDate = const Value.absent(),
           Value<DateTime?> maturityDate = const Value.absent(),
           Value<String?> notes = const Value.absent(),
@@ -2463,6 +2517,12 @@ class FinancialItem extends DataClass implements Insertable<FinancialItem> {
         interestRateType: interestRateType.present
             ? interestRateType.value
             : this.interestRateType,
+        interestDueDate: interestDueDate.present
+            ? interestDueDate.value
+            : this.interestDueDate,
+        interestDueAmountPaise: interestDueAmountPaise.present
+            ? interestDueAmountPaise.value
+            : this.interestDueAmountPaise,
         startDate: startDate.present ? startDate.value : this.startDate,
         maturityDate:
             maturityDate.present ? maturityDate.value : this.maturityDate,
@@ -2509,6 +2569,12 @@ class FinancialItem extends DataClass implements Insertable<FinancialItem> {
       interestRateType: data.interestRateType.present
           ? data.interestRateType.value
           : this.interestRateType,
+      interestDueDate: data.interestDueDate.present
+          ? data.interestDueDate.value
+          : this.interestDueDate,
+      interestDueAmountPaise: data.interestDueAmountPaise.present
+          ? data.interestDueAmountPaise.value
+          : this.interestDueAmountPaise,
       startDate: data.startDate.present ? data.startDate.value : this.startDate,
       maturityDate: data.maturityDate.present
           ? data.maturityDate.value
@@ -2541,6 +2607,8 @@ class FinancialItem extends DataClass implements Insertable<FinancialItem> {
           ..write('tenureMonths: $tenureMonths, ')
           ..write('tenureDays: $tenureDays, ')
           ..write('interestRateType: $interestRateType, ')
+          ..write('interestDueDate: $interestDueDate, ')
+          ..write('interestDueAmountPaise: $interestDueAmountPaise, ')
           ..write('startDate: $startDate, ')
           ..write('maturityDate: $maturityDate, ')
           ..write('notes: $notes, ')
@@ -2571,6 +2639,8 @@ class FinancialItem extends DataClass implements Insertable<FinancialItem> {
         tenureMonths,
         tenureDays,
         interestRateType,
+        interestDueDate,
+        interestDueAmountPaise,
         startDate,
         maturityDate,
         notes,
@@ -2600,6 +2670,8 @@ class FinancialItem extends DataClass implements Insertable<FinancialItem> {
           other.tenureMonths == this.tenureMonths &&
           other.tenureDays == this.tenureDays &&
           other.interestRateType == this.interestRateType &&
+          other.interestDueDate == this.interestDueDate &&
+          other.interestDueAmountPaise == this.interestDueAmountPaise &&
           other.startDate == this.startDate &&
           other.maturityDate == this.maturityDate &&
           other.notes == this.notes &&
@@ -2627,6 +2699,8 @@ class FinancialItemsCompanion extends UpdateCompanion<FinancialItem> {
   final Value<int?> tenureMonths;
   final Value<int?> tenureDays;
   final Value<String?> interestRateType;
+  final Value<DateTime?> interestDueDate;
+  final Value<int?> interestDueAmountPaise;
   final Value<DateTime?> startDate;
   final Value<DateTime?> maturityDate;
   final Value<String?> notes;
@@ -2652,6 +2726,8 @@ class FinancialItemsCompanion extends UpdateCompanion<FinancialItem> {
     this.tenureMonths = const Value.absent(),
     this.tenureDays = const Value.absent(),
     this.interestRateType = const Value.absent(),
+    this.interestDueDate = const Value.absent(),
+    this.interestDueAmountPaise = const Value.absent(),
     this.startDate = const Value.absent(),
     this.maturityDate = const Value.absent(),
     this.notes = const Value.absent(),
@@ -2678,6 +2754,8 @@ class FinancialItemsCompanion extends UpdateCompanion<FinancialItem> {
     this.tenureMonths = const Value.absent(),
     this.tenureDays = const Value.absent(),
     this.interestRateType = const Value.absent(),
+    this.interestDueDate = const Value.absent(),
+    this.interestDueAmountPaise = const Value.absent(),
     this.startDate = const Value.absent(),
     this.maturityDate = const Value.absent(),
     this.notes = const Value.absent(),
@@ -2708,6 +2786,8 @@ class FinancialItemsCompanion extends UpdateCompanion<FinancialItem> {
     Expression<int>? tenureMonths,
     Expression<int>? tenureDays,
     Expression<String>? interestRateType,
+    Expression<DateTime>? interestDueDate,
+    Expression<int>? interestDueAmountPaise,
     Expression<DateTime>? startDate,
     Expression<DateTime>? maturityDate,
     Expression<String>? notes,
@@ -2737,6 +2817,9 @@ class FinancialItemsCompanion extends UpdateCompanion<FinancialItem> {
       if (tenureMonths != null) 'tenure_months': tenureMonths,
       if (tenureDays != null) 'tenure_days': tenureDays,
       if (interestRateType != null) 'interest_rate_type': interestRateType,
+      if (interestDueDate != null) 'interest_due_date': interestDueDate,
+      if (interestDueAmountPaise != null)
+        'interest_due_amount_paise': interestDueAmountPaise,
       if (startDate != null) 'start_date': startDate,
       if (maturityDate != null) 'maturity_date': maturityDate,
       if (notes != null) 'notes': notes,
@@ -2765,6 +2848,8 @@ class FinancialItemsCompanion extends UpdateCompanion<FinancialItem> {
       Value<int?>? tenureMonths,
       Value<int?>? tenureDays,
       Value<String?>? interestRateType,
+      Value<DateTime?>? interestDueDate,
+      Value<int?>? interestDueAmountPaise,
       Value<DateTime?>? startDate,
       Value<DateTime?>? maturityDate,
       Value<String?>? notes,
@@ -2792,6 +2877,9 @@ class FinancialItemsCompanion extends UpdateCompanion<FinancialItem> {
       tenureMonths: tenureMonths ?? this.tenureMonths,
       tenureDays: tenureDays ?? this.tenureDays,
       interestRateType: interestRateType ?? this.interestRateType,
+      interestDueDate: interestDueDate ?? this.interestDueDate,
+      interestDueAmountPaise:
+          interestDueAmountPaise ?? this.interestDueAmountPaise,
       startDate: startDate ?? this.startDate,
       maturityDate: maturityDate ?? this.maturityDate,
       notes: notes ?? this.notes,
@@ -2862,6 +2950,13 @@ class FinancialItemsCompanion extends UpdateCompanion<FinancialItem> {
     if (interestRateType.present) {
       map['interest_rate_type'] = Variable<String>(interestRateType.value);
     }
+    if (interestDueDate.present) {
+      map['interest_due_date'] = Variable<DateTime>(interestDueDate.value);
+    }
+    if (interestDueAmountPaise.present) {
+      map['interest_due_amount_paise'] =
+          Variable<int>(interestDueAmountPaise.value);
+    }
     if (startDate.present) {
       map['start_date'] = Variable<DateTime>(startDate.value);
     }
@@ -2902,6 +2997,8 @@ class FinancialItemsCompanion extends UpdateCompanion<FinancialItem> {
           ..write('tenureMonths: $tenureMonths, ')
           ..write('tenureDays: $tenureDays, ')
           ..write('interestRateType: $interestRateType, ')
+          ..write('interestDueDate: $interestDueDate, ')
+          ..write('interestDueAmountPaise: $interestDueAmountPaise, ')
           ..write('startDate: $startDate, ')
           ..write('maturityDate: $maturityDate, ')
           ..write('notes: $notes, ')
@@ -12047,6 +12144,8 @@ typedef $$FinancialItemsTableCreateCompanionBuilder = FinancialItemsCompanion
   Value<int?> tenureMonths,
   Value<int?> tenureDays,
   Value<String?> interestRateType,
+  Value<DateTime?> interestDueDate,
+  Value<int?> interestDueAmountPaise,
   Value<DateTime?> startDate,
   Value<DateTime?> maturityDate,
   Value<String?> notes,
@@ -12074,6 +12173,8 @@ typedef $$FinancialItemsTableUpdateCompanionBuilder = FinancialItemsCompanion
   Value<int?> tenureMonths,
   Value<int?> tenureDays,
   Value<String?> interestRateType,
+  Value<DateTime?> interestDueDate,
+  Value<int?> interestDueAmountPaise,
   Value<DateTime?> startDate,
   Value<DateTime?> maturityDate,
   Value<String?> notes,
@@ -12150,6 +12251,14 @@ class $$FinancialItemsTableFilterComposer
 
   ColumnFilters<String> get interestRateType => $composableBuilder(
       column: $table.interestRateType,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get interestDueDate => $composableBuilder(
+      column: $table.interestDueDate,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get interestDueAmountPaise => $composableBuilder(
+      column: $table.interestDueAmountPaise,
       builder: (column) => ColumnFilters(column));
 
   ColumnFilters<DateTime> get startDate => $composableBuilder(
@@ -12241,6 +12350,14 @@ class $$FinancialItemsTableOrderingComposer
       column: $table.interestRateType,
       builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<DateTime> get interestDueDate => $composableBuilder(
+      column: $table.interestDueDate,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get interestDueAmountPaise => $composableBuilder(
+      column: $table.interestDueAmountPaise,
+      builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<DateTime> get startDate => $composableBuilder(
       column: $table.startDate, builder: (column) => ColumnOrderings(column));
 
@@ -12324,6 +12441,12 @@ class $$FinancialItemsTableAnnotationComposer
   GeneratedColumn<String> get interestRateType => $composableBuilder(
       column: $table.interestRateType, builder: (column) => column);
 
+  GeneratedColumn<DateTime> get interestDueDate => $composableBuilder(
+      column: $table.interestDueDate, builder: (column) => column);
+
+  GeneratedColumn<int> get interestDueAmountPaise => $composableBuilder(
+      column: $table.interestDueAmountPaise, builder: (column) => column);
+
   GeneratedColumn<DateTime> get startDate =>
       $composableBuilder(column: $table.startDate, builder: (column) => column);
 
@@ -12386,6 +12509,8 @@ class $$FinancialItemsTableTableManager extends RootTableManager<
             Value<int?> tenureMonths = const Value.absent(),
             Value<int?> tenureDays = const Value.absent(),
             Value<String?> interestRateType = const Value.absent(),
+            Value<DateTime?> interestDueDate = const Value.absent(),
+            Value<int?> interestDueAmountPaise = const Value.absent(),
             Value<DateTime?> startDate = const Value.absent(),
             Value<DateTime?> maturityDate = const Value.absent(),
             Value<String?> notes = const Value.absent(),
@@ -12412,6 +12537,8 @@ class $$FinancialItemsTableTableManager extends RootTableManager<
             tenureMonths: tenureMonths,
             tenureDays: tenureDays,
             interestRateType: interestRateType,
+            interestDueDate: interestDueDate,
+            interestDueAmountPaise: interestDueAmountPaise,
             startDate: startDate,
             maturityDate: maturityDate,
             notes: notes,
@@ -12438,6 +12565,8 @@ class $$FinancialItemsTableTableManager extends RootTableManager<
             Value<int?> tenureMonths = const Value.absent(),
             Value<int?> tenureDays = const Value.absent(),
             Value<String?> interestRateType = const Value.absent(),
+            Value<DateTime?> interestDueDate = const Value.absent(),
+            Value<int?> interestDueAmountPaise = const Value.absent(),
             Value<DateTime?> startDate = const Value.absent(),
             Value<DateTime?> maturityDate = const Value.absent(),
             Value<String?> notes = const Value.absent(),
@@ -12464,6 +12593,8 @@ class $$FinancialItemsTableTableManager extends RootTableManager<
             tenureMonths: tenureMonths,
             tenureDays: tenureDays,
             interestRateType: interestRateType,
+            interestDueDate: interestDueDate,
+            interestDueAmountPaise: interestDueAmountPaise,
             startDate: startDate,
             maturityDate: maturityDate,
             notes: notes,

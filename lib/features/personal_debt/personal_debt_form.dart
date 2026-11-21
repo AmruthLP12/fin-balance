@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/formatting/date_formatter.dart';
 import '../../core/providers/database_provider.dart';
+import '../../core/notifications/personal_debt_reminder_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../database/app_database.dart';
@@ -32,11 +33,13 @@ class _PersonalDebtFormState extends ConsumerState<PersonalDebtForm> {
   final _person = TextEditingController();
   final _amount = TextEditingController();
   final _rate = TextEditingController();
+  final _dueAmount = TextEditingController();
   final _notes = TextEditingController();
   String _period = 'monthly';
   bool _interest = false;
   DateTime _date = DateTime.now();
   DateTime? _endDate;
+  DateTime? _interestDueDate;
   bool _saving = false;
 
   @override
@@ -49,6 +52,11 @@ class _PersonalDebtFormState extends ConsumerState<PersonalDebtForm> {
     _notes.text = i.notes ?? '';
     _date = i.startDate ?? DateTime.now();
     _endDate = i.maturityDate;
+    _interestDueDate = i.interestDueDate;
+    if (i.interestDueAmountPaise != null) {
+      _dueAmount.text = (i.interestDueAmountPaise! / 100).toStringAsFixed(
+          i.interestDueAmountPaise! % 100 == 0 ? 0 : 2);
+    }
     final bps = i.interestRateBasisPoints;
     if (bps != null && bps > 0) {
       _interest = true;
@@ -62,6 +70,7 @@ class _PersonalDebtFormState extends ConsumerState<PersonalDebtForm> {
     _person.dispose();
     _amount.dispose();
     _rate.dispose();
+    _dueAmount.dispose();
     _notes.dispose();
     super.dispose();
   }
@@ -91,6 +100,12 @@ class _PersonalDebtFormState extends ConsumerState<PersonalDebtForm> {
                 startDate:
                     drift.Value(DateTime(_date.year, _date.month, _date.day)),
                 maturityDate: drift.Value(_endDate),
+                interestDueDate: drift.Value(_interestDueDate),
+                interestDueAmountPaise: drift.Value(_interest ? (
+                    double.tryParse(_dueAmount.text.trim()) == null
+                        ? null
+                        : FinancialPrecision.rupeesToPaise(
+                            double.parse(_dueAmount.text.trim()))) : null),
                 notes: drift.Value(
                     _notes.text.trim().isEmpty ? null : _notes.text.trim()),
                 updatedAt: DateTime.now().toUtc(),
@@ -135,10 +150,25 @@ class _PersonalDebtFormState extends ConsumerState<PersonalDebtForm> {
                 ),
               );
         }
+        if (_interest && _interestDueDate != null &&
+                _dueAmount.text.trim().isNotEmpty) {
+              final dueAmount =
+                  FinancialPrecision.rupeesToPaise(double.parse(_dueAmount.text.trim()));
+              await PersonalDebtReminderService.schedule(
+                itemId: old.id,
+                person: _person.text.trim(),
+                lent: widget.lent,
+                dueDate: _interestDueDate!,
+                amountPaise: dueAmount,
+              );
+        } else {
+              await PersonalDebtReminderService.cancel(old.id);
+        }
         if (mounted) Navigator.of(context).pop();
         return;
       }
-      await ref.read(transactionsDaoProvider).openPersonalDebt(
+      final itemId =
+              await ref.read(transactionsDaoProvider).openPersonalDebt(
             profileId: ref.read(activeProfileIdProvider),
             lent: widget.lent,
             person: _person.text.trim(),
@@ -148,8 +178,27 @@ class _PersonalDebtFormState extends ConsumerState<PersonalDebtForm> {
             rateBasisPoints:
                 rate == null || rate <= 0 ? null : (rate * 100).round(),
             ratePeriod: _period,
+                interestDueDate: _interest && _interestDueDate != null
+                    ? _interestDueDate
+                    : null,
+                interestDueAmountPaise: _interest &&
+                        _dueAmount.text.trim().isNotEmpty
+                    ? FinancialPrecision.rupeesToPaise(
+                        double.parse(_dueAmount.text.trim()))
+                    : null,
             notes: _notes.text,
           );
+      if (_interest && _interestDueDate != null &&
+              _dueAmount.text.trim().isNotEmpty) {
+        await PersonalDebtReminderService.schedule(
+              itemId: itemId,
+              person: _person.text.trim(),
+              lent: widget.lent,
+              dueDate: _interestDueDate!,
+              amountPaise: FinancialPrecision.rupeesToPaise(
+                  double.parse(_dueAmount.text.trim())),
+        );
+      }
       if (mounted) Navigator.of(context).pop();
     } catch (e) {
       if (mounted) {
@@ -284,6 +333,50 @@ class _PersonalDebtFormState extends ConsumerState<PersonalDebtForm> {
                 validator: (v) {
                   final n = double.tryParse((v ?? '').trim());
                   return n == null || n <= 0 ? 'Enter the rate in %' : null;
+                },
+              ),
+              const SizedBox(height: AppSpacing.md),
+              InkWell(
+                onTap: () async {
+                  final d = await showDatePicker(
+                      context: context,
+                      initialDate: _interestDueDate ?? _date,
+                      firstDate: DateTime(1990),
+                      lastDate: DateTime(2100));
+                  if (d != null) setState(() => _interestDueDate = d);
+                },
+                child: InputDecorator(
+                  decoration: InputDecoration(
+                    labelText: 'Interest to be paid on (optional)',
+                    border: const OutlineInputBorder(),
+                    suffixIcon: _interestDueDate == null
+                        ? const Icon(Icons.calendar_today_rounded, size: 18)
+                        : IconButton(
+                            icon: const Icon(Icons.close_rounded, size: 18),
+                            onPressed: () =>
+                                setState(() => _interestDueDate = null)),
+                  ),
+                  child: Text(_interestDueDate == null
+                      ? 'No reminder date'
+                      : DateFormatter.formatDate(_interestDueDate!)),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              TextFormField(
+                controller: _dueAmount,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(
+                    labelText: 'Interest amount',
+                    prefixText: '₹ ',
+                    border: OutlineInputBorder()),
+                validator: (v) {
+                  if (!_interest) return null;
+                  if (_interestDueDate == null) return null;
+                  final n = double.tryParse((v ?? '').trim());
+                  return n == null || n <= 0
+                      ? 'Enter the interest amount'
+                      : null;
                 },
               ),
             ],

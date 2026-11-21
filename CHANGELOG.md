@@ -5,6 +5,25 @@ All notable changes to the FinBalance application will be documented in this fil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.29.6] - 2026-11-21
+
+### Added
+
+- SIP installments can be marked skipped, unmarked, or deleted.
+- SIP transaction rows can be edited or deleted from the Mutual Fund details page.
+- Future mutual-fund holdings are shown as Planned and placed after active holdings.
+- SIP schedules have separate add, edit, pause/resume, and close controls.
+- SIP details show recent/current installment status and the number through the lifecycle card.
+
+## [0.29.5] - 2026-11-21
+
+### Added
+
+- Lent and borrowed records can now store an interest due date and interest amount.
+- The details screen shows the saved due date and amount, and the Record interest action prefills both values.
+- Android reminders are scheduled on the interest due date for lent and borrowed money records.
+- Reminder settings and due-date details can be edited from the existing lent/borrowed Edit form.
+
 ## [0.29.4] - 2026-11-20
 
 ### Fixed

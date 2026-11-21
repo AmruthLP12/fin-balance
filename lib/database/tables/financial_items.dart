@@ -56,6 +56,8 @@ class FinancialItems extends Table {
   IntColumn get tenureMonths => integer().nullable()();
   IntColumn get tenureDays => integer().nullable()();
   TextColumn get interestRateType => text().nullable()();
+  DateTimeColumn get interestDueDate => dateTime().nullable()();
+  IntColumn get interestDueAmountPaise => integer().nullable()();
 
   DateTimeColumn get startDate => dateTime().nullable()();
   DateTimeColumn get maturityDate => dateTime().nullable()();

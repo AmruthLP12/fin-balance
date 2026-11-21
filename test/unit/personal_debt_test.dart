@@ -86,6 +86,35 @@ void main() {
     expect(flowOf('debt_repayment'), MoneyFlow.expense);
   });
 
+  test('lent and borrowed records keep interest due date and amount', () async {
+    final dueDate = DateTime(2026, 12, 5);
+    final lentId = await db.transactionsDao.openPersonalDebt(
+        profileId: 1,
+        lent: true,
+        person: 'Ravi',
+        amountPaise: 500000,
+        date: DateTime(2026, 1, 1),
+        rateBasisPoints: 200,
+        ratePeriod: 'monthly',
+        interestDueDate: dueDate,
+        interestDueAmountPaise: 10000);
+    final lent = (await db.financialItemsDao.getItemById(lentId))!;
+    expect(lent.interestDueDate, dueDate);
+    expect(lent.interestDueAmountPaise, 10000);
+
+    final borrowedId = await db.transactionsDao.openPersonalDebt(
+        profileId: 1,
+        lent: false,
+        person: 'Friend',
+        amountPaise: 450000,
+        date: DateTime(2026, 1, 1),
+        interestDueDate: dueDate,
+        interestDueAmountPaise: 5000);
+    final borrowed = (await db.financialItemsDao.getItemById(borrowedId))!;
+    expect(borrowed.interestDueDate, dueDate);
+    expect(borrowed.interestDueAmountPaise, 5000);
+  });
+
   test('K / L / Cr amounts and groups', () {
     String f(num rupees) =>
         CurrencyFormatter.formatPaiseCompact((rupees * 100).round());

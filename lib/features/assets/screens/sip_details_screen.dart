@@ -623,30 +623,40 @@ class _SipDetailsScreenState extends ConsumerState<SipDetailsScreen>
                 ),
               ),
             ),
-            PopupMenuButton<String>(
-              icon: const Icon(Icons.more_horiz_rounded),
-              tooltip: 'SIP schedule actions',
-              onSelected: (v) {
-                if (v == 'new') {
-                  _openAddSipSchedule(context, holding, sip);
-                } else if (v == 'edit' && sip != null) {
-                  _openEditSipSchedule(context, sip);
-                } else if (v == 'close' && sip != null) {
-                  _confirmCloseSipPeriod(context, sip);
-                }
-              },
-              itemBuilder: (_) => [
-                PopupMenuItem(
-                    value: 'new',
-                    child: Text(sip == null ? 'Set up SIP' : 'New period')),
-                if (sip != null)
-                  const PopupMenuItem(
-                      value: 'edit', child: Text('Edit period')),
-                if (sip != null && hasActivePeriod)
-                  const PopupMenuItem(
-                      value: 'close', child: Text('Close period')),
-              ],
-            ),
+            if (sip == null)
+              IconButton(
+                tooltip: 'Set up SIP',
+                icon: const Icon(Icons.add_rounded),
+                onPressed: () => _openAddSipSchedule(context, holding, sip),
+              )
+            else
+              PopupMenuButton<String>(
+                icon: const Icon(Icons.more_horiz_rounded),
+                tooltip: 'SIP schedule actions',
+                onSelected: (v) {
+                  if (v == 'new') {
+                    _openAddSipSchedule(context, holding, sip);
+                  } else if (v == 'edit') {
+                    _openEditSipSchedule(context, sip);
+                  } else if (v == 'pause') {
+                    _pauseSip(context, sip);
+                  } else if (v == 'resume') {
+                    _resumeSip(context, sip);
+                  } else if (v == 'close') {
+                    _confirmCloseSipPeriod(context, sip);
+                  }
+                },
+                itemBuilder: (_) => [
+                  const PopupMenuItem(value: 'new', child: Text('Add period')),
+                  const PopupMenuItem(value: 'edit', child: Text('Edit period')),
+                  if (sip.status == 'active')
+                    const PopupMenuItem(value: 'pause', child: Text('Pause SIP')),
+                  if (sip.status == 'paused')
+                    const PopupMenuItem(value: 'resume', child: Text('Resume SIP')),
+                  if (hasActivePeriod)
+                    const PopupMenuItem(value: 'close', child: Text('Close SIP')),
+                ],
+              ),
           ],
         ),
         const SizedBox(height: AppSpacing.xs),
@@ -787,6 +797,56 @@ class _SipDetailsScreenState extends ConsumerState<SipDetailsScreen>
                       ],
                     ),
                   ),
+                ],
+                if (installments.isNotEmpty) ...[
+                  const Divider(height: AppSpacing.md),
+                  Text('Installments',
+                      style: AppTypography.labelMedium
+                          .copyWith(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 4),
+                  ...(() {
+                    final visible = installments.toList()
+                      ..sort((a, b) => b.scheduledDate.compareTo(a.scheduledDate));
+                    return visible.take(12).map((i) {
+                      final status = i.status == 'recorded'
+                          ? 'Recorded'
+                          : i.status == 'skipped'
+                              ? 'Skipped'
+                              : i.status == 'cancelled'
+                                  ? 'Cancelled'
+                                  : i.status == 'pending_valuation'
+                                      ? 'Awaiting NAV'
+                                      : 'Upcoming';
+                      return ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        dense: true,
+                        title: Text(
+                            '${DateFormatter.formatDate(i.scheduledDate)} · ${CurrencyFormatter.formatPaise(i.actualAmountPaise ?? i.expectedAmountPaise)}'),
+                        subtitle: Text('$status${i.notes == null || i.notes!.isEmpty ? '' : ' · ${i.notes}'}'),
+                        trailing: PopupMenuButton<String>(
+                          onSelected: (action) {
+                            if (action == 'skip') {
+                              _markSipInstallmentSkipped(context, i);
+                            } else if (action == 'unmark') {
+                              _unmarkSipInstallment(context, i);
+                            } else if (action == 'delete') {
+                              _deleteSipInstallment(context, i);
+                            }
+                          },
+                          itemBuilder: (_) => [
+                            if (i.status != 'skipped')
+                              const PopupMenuItem(
+                                  value: 'skip', child: Text('Mark skipped')),
+                            if (i.status == 'skipped')
+                              const PopupMenuItem(
+                                  value: 'unmark', child: Text('Unmark skipped')),
+                            const PopupMenuItem(
+                                value: 'delete', child: Text('Delete transaction')),
+                          ],
+                        ),
+                      );
+                    }).toList();
+                  })(),
                 ],
                 if (installments.any((i) => i.status == 'pending_valuation'))
                   Padding(
@@ -1346,12 +1406,36 @@ class _SipDetailsScreenState extends ConsumerState<SipDetailsScreen>
                   ),
                 ),
                 const SizedBox(width: 8),
-                Text(
-                  '$sign${CurrencyFormatter.formatPaise(tx.amountPaise)}',
-                  style: AppTypography.titleMedium.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: badgeColor,
-                  ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '$sign${CurrencyFormatter.formatPaise(tx.amountPaise)}',
+                      style: AppTypography.titleMedium.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: badgeColor,
+                      ),
+                    ),
+                    if (tx.sipPlanId != null)
+                      PopupMenuButton<String>(
+                        padding: EdgeInsets.zero,
+                        icon: const Icon(Icons.more_vert_rounded, size: 18),
+                        onSelected: (action) {
+                          if (action == 'edit') {
+                            _editSipTransaction(context, tx);
+                          } else if (action == 'delete') {
+                            _deleteSipTransaction(context, tx);
+                          }
+                        },
+                        itemBuilder: (_) => const [
+                          PopupMenuItem(
+                              value: 'edit', child: Text('Edit transaction')),
+                          PopupMenuItem(
+                              value: 'delete',
+                              child: Text('Delete transaction')),
+                        ],
+                      ),
+                  ],
                 ),
               ],
             ),
@@ -1778,6 +1862,207 @@ class _SipDetailsScreenState extends ConsumerState<SipDetailsScreen>
     if (result == true && mounted) {
       ref.invalidate(activeProfileAssetsProvider);
     }
+  }
+
+  Future<void> _pauseSip(BuildContext context, SipPlan sip) async {
+    await ref.read(sipsDaoProvider).pauseSip(sip.id);
+    ref.invalidate(activeProfileSipPlansProvider);
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('SIP paused.')),
+      );
+    }
+  }
+
+  Future<void> _resumeSip(BuildContext context, SipPlan sip) async {
+    await ref.read(sipsDaoProvider).resumeSip(sip.id);
+    ref.invalidate(activeProfileSipPlansProvider);
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('SIP resumed.')),
+      );
+    }
+  }
+
+  Future<void> _markSipInstallmentSkipped(
+      BuildContext context, SipInstallment installment) async {
+    await ref.read(sipsDaoProvider).skipInstallment(installment.id);
+    ref.invalidate(sipInstallmentsProvider(installment.sipPlanId));
+  }
+
+  Future<void> _unmarkSipInstallment(
+      BuildContext context, SipInstallment installment) async {
+    await ref.read(sipsDaoProvider).unmarkInstallment(installment.id);
+    ref.invalidate(sipInstallmentsProvider(installment.sipPlanId));
+  }
+
+  Future<void> _deleteSipInstallment(
+      BuildContext context, SipInstallment installment) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete SIP installment?'),
+        content: const Text(
+            'This removes the installment and any linked transaction, and adjusts the holding balance.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel')),
+          FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Delete')),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await ref.read(sipsDaoProvider).deleteInstallment(installment.id);
+    ref.invalidate(activeProfileAssetsProvider);
+    ref.invalidate(activeProfileTransactionsProvider);
+    ref.invalidate(sipInstallmentsProvider(installment.sipPlanId));
+  }
+
+  Future<void> _editSipTransaction(
+      BuildContext context, Transaction tx) async {
+    final amount = TextEditingController(
+        text: (tx.amountPaise / 100)
+            .toStringAsFixed(tx.amountPaise % 100 == 0 ? 0 : 2));
+    final units = TextEditingController(
+        text: tx.unitsMicroUnits == null
+            ? ''
+            : FinancialPrecision.microUnitsToUnits(tx.unitsMicroUnits!)
+                .toStringAsFixed(4));
+    final nav = TextEditingController(
+        text: tx.unitPriceMicroPaise == null
+            ? ''
+            : FinancialPrecision.microPaiseToNav(tx.unitPriceMicroPaise!)
+                .toStringAsFixed(4));
+    final notes = TextEditingController(text: tx.notes ?? '');
+    var date = tx.transactionDate;
+
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setState) => AlertDialog(
+          title: const Text('Edit SIP transaction'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: amount,
+                  autofocus: true,
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  decoration:
+                      const InputDecoration(labelText: 'Amount', prefixText: '₹ '),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: units,
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  decoration: const InputDecoration(labelText: 'Units'),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: nav,
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  decoration: const InputDecoration(labelText: 'NAV'),
+                ),
+                TextButton.icon(
+                  onPressed: () async {
+                    final picked = await showDatePicker(
+                      context: ctx,
+                      initialDate: date,
+                      firstDate: DateTime(1990),
+                      lastDate: DateTime(2100),
+                    );
+                    if (picked != null) setState(() => date = picked);
+                  },
+                  icon: const Icon(Icons.calendar_today_rounded, size: 16),
+                  label: Text(DateFormatter.formatDate(date)),
+                ),
+                TextField(
+                  controller: notes,
+                  decoration:
+                      const InputDecoration(labelText: 'Note (optional)'),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Cancel')),
+            FilledButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text('Save')),
+          ],
+        ),
+      ),
+    );
+
+    final amountValue = double.tryParse(amount.text.trim());
+    final unitsValue = double.tryParse(units.text.trim());
+    final navValue = double.tryParse(nav.text.trim());
+    final note = notes.text;
+    amount.dispose();
+    units.dispose();
+    nav.dispose();
+    notes.dispose();
+    if (saved != true || amountValue == null || amountValue <= 0) return;
+
+    await ref.read(sipsDaoProvider).updateLinkedTransaction(
+          transactionId: tx.id,
+          date: DateTime(date.year, date.month, date.day),
+          amountPaise: FinancialPrecision.rupeesToPaise(amountValue),
+          purchaseNavMicroPaise: navValue != null && navValue > 0
+              ? FinancialPrecision.navToMicroPaise(navValue)
+              : null,
+          unitsMicroUnits: unitsValue != null && unitsValue > 0
+              ? FinancialPrecision.unitsToMicroUnits(unitsValue)
+              : null,
+          notes: note,
+        );
+    ref.invalidate(activeProfileAssetsProvider);
+    ref.invalidate(activeProfileTransactionsProvider);
+    if (tx.sipPlanId != null) {
+      ref.invalidate(sipInstallmentsProvider(tx.sipPlanId!));
+    }
+  }
+
+  Future<void> _deleteSipTransaction(
+      BuildContext context, Transaction tx) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete SIP transaction?'),
+        content: const Text(
+            'This removes the transaction and the linked installment, and reverses its units and invested amount.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel')),
+          FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Delete')),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    final installments =
+        await ref.read(sipsDaoProvider).watchInstallments(tx.sipPlanId!).first;
+    final installment =
+        installments.where((i) => i.transactionId == tx.id).firstOrNull;
+    if (installment != null) {
+      await ref.read(sipsDaoProvider).deleteInstallment(installment.id);
+    } else {
+      await ref.read(transactionsDaoProvider).deleteTransaction(tx.id);
+    }
+    ref.invalidate(activeProfileAssetsProvider);
+    ref.invalidate(activeProfileTransactionsProvider);
+    ref.invalidate(sipInstallmentsProvider(tx.sipPlanId!));
   }
 
   Future<void> _openEditSipSchedule(BuildContext context, SipPlan sip) async {

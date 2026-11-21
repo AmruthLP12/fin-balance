@@ -44,6 +44,8 @@ class _AssetsScreenState extends ConsumerState<AssetsScreen> {
     final activeProfileAsync = ref.watch(activeProfileProvider);
     final assetsAsync = ref.watch(activeProfileAssetsProvider);
     final transactionsAsync = ref.watch(activeProfileTransactionsProvider);
+    final sips = ref.watch(activeProfileSipPlansProvider).value ??
+        const <SipPlan>[];
 
     final profileName = activeProfileAsync.value?.name ?? 'Profile';
     final allTransactions = transactionsAsync.value ?? [];
@@ -83,7 +85,8 @@ class _AssetsScreenState extends ConsumerState<AssetsScreen> {
               .where((i) => groupOf(i.subType, assetGroups).value == v)
               .length;
 
-          final filteredItems = _filterItems(items, _selectedCategoryFilter);
+          final filteredItems =
+              _filterItems(items, _selectedCategoryFilter, sips);
 
           // Calculate summary metrics for current category view
           final totalCurrentPaise = filteredItems.fold<int>(
@@ -397,13 +400,23 @@ class _AssetsScreenState extends ConsumerState<AssetsScreen> {
     }
   }
 
-  List<FinancialItem> _filterItems(List<FinancialItem> items, String filter) {
+  List<FinancialItem> _filterItems(
+      List<FinancialItem> items, String filter, List<SipPlan> sips) {
     final filtered = filter == 'all'
         ? items
         : items
             .where((i) => groupOf(i.subType, assetGroups).value == filter)
             .toList();
     filtered.sort((a, b) {
+      final futureA = sips.any((s) =>
+          s.financialItemId == a.id &&
+          s.startDate.isAfter(DateTime.now()) &&
+          a.currentValuationPaise == 0);
+      final futureB = sips.any((s) =>
+          s.financialItemId == b.id &&
+          s.startDate.isAfter(DateTime.now()) &&
+          b.currentValuationPaise == 0);
+      if (futureA != futureB) return futureA ? 1 : -1;
       final activeA = a.status == 'active' && a.currentValuationPaise > 0;
       final activeB = b.status == 'active' && b.currentValuationPaise > 0;
       if (activeA != activeB) return activeA ? -1 : 1;

@@ -621,6 +621,98 @@ class SipsDao extends DatabaseAccessor<AppDatabase> with _$SipsDaoMixin {
     );
   }
 
+  Future<int> unmarkInstallment(int installmentId) {
+    return (update(sipInstallments)
+            ..where((tbl) => tbl.id.equals(installmentId)))
+          .write(
+        SipInstallmentsCompanion(
+          status: const Value('upcoming'),
+          transactionId: const Value(null),
+          actualInvestmentDate: const Value(null),
+          actualAmountPaise: const Value(null),
+          purchaseNavMicroPaise: const Value(null),
+          unitsMicroUnits: const Value(null),
+          updatedAt: Value(DateTime.now().toUtc()),
+        ),
+    );
+  }
+
+  Future<bool> updateLinkedTransaction({
+    required int transactionId,
+    required DateTime date,
+    required int amountPaise,
+    int? purchaseNavMicroPaise,
+    int? unitsMicroUnits,
+    String? notes,
+  }) async {
+    return transaction(() async {
+        final installment = await (select(sipInstallments)
+              ..where((tbl) => tbl.transactionId.equals(transactionId)))
+            .getSingleOrNull();
+        final transaction = await db.transactionsDao.getTransactionById(transactionId);
+        if (transaction == null) return false;
+
+        final oldAmount = transaction.amountPaise;
+        final oldUnits = transaction.unitsMicroUnits ?? 0;
+        await db.transactionsDao.updateTransaction(
+          transaction.copyWith(
+            transactionDate: date,
+            amountPaise: amountPaise,
+            netAmountPaise: Value(amountPaise),
+            unitsMicroUnits: Value(unitsMicroUnits),
+            unitPriceMicroPaise: Value(purchaseNavMicroPaise),
+            notes: Value(notes?.trim().isEmpty == true ? null : notes?.trim()),
+            updatedAt: DateTime.now().toUtc(),
+          ),
+        );
+
+        if (installment != null) {
+          await (update(sipInstallments)
+                ..where((tbl) => tbl.id.equals(installment.id)))
+              .write(
+            SipInstallmentsCompanion(
+              actualInvestmentDate: Value(date),
+              actualAmountPaise: Value(amountPaise),
+              purchaseNavMicroPaise: Value(purchaseNavMicroPaise),
+              unitsMicroUnits: Value(unitsMicroUnits),
+              notes: Value(notes?.trim().isEmpty == true ? null : notes?.trim()),
+              updatedAt: Value(DateTime.now().toUtc()),
+            ),
+          );
+        }
+
+        if (transaction.financialItemId != null) {
+          await _applyToHolding(
+            transaction.financialItemId!,
+            transaction.sipPlanId != null
+                ? (await getSipById(transaction.sipPlanId!))?.schemeCode ?? 0
+                : 0,
+            deltaInvested: amountPaise - oldAmount,
+            deltaUnits: (unitsMicroUnits ?? 0) - oldUnits,
+          );
+        }
+        return true;
+    });
+  }
+
+  Future<int> pauseSip(int sipPlanId) {
+    return (update(sipPlans)..where((tbl) => tbl.id.equals(sipPlanId))).write(
+        SipPlansCompanion(
+          status: const Value('paused'),
+          updatedAt: Value(DateTime.now().toUtc()),
+        ),
+    );
+  }
+
+  Future<int> resumeSip(int sipPlanId) {
+    return (update(sipPlans)..where((tbl) => tbl.id.equals(sipPlanId))).write(
+        SipPlansCompanion(
+          status: const Value('active'),
+          updatedAt: Value(DateTime.now().toUtc()),
+        ),
+    );
+  }
+
   /// Mark an installment as cancelled.
   Future<int> cancelInstallment(int installmentId) {
     return (update(sipInstallments)
