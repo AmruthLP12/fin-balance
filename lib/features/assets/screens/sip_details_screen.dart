@@ -648,13 +648,17 @@ class _SipDetailsScreenState extends ConsumerState<SipDetailsScreen>
                 },
                 itemBuilder: (_) => [
                   const PopupMenuItem(value: 'new', child: Text('Add period')),
-                  const PopupMenuItem(value: 'edit', child: Text('Edit period')),
+                  const PopupMenuItem(
+                      value: 'edit', child: Text('Edit period')),
                   if (sip.status == 'active')
-                    const PopupMenuItem(value: 'pause', child: Text('Pause SIP')),
+                    const PopupMenuItem(
+                        value: 'pause', child: Text('Pause SIP')),
                   if (sip.status == 'paused')
-                    const PopupMenuItem(value: 'resume', child: Text('Resume SIP')),
+                    const PopupMenuItem(
+                        value: 'resume', child: Text('Resume SIP')),
                   if (hasActivePeriod)
-                    const PopupMenuItem(value: 'close', child: Text('Close SIP')),
+                    const PopupMenuItem(
+                        value: 'close', child: Text('Close SIP')),
                 ],
               ),
           ],
@@ -806,7 +810,8 @@ class _SipDetailsScreenState extends ConsumerState<SipDetailsScreen>
                   const SizedBox(height: 4),
                   ...(() {
                     final visible = installments.toList()
-                      ..sort((a, b) => b.scheduledDate.compareTo(a.scheduledDate));
+                      ..sort(
+                          (a, b) => b.scheduledDate.compareTo(a.scheduledDate));
                     return visible.take(12).map((i) {
                       final status = i.status == 'recorded'
                           ? 'Recorded'
@@ -822,7 +827,8 @@ class _SipDetailsScreenState extends ConsumerState<SipDetailsScreen>
                         dense: true,
                         title: Text(
                             '${DateFormatter.formatDate(i.scheduledDate)} · ${CurrencyFormatter.formatPaise(i.actualAmountPaise ?? i.expectedAmountPaise)}'),
-                        subtitle: Text('$status${i.notes == null || i.notes!.isEmpty ? '' : ' · ${i.notes}'}'),
+                        subtitle: Text(
+                            '$status${i.notes == null || i.notes!.isEmpty ? '' : ' · ${i.notes}'}'),
                         trailing: PopupMenuButton<String>(
                           onSelected: (action) {
                             if (action == 'skip') {
@@ -839,9 +845,11 @@ class _SipDetailsScreenState extends ConsumerState<SipDetailsScreen>
                                   value: 'skip', child: Text('Mark skipped')),
                             if (i.status == 'skipped')
                               const PopupMenuItem(
-                                  value: 'unmark', child: Text('Unmark skipped')),
+                                  value: 'unmark',
+                                  child: Text('Unmark skipped')),
                             const PopupMenuItem(
-                                value: 'delete', child: Text('Delete transaction')),
+                                value: 'delete',
+                                child: Text('Delete transaction')),
                           ],
                         ),
                       );
@@ -1921,8 +1929,7 @@ class _SipDetailsScreenState extends ConsumerState<SipDetailsScreen>
     ref.invalidate(sipInstallmentsProvider(installment.sipPlanId));
   }
 
-  Future<void> _editSipTransaction(
-      BuildContext context, Transaction tx) async {
+  Future<void> _editSipTransaction(BuildContext context, Transaction tx) async {
     final amount = TextEditingController(
         text: (tx.amountPaise / 100)
             .toStringAsFixed(tx.amountPaise % 100 == 0 ? 0 : 2));
@@ -1953,8 +1960,8 @@ class _SipDetailsScreenState extends ConsumerState<SipDetailsScreen>
                   autofocus: true,
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
-                  decoration:
-                      const InputDecoration(labelText: 'Amount', prefixText: '₹ '),
+                  decoration: const InputDecoration(
+                      labelText: 'Amount', prefixText: '₹ '),
                 ),
                 const SizedBox(height: 8),
                 TextField(

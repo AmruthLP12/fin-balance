@@ -106,8 +106,10 @@ class PersonalDebtDetailsScreen extends ConsumerWidget {
                   _row(lent ? 'Interest due date' : 'Interest payable date',
                       DateFormatter.formatDate(item.interestDueDate!)),
                 if (item.interestDueAmountPaise != null)
-                  _row('Interest amount',
-                      CurrencyFormatter.formatPaise(item.interestDueAmountPaise!)),
+                  _row(
+                      'Interest amount',
+                      CurrencyFormatter.formatPaise(
+                          item.interestDueAmountPaise!)),
                 if (monthly != null && active)
                   _row('Interest on the remaining amount',
                       '${CurrencyFormatter.formatPaise(monthly)} / month'),
@@ -306,8 +308,7 @@ class PersonalDebtDetailsScreen extends ConsumerWidget {
     final amount = TextEditingController(
         text: dueAmount == null
             ? ''
-            : (dueAmount / 100)
-                .toStringAsFixed(dueAmount % 100 == 0 ? 0 : 2));
+            : (dueAmount / 100).toStringAsFixed(dueAmount % 100 == 0 ? 0 : 2));
     final notes = TextEditingController();
     var date = interest && item.interestDueDate != null
         ? item.interestDueDate!

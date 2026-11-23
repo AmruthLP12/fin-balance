@@ -10,8 +10,17 @@ class PersonalDebtReminderService {
       FlutterLocalNotificationsPlugin();
   static bool _initialized = false;
 
+  // A reminder problem must never stop a record from being saved.
   static Future<void> initialize() async {
     if (_initialized || kIsWeb) return;
+    try {
+      await _initialize();
+    } catch (e) {
+      debugPrint('Reminder setup failed: $e');
+    }
+  }
+
+  static Future<void> _initialize() async {
     tz.initializeTimeZones();
     const android = AndroidInitializationSettings('@mipmap/ic_launcher');
     await _plugin.initialize(const InitializationSettings(android: android));
@@ -30,8 +39,17 @@ class PersonalDebtReminderService {
     required int amountPaise,
   }) async {
     await initialize();
-    if (kIsWeb) return;
+    if (kIsWeb || !_initialized) return;
     await cancel(itemId);
+    try {
+      await _schedule(itemId, person, lent, dueDate, amountPaise);
+    } catch (e) {
+      debugPrint('Could not schedule reminder: $e');
+    }
+  }
+
+  static Future<void> _schedule(int itemId, String person, bool lent,
+      DateTime dueDate, int amountPaise) async {
     final scheduled = tz.TZDateTime.from(
         DateTime(dueDate.year, dueDate.month, dueDate.day, 9), tz.local);
     if (scheduled.isBefore(tz.TZDateTime.now(tz.local))) return;
@@ -58,6 +76,10 @@ class PersonalDebtReminderService {
 
   static Future<void> cancel(int itemId) async {
     if (kIsWeb) return;
-    await _plugin.cancel(itemId);
+    try {
+      await _plugin.cancel(itemId);
+    } catch (e) {
+      debugPrint('Could not cancel reminder: $e');
+    }
   }
 }

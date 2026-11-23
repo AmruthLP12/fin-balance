@@ -242,12 +242,12 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
     // Only mutual funds can be added so far; other categories have no add flow.
     if (_currentIndex == 1) {
       final tab = ref.watch(assetsActiveCategoryProvider);
-      if (tab == 'money_lent') {
+      if (tab == 'money_lent' || tab == 'other_asset') {
         return FloatingActionButton(
           shape: const CircleBorder(),
           backgroundColor: AppColors.asset,
           foregroundColor: Colors.white,
-          tooltip: 'Lend Money',
+          tooltip: tab == 'other_asset' ? 'Add Asset' : 'Lend Money',
           onPressed: () => PersonalDebtForm.show(context, lent: true),
           child: const Icon(Icons.add_rounded, size: 28),
         );

@@ -8,7 +8,7 @@ class FinancialCategoryConstants {
   static const String etfs = 'ETFs';
   static const String fixedDeposits = 'Fixed Deposits (FD)';
   static const String recurringDeposits = 'Recurring Deposits (RD)';
-  static const String otherDeposits = 'Other Deposits';
+  static const String otherDeposits = 'Deposits';
   static const String ppf = 'PPF';
   static const String epf = 'EPF';
   static const String gpf = 'GPF';
@@ -89,7 +89,9 @@ class FinancialCategoryConstants {
     if (lower.contains('fixed & recurring deposits')) {
       return fixedDeposits;
     }
-    if (lower.contains('other deposit') || subType == 'other_deposit') {
+    if (lower.contains('other deposit') ||
+        lower == 'deposits' ||
+        subType == 'other_deposit') {
       return otherDeposits;
     }
     if (lower == 'ppf' || subType == 'ppf') {

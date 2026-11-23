@@ -63,11 +63,12 @@ class HoldingCard extends ConsumerWidget {
     );
 
     final subtitle = scheme?.fundHouse ?? _formatSubType(item.subType);
-    final linkedSips = ref.watch(sipsByHoldingProvider(item.id)).value ??
-        const <SipPlan>[];
+    final linkedSips =
+        ref.watch(sipsByHoldingProvider(item.id)).value ?? const <SipPlan>[];
     final now = DateTime.now();
     final futureSip = linkedSips
-        .where((s) => s.startDate.isAfter(now) && item.currentValuationPaise == 0)
+        .where(
+            (s) => s.startDate.isAfter(now) && item.currentValuationPaise == 0)
         .firstOrNull;
 
     return Padding(
@@ -123,8 +124,7 @@ class HoldingCard extends ConsumerWidget {
                     : StatusBadge(
                         label:
                             '${isProfit ? '+' : ''}${absoluteReturn.toStringAsFixed(1)}%',
-                        type:
-                            isProfit ? BadgeType.asset : BadgeType.liability,
+                        type: isProfit ? BadgeType.asset : BadgeType.liability,
                       ),
                 if (onDelete != null)
                   PopupMenuButton<String>(

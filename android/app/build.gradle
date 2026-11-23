@@ -31,6 +31,8 @@ android {
 
     signingConfigs {
         release {
+            // flutter_local_notifications needs these rules or R8 breaks it.
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
             if (keystorePropertiesFile.exists()) {
                 keyAlias keystoreProperties['keyAlias']
                 keyPassword keystoreProperties['keyPassword']

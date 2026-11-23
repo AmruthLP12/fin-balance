@@ -47,3 +47,27 @@ final dailyPnlProvider = StreamProvider<int?>((ref) async* {
       .tableUpdates(TableUpdateQuery.onTable(db.navHistory))
       .asyncMap((_) => dailyPnlPaise(db, assets));
 });
+
+/// Today's change per holding (item id -> paise and percent), for sorting.
+/// Holdings without two NAVs on record are left out.
+final dailyChangeByItemProvider =
+    StreamProvider<Map<int, ({int paise, double pct})>>((ref) async* {
+  final db = ref.watch(databaseProvider);
+  final assets = ref.watch(activeProfileAssetsProvider).value ?? [];
+  Future<Map<int, ({int paise, double pct})>> load() async {
+    final out = <int, ({int paise, double pct})>{};
+    for (final a in assets) {
+      if (a.unitCountMicroUnits <= 0) continue;
+      final paise = await dailyPnlPaise(db, [a]);
+      if (paise == null) continue;
+      final before = a.currentValuationPaise - paise;
+      out[a.id] = (paise: paise, pct: before > 0 ? paise * 100 / before : 0);
+    }
+    return out;
+  }
+
+  yield await load();
+  yield* db
+      .tableUpdates(TableUpdateQuery.onTable(db.navHistory))
+      .asyncMap((_) => load());
+});

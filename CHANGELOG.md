@@ -5,6 +5,22 @@ All notable changes to the FinBalance application will be documented in this fil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.29.7] - 2026-11-23
+
+### Added
+
+- **Mutual Funds page**: funds are listed A to Z. Funds you still hold are under **Active** with a total (cost and value); fully redeemed funds go to a **Redeemed** section with its own total, hidden behind a Show / Hide button. A name filter and a sort dialog (Name, Cost, Value, 1 Day P&L %, Return %; ascending or descending) sit above the list.
+- **Deposits** tab: sub-category chips for FD, RD, PPF, SSS, NSC, Tax Saving Bond and KVP. The Overview still shows just **Deposits**.
+- Adding from the Lent to Others / Other Assets tabs lets you choose **Lent to Others** (default) or **Other Assets** (a plain record with name, amount, date and notes). Other assets can be edited by tapping them.
+
+### Changed
+
+- "Other Deposits" is now **Deposits**; FRD and POSS are no longer offered (existing FRD / POSS records stay under Deposits).
+
+### Fixed
+
+- Saving an edit to a lent / borrowed record showed "Missing type parameter" (the reminder library failing in release builds). Release builds now keep the library's type information (new `proguard-rules.pro`), and a reminder problem can no longer make a save look like it failed.
+
 ## [0.29.6] - 2026-11-21
 
 ### Added

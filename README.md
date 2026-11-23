@@ -2,7 +2,9 @@
 
 > **FinBalance** is an offline-first, multi-profile personal finance and net worth management application for Android and Web, built with Flutter and SQLite (Drift).
 
-### Current Release Focus (0.29.6)
+### Current Release Focus (0.29.7)
+
+- Mutual Funds page: A to Z, Active / Redeemed sections with totals, name filter and sorting. Deposits sub-categories (FD, RD, PPF, SSS, NSC, Tax Saving Bond, KVP). Other Assets can be added from the lent form.
 
 - Lent / borrowed records can be edited and have an optional end date; the CAS import button stays pinned and a dimmed loader shows progress.
 - CAS import reads the KFintech statement layout; the import screen links to the KFintech and CAMS statement pages.

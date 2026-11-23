@@ -1,3 +1,4 @@
+import '../../../core/providers/daily_pnl.dart';
 import '../../personal_debt/personal_debt_card.dart';
 import '../../personal_debt/personal_debt_form.dart';
 import 'package:flutter/material.dart';
@@ -31,6 +32,18 @@ class AssetsScreen extends ConsumerStatefulWidget {
 class _AssetsScreenState extends ConsumerState<AssetsScreen> {
   // Category navigation filter: defaults to 'mutual_fund' as in reference
   String _selectedCategoryFilter = 'mutual_fund';
+  String _subFilter = 'all'; // sub-category chip inside Deposits
+  String _query = ''; // mutual fund name filter
+  final _queryCtl = TextEditingController();
+  String _sortBy = 'name';
+  bool _ascending = true;
+  bool _showRedeemed = false;
+
+  @override
+  void dispose() {
+    _queryCtl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -44,8 +57,8 @@ class _AssetsScreenState extends ConsumerState<AssetsScreen> {
     final activeProfileAsync = ref.watch(activeProfileProvider);
     final assetsAsync = ref.watch(activeProfileAssetsProvider);
     final transactionsAsync = ref.watch(activeProfileTransactionsProvider);
-    final sips = ref.watch(activeProfileSipPlansProvider).value ??
-        const <SipPlan>[];
+    final sips =
+        ref.watch(activeProfileSipPlansProvider).value ?? const <SipPlan>[];
 
     final profileName = activeProfileAsync.value?.name ?? 'Profile';
     final allTransactions = transactionsAsync.value ?? [];
@@ -148,6 +161,28 @@ class _AssetsScreenState extends ConsumerState<AssetsScreen> {
                     ],
                   ),
                 ),
+                if (_subCategories.isNotEmpty) ...[
+                  const SizedBox(height: AppSpacing.sm),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        for (final (value, label) in [
+                          ('all', 'All'),
+                          ..._subCategories,
+                        ]) ...[
+                          ChoiceChip(
+                            label: Text(label),
+                            selected: _subFilter == value,
+                            onSelected: (_) =>
+                                setState(() => _subFilter = value),
+                          ),
+                          const SizedBox(width: AppSpacing.xs),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
                 const SizedBox(height: AppSpacing.md),
 
                 // 2. Compact Portfolio Summary Card
@@ -327,13 +362,17 @@ class _AssetsScreenState extends ConsumerState<AssetsScreen> {
                 SectionHeader(
                   title:
                       '${_categoryDisplayName(_selectedCategoryFilter)} (${filteredItems.length})',
-                  actionLabel: _selectedCategoryFilter == 'money_lent'
-                      ? '+ Lend Money'
+                  actionLabel: _selectedCategoryFilter == 'money_lent' ||
+                          _selectedCategoryFilter == 'other_asset'
+                      ? (_selectedCategoryFilter == 'money_lent'
+                          ? '+ Lend Money'
+                          : '+ Add Asset')
                       : _selectedCategoryFilter == 'mutual_fund' ||
                               _selectedCategoryFilter == 'all'
                           ? 'Search Schemes'
                           : null,
-                  onActionTap: () => _selectedCategoryFilter == 'money_lent'
+                  onActionTap: () => _selectedCategoryFilter == 'money_lent' ||
+                          _selectedCategoryFilter == 'other_asset'
                       ? PersonalDebtForm.show(context, lent: true)
                       : _openSearchScreen(context),
                 ),
@@ -344,18 +383,10 @@ class _AssetsScreenState extends ConsumerState<AssetsScreen> {
                     category: _selectedCategoryFilter,
                     profileName: profileName,
                   )
+                else if (_selectedCategoryFilter == 'mutual_fund')
+                  ..._mutualFundSections(filteredItems, sips, isDark)
                 else
-                  ...filteredItems.map(
-                    (item) => item.subType == 'money_lent'
-                        ? PersonalDebtCard(item: item)
-                        : HoldingCard(
-                            item: item,
-                            onTap: () => _openHoldingDetails(context, item),
-                            onDelete: () =>
-                                _confirmDeleteHolding(context, item),
-                          ),
-                  ),
-
+                  ...filteredItems.map(_holdingTile),
                 const SizedBox(height: 80), // FAB clearance
               ],
             ),
@@ -374,12 +405,210 @@ class _AssetsScreenState extends ConsumerState<AssetsScreen> {
     );
   }
 
+  List<(String, String)> get _subCategories {
+    for (final g in assetGroups) {
+      if (g.value == _selectedCategoryFilter) return g.children;
+    }
+    return const [];
+  }
+
+  Widget _holdingTile(FinancialItem item) {
+    if (item.subType == 'money_lent') return PersonalDebtCard(item: item);
+    return HoldingCard(
+      item: item,
+      onTap: () => item.subType == 'other_asset'
+          ? PersonalDebtForm.show(context, lent: true, item: item)
+          : _openHoldingDetails(context, item),
+      onDelete: () => _confirmDeleteHolding(context, item),
+    );
+  }
+
+  static const _sortLabels = {
+    'name': 'Name',
+    'cost': 'Cost',
+    'value': 'Value',
+    'day': '1 Day P&L %',
+    'return': 'Return %',
+  };
+
+  Future<void> _pickSort() async {
+    var by = _sortBy, asc = _ascending;
+    await showDialog<void>(
+      context: context,
+      builder: (c) => StatefulBuilder(
+        builder: (c, setD) => SimpleDialog(
+          title: const Text('Sort mutual funds'),
+          children: [
+            RadioGroup<String>(
+              groupValue: by,
+              onChanged: (v) => setD(() => by = v ?? by),
+              child: Column(children: [
+                for (final e in _sortLabels.entries)
+                  RadioListTile<String>(title: Text(e.value), value: e.key),
+              ]),
+            ),
+            const Divider(),
+            RadioGroup<bool>(
+              groupValue: asc,
+              onChanged: (v) => setD(() => asc = v ?? asc),
+              child: const Column(children: [
+                RadioListTile<bool>(title: Text('Ascending'), value: true),
+                RadioListTile<bool>(title: Text('Descending'), value: false),
+              ]),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: FilledButton(
+                  onPressed: () => Navigator.pop(c),
+                  child: const Text('Apply')),
+            ),
+          ],
+        ),
+      ),
+    );
+    setState(() {
+      _sortBy = by;
+      _ascending = asc;
+    });
+  }
+
+  /// Mutual funds: name filter + sort, active holdings first, redeemed
+  /// (zero-unit) funds in their own section behind a button.
+  List<Widget> _mutualFundSections(
+      List<FinancialItem> all, List<SipPlan> sips, bool isDark) {
+    final daily = ref.watch(dailyChangeByItemProvider).value ?? const {};
+    final q = _query.trim().toLowerCase();
+    final shown =
+        all.where((i) => q.isEmpty || i.name.toLowerCase().contains(q));
+    final now = DateTime.now();
+    bool planned(FinancialItem i) =>
+        i.currentValuationPaise == 0 &&
+        sips.any((s) => s.financialItemId == i.id && s.startDate.isAfter(now));
+
+    num key(FinancialItem i) {
+      switch (_sortBy) {
+        case 'cost':
+          return i.initialValuePaise;
+        case 'value':
+          return i.currentValuationPaise;
+        case 'day':
+          return daily[i.id]?.pct ?? double.negativeInfinity;
+        case 'return':
+          return FinancialCalculator.calculateAbsoluteReturn(
+              investedPaise: i.initialValuePaise,
+              currentValuationPaise: i.currentValuationPaise);
+      }
+      return 0;
+    }
+
+    int cmp(FinancialItem a, FinancialItem b) {
+      final c = _sortBy == 'name'
+          ? a.name.toLowerCase().compareTo(b.name.toLowerCase())
+          : key(a).compareTo(key(b));
+      return _ascending ? c : -c;
+    }
+
+    final live = shown.where((i) => i.currentValuationPaise > 0).toList()
+      ..sort(cmp);
+    final plannedItems = shown.where(planned).toList()..sort(cmp);
+    final redeemed = shown
+        .where((i) => i.currentValuationPaise == 0 && !planned(i))
+        .toList()
+      ..sort(cmp);
+    final muted = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
+
+    Widget header(String title, List<FinancialItem> l) => Padding(
+          padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text('$title (${l.length})',
+                    style: AppTypography.titleMedium),
+              ),
+              Text(
+                'Cost ${CurrencyFormatter.formatPaiseCompact(l.fold<int>(0, (s, i) => s + i.initialValuePaise))}'
+                ' · Value ${CurrencyFormatter.formatPaiseCompact(l.fold<int>(0, (s, i) => s + i.currentValuationPaise))}',
+                style: AppTypography.labelSmall.copyWith(color: muted),
+              ),
+            ],
+          ),
+        );
+
+    return [
+      Row(
+        children: [
+          Expanded(
+            child: TextField(
+              decoration: InputDecoration(
+                isDense: true,
+                hintText: 'Filter funds by name',
+                prefixIcon: const Icon(Icons.filter_list_rounded, size: 20),
+                border: const OutlineInputBorder(),
+                suffixIcon: _query.isEmpty
+                    ? null
+                    : IconButton(
+                        icon: const Icon(Icons.close_rounded, size: 18),
+                        onPressed: () {
+                          _queryCtl.clear();
+                          setState(() => _query = '');
+                        }),
+              ),
+              controller: _queryCtl,
+              onChanged: (v) => setState(() => _query = v),
+              textInputAction: TextInputAction.search,
+            ),
+          ),
+          IconButton(
+            tooltip: 'Sort',
+            icon: const Icon(Icons.sort_rounded),
+            onPressed: _pickSort,
+          ),
+        ],
+      ),
+      Padding(
+        padding: const EdgeInsets.only(top: 2, bottom: AppSpacing.sm),
+        child: Text(
+            'Sorted by ${_sortLabels[_sortBy]} (${_ascending ? 'ascending' : 'descending'})',
+            style: AppTypography.labelSmall.copyWith(color: muted)),
+      ),
+      if (live.isEmpty && plannedItems.isEmpty && redeemed.isEmpty)
+        const Padding(
+          padding: EdgeInsets.all(AppSpacing.md),
+          child: Center(child: Text('No funds match the filter.')),
+        ),
+      if (live.isNotEmpty || plannedItems.isNotEmpty) ...[
+        header('Active', [...live, ...plannedItems]),
+        ...live.map(_holdingTile),
+        ...plannedItems.map(_holdingTile),
+      ],
+      if (redeemed.isNotEmpty) ...[
+        const SizedBox(height: AppSpacing.sm),
+        OutlinedButton.icon(
+          icon: Icon(_showRedeemed
+              ? Icons.expand_less_rounded
+              : Icons.expand_more_rounded),
+          label: Text(
+              '${_showRedeemed ? 'Hide' : 'Show'} redeemed (${redeemed.length}) · Cost ${CurrencyFormatter.formatPaiseCompact(redeemed.fold<int>(0, (s, i) => s + i.initialValuePaise))}'),
+          onPressed: () => setState(() => _showRedeemed = !_showRedeemed),
+        ),
+        if (_showRedeemed) ...[
+          const SizedBox(height: AppSpacing.sm),
+          header('Redeemed', redeemed),
+          ...redeemed.map(_holdingTile),
+        ],
+      ],
+    ];
+  }
+
   static final _tabOrder = ['all', for (final g in assetGroups) g.value];
   final _pillKeys = {for (final v in _tabOrder) v: GlobalKey()};
 
   void _select(String category) {
     ref.read(assetsActiveCategoryProvider.notifier).state = category;
-    setState(() => _selectedCategoryFilter = category);
+    setState(() {
+      _selectedCategoryFilter = category;
+      _subFilter = 'all';
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final ctx = _pillKeys[category]?.currentContext;
       if (ctx != null) {
@@ -406,6 +635,7 @@ class _AssetsScreenState extends ConsumerState<AssetsScreen> {
         ? items
         : items
             .where((i) => groupOf(i.subType, assetGroups).value == filter)
+            .where((i) => _subFilter == 'all' || i.subType == _subFilter)
             .toList();
     filtered.sort((a, b) {
       final futureA = sips.any((s) =>
@@ -514,9 +744,9 @@ class _AssetsScreenState extends ConsumerState<AssetsScreen> {
       case 'other_deposit':
         return EmptyStateView(
           icon: Icons.account_balance_rounded,
-          title: 'No Other Deposits Added',
+          title: 'No Deposits Added',
           description:
-              'FD, RD, FRD and other deposit records for $profileName will appear here.',
+              'FD, RD, PPF, SSS, NSC, Tax Saving Bonds and KVP for $profileName will appear here.',
         );
       case 'money_lent':
         return const EmptyStateView(

@@ -5,25 +5,31 @@ class CategoryGroup {
   final String label;
   final List<(String, String)> children;
 
-  const CategoryGroup(this.value, this.label, [this.children = const []]);
+  /// Older subTypes that still belong here but are no longer offered.
+  final List<String> legacy;
+
+  const CategoryGroup(this.value, this.label,
+      [this.children = const [], this.legacy = const []]);
 
   bool contains(String subType) => children.isEmpty
       ? subType == value
-      : children.any((c) => c.$1 == subType);
+      : children.any((c) => c.$1 == subType) || legacy.contains(subType);
 }
 
 const assetGroups = <CategoryGroup>[
   CategoryGroup('mutual_fund', 'Mutual Funds'),
   CategoryGroup('stock', 'Stocks & ETFs'),
-  CategoryGroup('other_deposit', 'Other Deposits', [
+  CategoryGroup('other_deposit', 'Deposits', [
+    ('fixed_deposit', 'FD'),
+    ('recurring_deposit', 'RD'),
     ('ppf', 'PPF'),
+    ('sss', 'SSS'),
     ('nsc', 'NSC'),
+    ('tax_saving_bond', 'Tax Saving Bond'),
     ('kvp', 'KVP'),
-    ('sss', 'SSS (Sukanya Samriddhi)'),
-    ('poss', 'POSS (Post Office Savings)'),
-    ('fixed_deposit', 'FD (Fixed Deposit)'),
-    ('frd', 'FRD (Flexi Recurring Deposit)'),
-    ('recurring_deposit', 'RD (Recurring Deposit)'),
+  ], [
+    'frd',
+    'poss'
   ]),
   CategoryGroup('epf', 'EPF'),
   CategoryGroup('nps', 'NPS'),
