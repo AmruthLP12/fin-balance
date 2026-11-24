@@ -234,6 +234,8 @@ class HoldingCard extends ConsumerWidget {
         return 'Stock';
       case 'fixed_deposit':
         return 'Fixed Deposit';
+      case 'recurring_deposit':
+        return 'Recurring Deposit';
       case 'gold':
         return 'Gold';
       case 'ppf':

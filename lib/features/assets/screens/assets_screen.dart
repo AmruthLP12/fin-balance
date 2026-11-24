@@ -20,6 +20,8 @@ import '../../profile/widgets/profile_menu_button.dart';
 import '../widgets/holding_card.dart';
 import 'mutual_fund_search_screen.dart';
 import 'sip_details_screen.dart';
+import 'deposit_details_screen.dart';
+import 'deposit_form_screen.dart';
 
 /// Assets screen for managing Mutual Funds, Stocks, FDs, Gold, and wealth holdings scoped to the active profile.
 class AssetsScreen extends ConsumerStatefulWidget {
@@ -367,14 +369,18 @@ class _AssetsScreenState extends ConsumerState<AssetsScreen> {
                       ? (_selectedCategoryFilter == 'money_lent'
                           ? '+ Lend Money'
                           : '+ Add Asset')
-                      : _selectedCategoryFilter == 'mutual_fund' ||
-                              _selectedCategoryFilter == 'all'
-                          ? 'Search Schemes'
-                          : null,
+                      : _selectedCategoryFilter == 'other_deposit'
+                          ? '+ Add Deposit'
+                          : _selectedCategoryFilter == 'mutual_fund' ||
+                                  _selectedCategoryFilter == 'all'
+                              ? 'Search Schemes'
+                              : null,
                   onActionTap: () => _selectedCategoryFilter == 'money_lent' ||
                           _selectedCategoryFilter == 'other_asset'
                       ? PersonalDebtForm.show(context, lent: true)
-                      : _openSearchScreen(context),
+                      : _selectedCategoryFilter == 'other_deposit'
+                          ? DepositFormScreen.showTypePicker(context)
+                          : _openSearchScreen(context),
                 ),
                 const SizedBox(height: AppSpacing.sm),
 
@@ -416,9 +422,17 @@ class _AssetsScreenState extends ConsumerState<AssetsScreen> {
     if (item.subType == 'money_lent') return PersonalDebtCard(item: item);
     return HoldingCard(
       item: item,
-      onTap: () => item.subType == 'other_asset'
-          ? PersonalDebtForm.show(context, lent: true, item: item)
-          : _openHoldingDetails(context, item),
+      onTap: () {
+        if (item.subType == 'other_asset') {
+          PersonalDebtForm.show(context, lent: true, item: item);
+        } else if (item.subType == 'fixed_deposit' ||
+            item.subType == 'recurring_deposit') {
+          Navigator.of(context).push(MaterialPageRoute<void>(
+              builder: (_) => DepositDetailsScreen(holding: item)));
+        } else {
+          _openHoldingDetails(context, item);
+        }
+      },
       onDelete: () => _confirmDeleteHolding(context, item),
     );
   }
@@ -746,7 +760,7 @@ class _AssetsScreenState extends ConsumerState<AssetsScreen> {
           icon: Icons.account_balance_rounded,
           title: 'No Deposits Added',
           description:
-              'FD, RD, PPF, SSS, NSC, Tax Saving Bonds and KVP for $profileName will appear here.',
+              'FD, RD, PPF, SSS, NSC, Tax Saving Bonds, KVP, EPF, Bonds, Gold and NPS for $profileName will appear here.',
         );
       case 'money_lent':
         return const EmptyStateView(

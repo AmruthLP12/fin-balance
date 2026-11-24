@@ -9,6 +9,7 @@ import '../../../core/widgets/finbalance_logo.dart';
 import '../../activity/screens/activity_screen.dart';
 import '../../assets/screens/assets_screen.dart';
 import '../../assets/screens/mutual_fund_search_screen.dart';
+import '../../assets/screens/deposit_form_screen.dart';
 import '../../liabilities/screens/liabilities_screen.dart';
 import '../../liabilities/widgets/add_liability_dialog.dart';
 import '../../overview/screens/overview_screen.dart';
@@ -249,6 +250,16 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
           foregroundColor: Colors.white,
           tooltip: tab == 'other_asset' ? 'Add Asset' : 'Lend Money',
           onPressed: () => PersonalDebtForm.show(context, lent: true),
+          child: const Icon(Icons.add_rounded, size: 28),
+        );
+      }
+      if (tab == 'other_deposit') {
+        return FloatingActionButton(
+          shape: const CircleBorder(),
+          backgroundColor: AppColors.asset,
+          foregroundColor: Colors.white,
+          tooltip: 'Add Deposit',
+          onPressed: () => DepositFormScreen.showTypePicker(context),
           child: const Icon(Icons.add_rounded, size: 28),
         );
       }

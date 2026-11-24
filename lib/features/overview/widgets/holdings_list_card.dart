@@ -66,10 +66,9 @@ class HoldingsListCard extends StatelessWidget {
 
     Widget section(String title, List<FinancialItem> items, Color color,
         bool isLiability, List<CategoryGroup> groups) {
-      // Assets: EPF, NPS, Bonds, Gold, Lent to Others and Other Assets share
-      // one "Other Assets" row here (the Assets tab keeps them separate).
+      // Lent to Others and Other Assets share one overview row.
       final mergeFrom =
-          isLiability ? -1 : groups.indexWhere((g) => g.value == 'epf');
+          isLiability ? -1 : groups.indexWhere((g) => g.value == 'money_lent');
       final merged = mergeFrom < 0
           ? <String>{}
           : groups.sublist(mergeFrom).map((g) => g.value).toSet();

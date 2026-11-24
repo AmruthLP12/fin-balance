@@ -14,7 +14,7 @@ class RecurringTransactions extends Table {
 
   TextColumn get name => text().withLength(min: 1, max: 150)();
 
-  /// Recurring type: 'sip_investment', 'loan_emi', 'recurring_income', 'recurring_expense'
+  /// Recurring type: 'sip_investment', 'loan_emi', 'recurring_deposit', 'fixed_deposit_interest', 'recurring_income', 'recurring_expense'
   TextColumn get recurringType => text()();
 
   IntColumn get financialItemId => integer()
@@ -35,7 +35,7 @@ class RecurringTransactions extends Table {
   /// Scheduled cash amount in Paise
   IntColumn get amountPaise => integer()();
 
-  /// Frequency: 'weekly', 'monthly', 'quarterly', 'yearly'
+  /// Frequency: 'weekly', 'monthly', 'quarterly', 'half_yearly', 'yearly'
   TextColumn get frequency => text()();
 
   /// Scheduled day: 1-31 for monthly/quarterly, 1-7 for weekly

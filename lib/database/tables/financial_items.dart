@@ -20,7 +20,7 @@ class FinancialItems extends Table {
   TextColumn get itemType => text()();
 
   /// Specific sub-type:
-  /// Assets: 'mutual_fund', 'stock', 'fixed_deposit', 'gold', 'ppf', 'epf', 'nps', 'bond', 'cash', 'other_asset'
+  /// Assets: 'mutual_fund', 'stock', 'fixed_deposit', 'recurring_deposit', 'gold', 'ppf', 'epf', 'nps', 'bond', 'cash', 'other_asset'
   /// Liabilities: 'home_loan', 'personal_loan', 'vehicle_loan', 'education_loan', 'credit_card', 'other_liability'
   TextColumn get subType => text()();
 
@@ -48,6 +48,12 @@ class FinancialItems extends Table {
 
   /// Annual interest rate in basis points (e.g. 850 = 8.50% p.a., 710 = 7.10% for PPF)
   IntColumn get interestRateBasisPoints => integer().nullable()();
+
+  TextColumn get bankName => text().nullable()();
+  TextColumn get accountHolder => text().nullable()();
+  IntColumn get depositCompoundingMonths => integer().nullable()();
+  BoolColumn get depositCumulative => boolean().nullable()();
+  BoolColumn get depositTaxSaving => boolean().nullable()();
 
   /// Liability-specific repayment details.
   TextColumn get lenderName => text().nullable()();

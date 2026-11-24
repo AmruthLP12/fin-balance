@@ -1864,6 +1864,42 @@ class $FinancialItemsTable extends FinancialItems
   late final GeneratedColumn<int> interestRateBasisPoints =
       GeneratedColumn<int>('interest_rate_basis_points', aliasedName, true,
           type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _bankNameMeta =
+      const VerificationMeta('bankName');
+  @override
+  late final GeneratedColumn<String> bankName = GeneratedColumn<String>(
+      'bank_name', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _accountHolderMeta =
+      const VerificationMeta('accountHolder');
+  @override
+  late final GeneratedColumn<String> accountHolder = GeneratedColumn<String>(
+      'account_holder', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _depositCompoundingMonthsMeta =
+      const VerificationMeta('depositCompoundingMonths');
+  @override
+  late final GeneratedColumn<int> depositCompoundingMonths =
+      GeneratedColumn<int>('deposit_compounding_months', aliasedName, true,
+          type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _depositCumulativeMeta =
+      const VerificationMeta('depositCumulative');
+  @override
+  late final GeneratedColumn<bool> depositCumulative = GeneratedColumn<bool>(
+      'deposit_cumulative', aliasedName, true,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("deposit_cumulative" IN (0, 1))'));
+  static const VerificationMeta _depositTaxSavingMeta =
+      const VerificationMeta('depositTaxSaving');
+  @override
+  late final GeneratedColumn<bool> depositTaxSaving = GeneratedColumn<bool>(
+      'deposit_tax_saving', aliasedName, true,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("deposit_tax_saving" IN (0, 1))'));
   static const VerificationMeta _lenderNameMeta =
       const VerificationMeta('lenderName');
   @override
@@ -1960,6 +1996,11 @@ class $FinancialItemsTable extends FinancialItems
         currentValuationPaise,
         unitCountMicroUnits,
         interestRateBasisPoints,
+        bankName,
+        accountHolder,
+        depositCompoundingMonths,
+        depositCumulative,
+        depositTaxSaving,
         lenderName,
         emiPaise,
         tenureYears,
@@ -2057,6 +2098,35 @@ class $FinancialItemsTable extends FinancialItems
           interestRateBasisPoints.isAcceptableOrUnknown(
               data['interest_rate_basis_points']!,
               _interestRateBasisPointsMeta));
+    }
+    if (data.containsKey('bank_name')) {
+      context.handle(_bankNameMeta,
+          bankName.isAcceptableOrUnknown(data['bank_name']!, _bankNameMeta));
+    }
+    if (data.containsKey('account_holder')) {
+      context.handle(
+          _accountHolderMeta,
+          accountHolder.isAcceptableOrUnknown(
+              data['account_holder']!, _accountHolderMeta));
+    }
+    if (data.containsKey('deposit_compounding_months')) {
+      context.handle(
+          _depositCompoundingMonthsMeta,
+          depositCompoundingMonths.isAcceptableOrUnknown(
+              data['deposit_compounding_months']!,
+              _depositCompoundingMonthsMeta));
+    }
+    if (data.containsKey('deposit_cumulative')) {
+      context.handle(
+          _depositCumulativeMeta,
+          depositCumulative.isAcceptableOrUnknown(
+              data['deposit_cumulative']!, _depositCumulativeMeta));
+    }
+    if (data.containsKey('deposit_tax_saving')) {
+      context.handle(
+          _depositTaxSavingMeta,
+          depositTaxSaving.isAcceptableOrUnknown(
+              data['deposit_tax_saving']!, _depositTaxSavingMeta));
     }
     if (data.containsKey('lender_name')) {
       context.handle(
@@ -2162,6 +2232,17 @@ class $FinancialItemsTable extends FinancialItems
       interestRateBasisPoints: attachedDatabase.typeMapping.read(
           DriftSqlType.int,
           data['${effectivePrefix}interest_rate_basis_points']),
+      bankName: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}bank_name']),
+      accountHolder: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}account_holder']),
+      depositCompoundingMonths: attachedDatabase.typeMapping.read(
+          DriftSqlType.int,
+          data['${effectivePrefix}deposit_compounding_months']),
+      depositCumulative: attachedDatabase.typeMapping.read(
+          DriftSqlType.bool, data['${effectivePrefix}deposit_cumulative']),
+      depositTaxSaving: attachedDatabase.typeMapping.read(
+          DriftSqlType.bool, data['${effectivePrefix}deposit_tax_saving']),
       lenderName: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}lender_name']),
       emiPaise: attachedDatabase.typeMapping
@@ -2209,7 +2290,7 @@ class FinancialItem extends DataClass implements Insertable<FinancialItem> {
   final String itemType;
 
   /// Specific sub-type:
-  /// Assets: 'mutual_fund', 'stock', 'fixed_deposit', 'gold', 'ppf', 'epf', 'nps', 'bond', 'cash', 'other_asset'
+  /// Assets: 'mutual_fund', 'stock', 'fixed_deposit', 'recurring_deposit', 'gold', 'ppf', 'epf', 'nps', 'bond', 'cash', 'other_asset'
   /// Liabilities: 'home_loan', 'personal_loan', 'vehicle_loan', 'education_loan', 'credit_card', 'other_liability'
   final String subType;
   final int categoryId;
@@ -2232,6 +2313,11 @@ class FinancialItem extends DataClass implements Insertable<FinancialItem> {
 
   /// Annual interest rate in basis points (e.g. 850 = 8.50% p.a., 710 = 7.10% for PPF)
   final int? interestRateBasisPoints;
+  final String? bankName;
+  final String? accountHolder;
+  final int? depositCompoundingMonths;
+  final bool? depositCumulative;
+  final bool? depositTaxSaving;
 
   /// Liability-specific repayment details.
   final String? lenderName;
@@ -2261,6 +2347,11 @@ class FinancialItem extends DataClass implements Insertable<FinancialItem> {
       required this.currentValuationPaise,
       required this.unitCountMicroUnits,
       this.interestRateBasisPoints,
+      this.bankName,
+      this.accountHolder,
+      this.depositCompoundingMonths,
+      this.depositCumulative,
+      this.depositTaxSaving,
       this.lenderName,
       this.emiPaise,
       this.tenureYears,
@@ -2296,6 +2387,22 @@ class FinancialItem extends DataClass implements Insertable<FinancialItem> {
     if (!nullToAbsent || interestRateBasisPoints != null) {
       map['interest_rate_basis_points'] =
           Variable<int>(interestRateBasisPoints);
+    }
+    if (!nullToAbsent || bankName != null) {
+      map['bank_name'] = Variable<String>(bankName);
+    }
+    if (!nullToAbsent || accountHolder != null) {
+      map['account_holder'] = Variable<String>(accountHolder);
+    }
+    if (!nullToAbsent || depositCompoundingMonths != null) {
+      map['deposit_compounding_months'] =
+          Variable<int>(depositCompoundingMonths);
+    }
+    if (!nullToAbsent || depositCumulative != null) {
+      map['deposit_cumulative'] = Variable<bool>(depositCumulative);
+    }
+    if (!nullToAbsent || depositTaxSaving != null) {
+      map['deposit_tax_saving'] = Variable<bool>(depositTaxSaving);
     }
     if (!nullToAbsent || lenderName != null) {
       map['lender_name'] = Variable<String>(lenderName);
@@ -2356,6 +2463,21 @@ class FinancialItem extends DataClass implements Insertable<FinancialItem> {
       interestRateBasisPoints: interestRateBasisPoints == null && nullToAbsent
           ? const Value.absent()
           : Value(interestRateBasisPoints),
+      bankName: bankName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(bankName),
+      accountHolder: accountHolder == null && nullToAbsent
+          ? const Value.absent()
+          : Value(accountHolder),
+      depositCompoundingMonths: depositCompoundingMonths == null && nullToAbsent
+          ? const Value.absent()
+          : Value(depositCompoundingMonths),
+      depositCumulative: depositCumulative == null && nullToAbsent
+          ? const Value.absent()
+          : Value(depositCumulative),
+      depositTaxSaving: depositTaxSaving == null && nullToAbsent
+          ? const Value.absent()
+          : Value(depositTaxSaving),
       lenderName: lenderName == null && nullToAbsent
           ? const Value.absent()
           : Value(lenderName),
@@ -2413,6 +2535,12 @@ class FinancialItem extends DataClass implements Insertable<FinancialItem> {
           serializer.fromJson<int>(json['unitCountMicroUnits']),
       interestRateBasisPoints:
           serializer.fromJson<int?>(json['interestRateBasisPoints']),
+      bankName: serializer.fromJson<String?>(json['bankName']),
+      accountHolder: serializer.fromJson<String?>(json['accountHolder']),
+      depositCompoundingMonths:
+          serializer.fromJson<int?>(json['depositCompoundingMonths']),
+      depositCumulative: serializer.fromJson<bool?>(json['depositCumulative']),
+      depositTaxSaving: serializer.fromJson<bool?>(json['depositTaxSaving']),
       lenderName: serializer.fromJson<String?>(json['lenderName']),
       emiPaise: serializer.fromJson<int?>(json['emiPaise']),
       tenureYears: serializer.fromJson<int?>(json['tenureYears']),
@@ -2447,6 +2575,12 @@ class FinancialItem extends DataClass implements Insertable<FinancialItem> {
       'unitCountMicroUnits': serializer.toJson<int>(unitCountMicroUnits),
       'interestRateBasisPoints':
           serializer.toJson<int?>(interestRateBasisPoints),
+      'bankName': serializer.toJson<String?>(bankName),
+      'accountHolder': serializer.toJson<String?>(accountHolder),
+      'depositCompoundingMonths':
+          serializer.toJson<int?>(depositCompoundingMonths),
+      'depositCumulative': serializer.toJson<bool?>(depositCumulative),
+      'depositTaxSaving': serializer.toJson<bool?>(depositTaxSaving),
       'lenderName': serializer.toJson<String?>(lenderName),
       'emiPaise': serializer.toJson<int?>(emiPaise),
       'tenureYears': serializer.toJson<int?>(tenureYears),
@@ -2477,6 +2611,11 @@ class FinancialItem extends DataClass implements Insertable<FinancialItem> {
           int? currentValuationPaise,
           int? unitCountMicroUnits,
           Value<int?> interestRateBasisPoints = const Value.absent(),
+          Value<String?> bankName = const Value.absent(),
+          Value<String?> accountHolder = const Value.absent(),
+          Value<int?> depositCompoundingMonths = const Value.absent(),
+          Value<bool?> depositCumulative = const Value.absent(),
+          Value<bool?> depositTaxSaving = const Value.absent(),
           Value<String?> lenderName = const Value.absent(),
           Value<int?> emiPaise = const Value.absent(),
           Value<int?> tenureYears = const Value.absent(),
@@ -2508,6 +2647,18 @@ class FinancialItem extends DataClass implements Insertable<FinancialItem> {
         interestRateBasisPoints: interestRateBasisPoints.present
             ? interestRateBasisPoints.value
             : this.interestRateBasisPoints,
+        bankName: bankName.present ? bankName.value : this.bankName,
+        accountHolder:
+            accountHolder.present ? accountHolder.value : this.accountHolder,
+        depositCompoundingMonths: depositCompoundingMonths.present
+            ? depositCompoundingMonths.value
+            : this.depositCompoundingMonths,
+        depositCumulative: depositCumulative.present
+            ? depositCumulative.value
+            : this.depositCumulative,
+        depositTaxSaving: depositTaxSaving.present
+            ? depositTaxSaving.value
+            : this.depositTaxSaving,
         lenderName: lenderName.present ? lenderName.value : this.lenderName,
         emiPaise: emiPaise.present ? emiPaise.value : this.emiPaise,
         tenureYears: tenureYears.present ? tenureYears.value : this.tenureYears,
@@ -2556,6 +2707,19 @@ class FinancialItem extends DataClass implements Insertable<FinancialItem> {
       interestRateBasisPoints: data.interestRateBasisPoints.present
           ? data.interestRateBasisPoints.value
           : this.interestRateBasisPoints,
+      bankName: data.bankName.present ? data.bankName.value : this.bankName,
+      accountHolder: data.accountHolder.present
+          ? data.accountHolder.value
+          : this.accountHolder,
+      depositCompoundingMonths: data.depositCompoundingMonths.present
+          ? data.depositCompoundingMonths.value
+          : this.depositCompoundingMonths,
+      depositCumulative: data.depositCumulative.present
+          ? data.depositCumulative.value
+          : this.depositCumulative,
+      depositTaxSaving: data.depositTaxSaving.present
+          ? data.depositTaxSaving.value
+          : this.depositTaxSaving,
       lenderName:
           data.lenderName.present ? data.lenderName.value : this.lenderName,
       emiPaise: data.emiPaise.present ? data.emiPaise.value : this.emiPaise,
@@ -2601,6 +2765,11 @@ class FinancialItem extends DataClass implements Insertable<FinancialItem> {
           ..write('currentValuationPaise: $currentValuationPaise, ')
           ..write('unitCountMicroUnits: $unitCountMicroUnits, ')
           ..write('interestRateBasisPoints: $interestRateBasisPoints, ')
+          ..write('bankName: $bankName, ')
+          ..write('accountHolder: $accountHolder, ')
+          ..write('depositCompoundingMonths: $depositCompoundingMonths, ')
+          ..write('depositCumulative: $depositCumulative, ')
+          ..write('depositTaxSaving: $depositTaxSaving, ')
           ..write('lenderName: $lenderName, ')
           ..write('emiPaise: $emiPaise, ')
           ..write('tenureYears: $tenureYears, ')
@@ -2633,6 +2802,11 @@ class FinancialItem extends DataClass implements Insertable<FinancialItem> {
         currentValuationPaise,
         unitCountMicroUnits,
         interestRateBasisPoints,
+        bankName,
+        accountHolder,
+        depositCompoundingMonths,
+        depositCumulative,
+        depositTaxSaving,
         lenderName,
         emiPaise,
         tenureYears,
@@ -2664,6 +2838,11 @@ class FinancialItem extends DataClass implements Insertable<FinancialItem> {
           other.currentValuationPaise == this.currentValuationPaise &&
           other.unitCountMicroUnits == this.unitCountMicroUnits &&
           other.interestRateBasisPoints == this.interestRateBasisPoints &&
+          other.bankName == this.bankName &&
+          other.accountHolder == this.accountHolder &&
+          other.depositCompoundingMonths == this.depositCompoundingMonths &&
+          other.depositCumulative == this.depositCumulative &&
+          other.depositTaxSaving == this.depositTaxSaving &&
           other.lenderName == this.lenderName &&
           other.emiPaise == this.emiPaise &&
           other.tenureYears == this.tenureYears &&
@@ -2693,6 +2872,11 @@ class FinancialItemsCompanion extends UpdateCompanion<FinancialItem> {
   final Value<int> currentValuationPaise;
   final Value<int> unitCountMicroUnits;
   final Value<int?> interestRateBasisPoints;
+  final Value<String?> bankName;
+  final Value<String?> accountHolder;
+  final Value<int?> depositCompoundingMonths;
+  final Value<bool?> depositCumulative;
+  final Value<bool?> depositTaxSaving;
   final Value<String?> lenderName;
   final Value<int?> emiPaise;
   final Value<int?> tenureYears;
@@ -2720,6 +2904,11 @@ class FinancialItemsCompanion extends UpdateCompanion<FinancialItem> {
     this.currentValuationPaise = const Value.absent(),
     this.unitCountMicroUnits = const Value.absent(),
     this.interestRateBasisPoints = const Value.absent(),
+    this.bankName = const Value.absent(),
+    this.accountHolder = const Value.absent(),
+    this.depositCompoundingMonths = const Value.absent(),
+    this.depositCumulative = const Value.absent(),
+    this.depositTaxSaving = const Value.absent(),
     this.lenderName = const Value.absent(),
     this.emiPaise = const Value.absent(),
     this.tenureYears = const Value.absent(),
@@ -2748,6 +2937,11 @@ class FinancialItemsCompanion extends UpdateCompanion<FinancialItem> {
     this.currentValuationPaise = const Value.absent(),
     this.unitCountMicroUnits = const Value.absent(),
     this.interestRateBasisPoints = const Value.absent(),
+    this.bankName = const Value.absent(),
+    this.accountHolder = const Value.absent(),
+    this.depositCompoundingMonths = const Value.absent(),
+    this.depositCumulative = const Value.absent(),
+    this.depositTaxSaving = const Value.absent(),
     this.lenderName = const Value.absent(),
     this.emiPaise = const Value.absent(),
     this.tenureYears = const Value.absent(),
@@ -2780,6 +2974,11 @@ class FinancialItemsCompanion extends UpdateCompanion<FinancialItem> {
     Expression<int>? currentValuationPaise,
     Expression<int>? unitCountMicroUnits,
     Expression<int>? interestRateBasisPoints,
+    Expression<String>? bankName,
+    Expression<String>? accountHolder,
+    Expression<int>? depositCompoundingMonths,
+    Expression<bool>? depositCumulative,
+    Expression<bool>? depositTaxSaving,
     Expression<String>? lenderName,
     Expression<int>? emiPaise,
     Expression<int>? tenureYears,
@@ -2811,6 +3010,12 @@ class FinancialItemsCompanion extends UpdateCompanion<FinancialItem> {
         'unit_count_micro_units': unitCountMicroUnits,
       if (interestRateBasisPoints != null)
         'interest_rate_basis_points': interestRateBasisPoints,
+      if (bankName != null) 'bank_name': bankName,
+      if (accountHolder != null) 'account_holder': accountHolder,
+      if (depositCompoundingMonths != null)
+        'deposit_compounding_months': depositCompoundingMonths,
+      if (depositCumulative != null) 'deposit_cumulative': depositCumulative,
+      if (depositTaxSaving != null) 'deposit_tax_saving': depositTaxSaving,
       if (lenderName != null) 'lender_name': lenderName,
       if (emiPaise != null) 'emi_paise': emiPaise,
       if (tenureYears != null) 'tenure_years': tenureYears,
@@ -2842,6 +3047,11 @@ class FinancialItemsCompanion extends UpdateCompanion<FinancialItem> {
       Value<int>? currentValuationPaise,
       Value<int>? unitCountMicroUnits,
       Value<int?>? interestRateBasisPoints,
+      Value<String?>? bankName,
+      Value<String?>? accountHolder,
+      Value<int?>? depositCompoundingMonths,
+      Value<bool?>? depositCumulative,
+      Value<bool?>? depositTaxSaving,
       Value<String?>? lenderName,
       Value<int?>? emiPaise,
       Value<int?>? tenureYears,
@@ -2871,6 +3081,12 @@ class FinancialItemsCompanion extends UpdateCompanion<FinancialItem> {
       unitCountMicroUnits: unitCountMicroUnits ?? this.unitCountMicroUnits,
       interestRateBasisPoints:
           interestRateBasisPoints ?? this.interestRateBasisPoints,
+      bankName: bankName ?? this.bankName,
+      accountHolder: accountHolder ?? this.accountHolder,
+      depositCompoundingMonths:
+          depositCompoundingMonths ?? this.depositCompoundingMonths,
+      depositCumulative: depositCumulative ?? this.depositCumulative,
+      depositTaxSaving: depositTaxSaving ?? this.depositTaxSaving,
       lenderName: lenderName ?? this.lenderName,
       emiPaise: emiPaise ?? this.emiPaise,
       tenureYears: tenureYears ?? this.tenureYears,
@@ -2932,6 +3148,22 @@ class FinancialItemsCompanion extends UpdateCompanion<FinancialItem> {
       map['interest_rate_basis_points'] =
           Variable<int>(interestRateBasisPoints.value);
     }
+    if (bankName.present) {
+      map['bank_name'] = Variable<String>(bankName.value);
+    }
+    if (accountHolder.present) {
+      map['account_holder'] = Variable<String>(accountHolder.value);
+    }
+    if (depositCompoundingMonths.present) {
+      map['deposit_compounding_months'] =
+          Variable<int>(depositCompoundingMonths.value);
+    }
+    if (depositCumulative.present) {
+      map['deposit_cumulative'] = Variable<bool>(depositCumulative.value);
+    }
+    if (depositTaxSaving.present) {
+      map['deposit_tax_saving'] = Variable<bool>(depositTaxSaving.value);
+    }
     if (lenderName.present) {
       map['lender_name'] = Variable<String>(lenderName.value);
     }
@@ -2991,6 +3223,11 @@ class FinancialItemsCompanion extends UpdateCompanion<FinancialItem> {
           ..write('currentValuationPaise: $currentValuationPaise, ')
           ..write('unitCountMicroUnits: $unitCountMicroUnits, ')
           ..write('interestRateBasisPoints: $interestRateBasisPoints, ')
+          ..write('bankName: $bankName, ')
+          ..write('accountHolder: $accountHolder, ')
+          ..write('depositCompoundingMonths: $depositCompoundingMonths, ')
+          ..write('depositCumulative: $depositCumulative, ')
+          ..write('depositTaxSaving: $depositTaxSaving, ')
           ..write('lenderName: $lenderName, ')
           ..write('emiPaise: $emiPaise, ')
           ..write('tenureYears: $tenureYears, ')
@@ -4787,7 +5024,7 @@ class RecurringTransaction extends DataClass
   final int profileId;
   final String name;
 
-  /// Recurring type: 'sip_investment', 'loan_emi', 'recurring_income', 'recurring_expense'
+  /// Recurring type: 'sip_investment', 'loan_emi', 'recurring_deposit', 'fixed_deposit_interest', 'recurring_income', 'recurring_expense'
   final String recurringType;
   final int? financialItemId;
   final int? fromAccountId;
@@ -4797,7 +5034,7 @@ class RecurringTransaction extends DataClass
   /// Scheduled cash amount in Paise
   final int amountPaise;
 
-  /// Frequency: 'weekly', 'monthly', 'quarterly', 'yearly'
+  /// Frequency: 'weekly', 'monthly', 'quarterly', 'half_yearly', 'yearly'
   final String frequency;
 
   /// Scheduled day: 1-31 for monthly/quarterly, 1-7 for weekly
@@ -12138,6 +12375,11 @@ typedef $$FinancialItemsTableCreateCompanionBuilder = FinancialItemsCompanion
   Value<int> currentValuationPaise,
   Value<int> unitCountMicroUnits,
   Value<int?> interestRateBasisPoints,
+  Value<String?> bankName,
+  Value<String?> accountHolder,
+  Value<int?> depositCompoundingMonths,
+  Value<bool?> depositCumulative,
+  Value<bool?> depositTaxSaving,
   Value<String?> lenderName,
   Value<int?> emiPaise,
   Value<int?> tenureYears,
@@ -12167,6 +12409,11 @@ typedef $$FinancialItemsTableUpdateCompanionBuilder = FinancialItemsCompanion
   Value<int> currentValuationPaise,
   Value<int> unitCountMicroUnits,
   Value<int?> interestRateBasisPoints,
+  Value<String?> bankName,
+  Value<String?> accountHolder,
+  Value<int?> depositCompoundingMonths,
+  Value<bool?> depositCumulative,
+  Value<bool?> depositTaxSaving,
   Value<String?> lenderName,
   Value<int?> emiPaise,
   Value<int?> tenureYears,
@@ -12232,6 +12479,24 @@ class $$FinancialItemsTableFilterComposer
 
   ColumnFilters<int> get interestRateBasisPoints => $composableBuilder(
       column: $table.interestRateBasisPoints,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get bankName => $composableBuilder(
+      column: $table.bankName, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get accountHolder => $composableBuilder(
+      column: $table.accountHolder, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get depositCompoundingMonths => $composableBuilder(
+      column: $table.depositCompoundingMonths,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get depositCumulative => $composableBuilder(
+      column: $table.depositCumulative,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get depositTaxSaving => $composableBuilder(
+      column: $table.depositTaxSaving,
       builder: (column) => ColumnFilters(column));
 
   ColumnFilters<String> get lenderName => $composableBuilder(
@@ -12330,6 +12595,25 @@ class $$FinancialItemsTableOrderingComposer
       column: $table.interestRateBasisPoints,
       builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get bankName => $composableBuilder(
+      column: $table.bankName, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get accountHolder => $composableBuilder(
+      column: $table.accountHolder,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get depositCompoundingMonths => $composableBuilder(
+      column: $table.depositCompoundingMonths,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get depositCumulative => $composableBuilder(
+      column: $table.depositCumulative,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get depositTaxSaving => $composableBuilder(
+      column: $table.depositTaxSaving,
+      builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<String> get lenderName => $composableBuilder(
       column: $table.lenderName, builder: (column) => ColumnOrderings(column));
 
@@ -12423,6 +12707,21 @@ class $$FinancialItemsTableAnnotationComposer
   GeneratedColumn<int> get interestRateBasisPoints => $composableBuilder(
       column: $table.interestRateBasisPoints, builder: (column) => column);
 
+  GeneratedColumn<String> get bankName =>
+      $composableBuilder(column: $table.bankName, builder: (column) => column);
+
+  GeneratedColumn<String> get accountHolder => $composableBuilder(
+      column: $table.accountHolder, builder: (column) => column);
+
+  GeneratedColumn<int> get depositCompoundingMonths => $composableBuilder(
+      column: $table.depositCompoundingMonths, builder: (column) => column);
+
+  GeneratedColumn<bool> get depositCumulative => $composableBuilder(
+      column: $table.depositCumulative, builder: (column) => column);
+
+  GeneratedColumn<bool> get depositTaxSaving => $composableBuilder(
+      column: $table.depositTaxSaving, builder: (column) => column);
+
   GeneratedColumn<String> get lenderName => $composableBuilder(
       column: $table.lenderName, builder: (column) => column);
 
@@ -12503,6 +12802,11 @@ class $$FinancialItemsTableTableManager extends RootTableManager<
             Value<int> currentValuationPaise = const Value.absent(),
             Value<int> unitCountMicroUnits = const Value.absent(),
             Value<int?> interestRateBasisPoints = const Value.absent(),
+            Value<String?> bankName = const Value.absent(),
+            Value<String?> accountHolder = const Value.absent(),
+            Value<int?> depositCompoundingMonths = const Value.absent(),
+            Value<bool?> depositCumulative = const Value.absent(),
+            Value<bool?> depositTaxSaving = const Value.absent(),
             Value<String?> lenderName = const Value.absent(),
             Value<int?> emiPaise = const Value.absent(),
             Value<int?> tenureYears = const Value.absent(),
@@ -12531,6 +12835,11 @@ class $$FinancialItemsTableTableManager extends RootTableManager<
             currentValuationPaise: currentValuationPaise,
             unitCountMicroUnits: unitCountMicroUnits,
             interestRateBasisPoints: interestRateBasisPoints,
+            bankName: bankName,
+            accountHolder: accountHolder,
+            depositCompoundingMonths: depositCompoundingMonths,
+            depositCumulative: depositCumulative,
+            depositTaxSaving: depositTaxSaving,
             lenderName: lenderName,
             emiPaise: emiPaise,
             tenureYears: tenureYears,
@@ -12559,6 +12868,11 @@ class $$FinancialItemsTableTableManager extends RootTableManager<
             Value<int> currentValuationPaise = const Value.absent(),
             Value<int> unitCountMicroUnits = const Value.absent(),
             Value<int?> interestRateBasisPoints = const Value.absent(),
+            Value<String?> bankName = const Value.absent(),
+            Value<String?> accountHolder = const Value.absent(),
+            Value<int?> depositCompoundingMonths = const Value.absent(),
+            Value<bool?> depositCumulative = const Value.absent(),
+            Value<bool?> depositTaxSaving = const Value.absent(),
             Value<String?> lenderName = const Value.absent(),
             Value<int?> emiPaise = const Value.absent(),
             Value<int?> tenureYears = const Value.absent(),
@@ -12587,6 +12901,11 @@ class $$FinancialItemsTableTableManager extends RootTableManager<
             currentValuationPaise: currentValuationPaise,
             unitCountMicroUnits: unitCountMicroUnits,
             interestRateBasisPoints: interestRateBasisPoints,
+            bankName: bankName,
+            accountHolder: accountHolder,
+            depositCompoundingMonths: depositCompoundingMonths,
+            depositCumulative: depositCumulative,
+            depositTaxSaving: depositTaxSaving,
             lenderName: lenderName,
             emiPaise: emiPaise,
             tenureYears: tenureYears,

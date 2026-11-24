@@ -5,6 +5,13 @@ All notable changes to the FinBalance application will be documented in this fil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.29.10] - 2026-11-24
+
+### Added
+
+- Fixed and recurring deposit forms with maturity estimates, rate/compounding, tenure, tax-saving, bank and account-holder details.
+- FD deposits and RD installments are recorded as investment outflows; non-cumulative FD interest is posted as income. Due RD entries catch up when the app is next opened or resumed.
+
 ## [0.29.9] - 2026-11-24
 
 ### Changed

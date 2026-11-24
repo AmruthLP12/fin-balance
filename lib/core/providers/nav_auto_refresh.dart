@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../data/assets/recurring_deposit_service.dart';
 import 'database_provider.dart';
 import 'nav_providers.dart';
 
@@ -29,25 +30,57 @@ class _NavAutoRefreshState extends ConsumerState<NavAutoRefresh>
     with WidgetsBindingObserver {
   static const _retryAfter = Duration(minutes: 10);
   Timer? _timer;
+  Timer? _depositTimer;
   bool _running = false;
+  bool _postingDeposits = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _check());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkDueDepositInstallments();
+      _check();
+    });
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) _check();
+    if (state == AppLifecycleState.resumed) {
+      _checkDueDepositInstallments();
+      _check();
+    }
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _timer?.cancel();
+    _depositTimer?.cancel();
     super.dispose();
+  }
+
+  Future<void> _checkDueDepositInstallments() async {
+    if (!NavAutoRefresh.enabled) return;
+    _depositTimer?.cancel();
+    if (_postingDeposits) return;
+    _postingDeposits = true;
+    try {
+      final posted =
+          await applyDueDepositTransactions(ref.read(databaseProvider));
+      if (posted > 0) debugPrint('Auto-posted $posted RD installment(s).');
+    } catch (e) {
+      debugPrint('Could not auto-post RD installments: $e');
+    } finally {
+      _postingDeposits = false;
+      if (mounted) {
+        final now = DateTime.now();
+        final nextDay = DateTime(now.year, now.month, now.day + 1)
+            .add(const Duration(seconds: 1));
+        _depositTimer =
+            Timer(nextDay.difference(now), _checkDueDepositInstallments);
+      }
+    }
   }
 
   Future<void> _check() async {
