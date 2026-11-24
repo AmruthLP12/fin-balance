@@ -70,6 +70,18 @@ class RecurringTransactionsDao extends DatabaseAccessor<AppDatabase>
         .get();
   }
 
+  /// Watch schedules for a specific financial item within a profile.
+  Stream<List<RecurringTransaction>> watchSchedulesByItem(
+    int profileId,
+    int financialItemId,
+  ) {
+    return (select(recurringTransactions)
+          ..where((tbl) =>
+              tbl.profileId.equals(profileId) &
+              tbl.financialItemId.equals(financialItemId)))
+        .watch();
+  }
+
   /// Insert a new recurring schedule.
   Future<int> insertSchedule(RecurringTransactionsCompanion schedule) {
     return into(recurringTransactions).insert(schedule);

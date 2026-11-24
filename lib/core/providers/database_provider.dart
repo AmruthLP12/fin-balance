@@ -230,6 +230,14 @@ final transactionsByItemProvider =
       .watchTransactionsByItem(arg.profileId, arg.itemId);
 });
 
+/// Stream provider for schedules belonging to a specific financial item.
+final schedulesByItemProvider = StreamProvider.family<
+    List<RecurringTransaction>, ({int profileId, int itemId})>((ref, arg) {
+  return ref
+      .watch(recurringTransactionsDaoProvider)
+      .watchSchedulesByItem(arg.profileId, arg.itemId);
+});
+
 /// Stream provider for all SIP plans belonging to the active profile.
 final activeProfileSipPlansProvider = StreamProvider<List<SipPlan>>((ref) {
   final profileId = ref.watch(activeProfileIdProvider);

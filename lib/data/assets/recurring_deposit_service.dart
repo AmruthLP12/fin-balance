@@ -44,8 +44,8 @@ Future<int> applyDueDepositTransactions(AppDatabase db,
                   : due.isBefore(maturityDate)))) {
         final dueDay = DateTime(due.year, due.month, due.day);
         if (lastProcessed != null && !dueDay.isAfter(lastProcessed)) {
-          due =
-              _nextScheduledDate(dueDay, schedule.scheduledDay, intervalMonths);
+          due = nextDepositScheduledDate(
+              dueDay, schedule.scheduledDay, intervalMonths);
           continue;
         }
 
@@ -101,8 +101,8 @@ Future<int> applyDueDepositTransactions(AppDatabase db,
         }
 
         lastProcessed = dueDay;
-        final nextDue =
-            _nextScheduledDate(dueDay, schedule.scheduledDay, intervalMonths);
+        final nextDue = nextDepositScheduledDate(
+            dueDay, schedule.scheduledDay, intervalMonths);
         due = paysInterest &&
                 maturityDate != null &&
                 nextDue.isAfter(maturityDate) &&
@@ -132,7 +132,7 @@ Future<int> applyDueDepositTransactions(AppDatabase db,
   return posted;
 }
 
-DateTime _nextScheduledDate(DateTime date, int scheduledDay, int months) {
+DateTime nextDepositScheduledDate(DateTime date, int scheduledDay, int months) {
   final monthIndex = date.year * 12 + date.month - 1 + months;
   final year = monthIndex ~/ 12;
   final month = monthIndex % 12 + 1;

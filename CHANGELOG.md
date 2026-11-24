@@ -5,6 +5,13 @@ All notable changes to the FinBalance application will be documented in this fil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.29.11] - 2026-11-24
+
+### Changed
+
+- Fixed and recurring deposits can now be edited; their forms follow the app's standard save-button and field layout.
+- Deposit details now include estimated interest and maturity amount.
+
 ## [0.29.10] - 2026-11-24
 
 ### Added

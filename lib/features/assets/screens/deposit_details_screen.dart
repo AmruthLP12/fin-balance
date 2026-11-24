@@ -7,8 +7,10 @@ import '../../../core/providers/database_provider.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/fin_card.dart';
+import '../../../data/assets/deposit_calculator.dart';
 import '../../../data/assets/recurring_deposit_service.dart';
 import '../../../database/app_database.dart';
+import 'deposit_form_screen.dart';
 
 class DepositDetailsScreen extends ConsumerWidget {
   final FinancialItem holding;
@@ -34,6 +36,9 @@ class DepositDetailsScreen extends ConsumerWidget {
         final transactionsAsync = ref.watch(transactionsByItemProvider(
           (profileId: item.profileId, itemId: item.id),
         ));
+        final schedulesAsync = ref.watch(schedulesByItemProvider(
+          (profileId: item.profileId, itemId: item.id),
+        ));
         final recurring = item.subType == 'recurring_deposit';
         final rate = item.interestRateBasisPoints;
         final compounding = switch (item.depositCompoundingMonths) {
@@ -49,7 +54,24 @@ class DepositDetailsScreen extends ConsumerWidget {
             : '$tenureMonths months';
 
         return Scaffold(
-          appBar: AppBar(title: Text(item.name)),
+          appBar: AppBar(
+            title: Text(item.name),
+            actions: [
+              IconButton(
+                tooltip: 'Edit deposit',
+                icon: const Icon(Icons.edit_outlined),
+                onPressed: () => Navigator.of(context).push<bool>(
+                  MaterialPageRoute(
+                    fullscreenDialog: true,
+                    builder: (_) => DepositFormScreen(
+                      recurring: recurring,
+                      holding: item,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
           body: ListView(
             padding: const EdgeInsets.all(AppSpacing.md),
             children: [
@@ -98,6 +120,34 @@ class DepositDetailsScreen extends ConsumerWidget {
                   ],
                 ),
               ),
+              const SizedBox(height: AppSpacing.sm),
+              if (!recurring)
+                _maturityEstimate(
+                  item: item,
+                  installmentPaise: item.initialValuePaise,
+                  recurring: false,
+                )
+              else
+                schedulesAsync.when(
+                  loading: () => const LinearProgressIndicator(),
+                  error: (error, _) =>
+                      Text('Could not load maturity estimate: $error'),
+                  data: (schedules) {
+                    final schedule = schedules
+                        .where((entry) =>
+                            entry.recurringType == recurringDepositType)
+                        .firstOrNull;
+                    if (schedule == null) {
+                      return const Text(
+                          'Maturity estimate is unavailable without an RD schedule.');
+                    }
+                    return _maturityEstimate(
+                      item: item,
+                      installmentPaise: schedule.amountPaise,
+                      recurring: true,
+                    );
+                  },
+                ),
               if (recurring) ...[
                 const SizedBox(height: AppSpacing.sm),
                 Text(
@@ -148,6 +198,34 @@ class DepositDetailsScreen extends ConsumerWidget {
           ),
         );
       },
+    );
+  }
+
+  Widget _maturityEstimate({
+    required FinancialItem item,
+    required int installmentPaise,
+    required bool recurring,
+  }) {
+    final estimate = estimateDeposit(
+      installmentRupees: installmentPaise / 100,
+      rateBasisPoints: item.interestRateBasisPoints ?? 0,
+      tenureMonths: item.tenureMonths ?? 0,
+      compoundingMonths: item.depositCompoundingMonths ?? 3,
+      recurring: recurring,
+      cumulative: item.depositCumulative != false,
+    );
+    return FinCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('MATURITY ESTIMATE', style: AppTypography.labelSmall),
+          const SizedBox(height: AppSpacing.xs),
+          _detail('Estimated interest',
+              CurrencyFormatter.formatPaise(estimate.interestPaise)),
+          _detail('Maturity amount',
+              CurrencyFormatter.formatPaise(estimate.maturityPaise)),
+        ],
+      ),
     );
   }
 
