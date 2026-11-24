@@ -13,10 +13,24 @@ void main() {
       () {
     final g = assetGroups.firstWhere((g) => g.value == 'other_deposit');
     expect(g.label, 'Deposits');
-    expect(g.children.map((c) => c.$2),
-        ['FD', 'RD', 'PPF', 'SSS', 'NSC', 'Tax Saving Bond', 'KVP']);
+    expect(g.children.map((c) => c.$2), [
+      'FD',
+      'RD',
+      'PPF',
+      'SSS',
+      'NSC',
+      'Tax Saving Bond',
+      'KVP',
+      'EPF',
+      'Bonds',
+      'Gold',
+      'NPS',
+    ]);
     expect(groupOf('frd', assetGroups).value, 'other_deposit');
     expect(groupOf('poss', assetGroups).value, 'other_deposit');
+    for (final subType in ['epf', 'bond', 'gold', 'nps']) {
+      expect(groupOf(subType, assetGroups).value, 'other_deposit');
+    }
   });
 
   testWidgets('redeemed funds sit in their own hidden section, A to Z',

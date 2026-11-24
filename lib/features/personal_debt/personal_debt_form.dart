@@ -101,7 +101,9 @@ class _PersonalDebtFormState extends ConsumerState<PersonalDebtForm> {
         await ref.read(databaseProvider).financialItemsDao.updateItem(
               old.copyWith(
                 name: _person.text.trim(),
+                subType: 'money_lent',
                 lenderName: drift.Value(_person.text.trim()),
+                itemType: 'asset',
                 initialValuePaise: amountPaise,
                 currentValuationPaise: outstanding,
                 interestRateBasisPoints: drift.Value(
@@ -228,12 +230,22 @@ class _PersonalDebtFormState extends ConsumerState<PersonalDebtForm> {
     if (old != null) {
       await dao.updateItem(old.copyWith(
         name: _person.text.trim(),
+        subType: 'other_asset',
+        itemType: 'asset',
         initialValuePaise: amountPaise,
         currentValuationPaise: amountPaise,
         startDate: drift.Value(date),
+        lenderName: const drift.Value(null),
+        maturityDate: const drift.Value(null),
+        interestRateBasisPoints: const drift.Value(null),
+        interestDueDate: const drift.Value(null),
+        interestDueAmountPaise: const drift.Value(null),
         notes: drift.Value(notes),
         updatedAt: DateTime.now().toUtc(),
       ));
+      if (old.subType == 'money_lent') {
+        await PersonalDebtReminderService.cancel(old.id);
+      }
       return;
     }
     final db = ref.read(databaseProvider);
@@ -284,7 +296,7 @@ class _PersonalDebtFormState extends ConsumerState<PersonalDebtForm> {
         child: ListView(
           padding: const EdgeInsets.all(AppSpacing.md),
           children: [
-            if (lent && widget.item == null) ...[
+            if (lent) ...[
               SegmentedButton<String>(
                 showSelectedIcon: false,
                 segments: const [

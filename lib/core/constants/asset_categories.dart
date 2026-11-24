@@ -27,14 +27,14 @@ const assetGroups = <CategoryGroup>[
     ('nsc', 'NSC'),
     ('tax_saving_bond', 'Tax Saving Bond'),
     ('kvp', 'KVP'),
+    ('epf', 'EPF'),
+    ('bond', 'Bonds'),
+    ('gold', 'Gold'),
+    ('nps', 'NPS'),
   ], [
     'frd',
     'poss'
   ]),
-  CategoryGroup('epf', 'EPF'),
-  CategoryGroup('nps', 'NPS'),
-  CategoryGroup('bond', 'Bonds'),
-  CategoryGroup('gold', 'Gold'),
   CategoryGroup('money_lent', 'Lent to Others'),
   CategoryGroup('other_asset', 'Other Assets'),
 ];

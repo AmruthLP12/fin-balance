@@ -2,10 +2,11 @@
 
 > **FinBalance** is an offline-first, multi-profile personal finance and net worth management application for Android and Web, built with Flutter and SQLite (Drift).
 
-### Current Release Focus (0.29.8)
+### Current Release Focus (0.29.9)
 
+- Lent to Others and Other Assets can be switched when editing a record; EPF, Bonds, Gold and NPS are grouped under Deposits.
 - Android release builds use the supported optimized ProGuard configuration, keeping release builds compatible with current Android Gradle Plugin versions.
-- Mutual Funds page: A to Z, Active / Redeemed sections with totals, name filter and sorting. Deposits sub-categories (FD, RD, PPF, SSS, NSC, Tax Saving Bond, KVP). Other Assets can be added from the lent form.
+- Mutual Funds page: A to Z, Active / Redeemed sections with totals, name filter and sorting. Deposits sub-categories (FD, RD, PPF, SSS, NSC, Tax Saving Bond, KVP, EPF, Bonds, Gold, NPS). Other Assets can be added from the lent form.
 
 - Lent / borrowed records can be edited and have an optional end date; the CAS import button stays pinned and a dimmed loader shows progress.
 - CAS import reads the KFintech statement layout; the import screen links to the KFintech and CAMS statement pages.
@@ -258,7 +259,7 @@ make clean
 
 - **Built by:** Amruth L P
 - **Developer Portfolio:** [https://amruthlp.vercel.app](https://amruthlp.vercel.app)
-- **Application Version:** `v0.29.8` (read from the installed app in Settings > About)
+- **Application Version:** `v0.29.9` (read from the installed app in Settings > About)
 - **Support & Inquiries:** Accessible in-app under `Settings` $\rightarrow$ `Support` (`Contact details will be provided here.`).
 - **In-App Privacy Policy:** Open `Settings` $\rightarrow$ `Support` $\rightarrow$ `Privacy Policy`.
 - **Privacy Policy Markdown File:** Located in the repository at [`docs/privacy-policy.md`](docs/privacy-policy.md).

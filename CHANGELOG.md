@@ -5,6 +5,13 @@ All notable changes to the FinBalance application will be documented in this fil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.29.9] - 2026-11-24
+
+### Changed
+
+- Lent to Others and Other Assets can now be switched when editing a record.
+- EPF, Bonds, Gold and NPS are grouped under Deposits in the Assets tab.
+
 ## [0.29.8] - 2026-11-24
 
 ### Fixed
