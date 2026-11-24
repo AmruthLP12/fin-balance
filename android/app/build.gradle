@@ -31,8 +31,6 @@ android {
 
     signingConfigs {
         release {
-            // flutter_local_notifications needs these rules or R8 breaks it.
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
             if (keystorePropertiesFile.exists()) {
                 keyAlias keystoreProperties['keyAlias']
                 keyPassword keystoreProperties['keyPassword']
@@ -47,6 +45,8 @@ android {
             // Same key on every machine, or Android refuses to update the app.
             // Falls back to the debug key when android/key.properties is absent.
             signingConfig = keystorePropertiesFile.exists() ? signingConfigs.release : signingConfigs.debug
+            // flutter_local_notifications needs these rules or R8 breaks it.
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
 }

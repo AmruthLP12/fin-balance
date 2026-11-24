@@ -5,6 +5,12 @@ All notable changes to the FinBalance application will be documented in this fil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.29.8] - 2026-11-24
+
+### Fixed
+
+- Android release builds now use the supported optimized ProGuard configuration, while preserving the notification library rules required by release builds.
+
 ## [0.29.7] - 2026-11-23
 
 ### Added
