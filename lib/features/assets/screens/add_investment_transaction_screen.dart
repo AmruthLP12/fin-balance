@@ -753,6 +753,7 @@ class _AddInvestmentTransactionScreenState
         startDate: _transactionDate,
         installmentCount: count,
         frequency: _frequency,
+        weekendToMonday: isSip,
       );
       summary = 'Records this installment now and plans ${count - 1} more '
           '${_frequency.label.toLowerCase()} $noun installments, '

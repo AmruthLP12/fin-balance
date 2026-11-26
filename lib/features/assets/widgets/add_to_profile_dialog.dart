@@ -137,6 +137,7 @@ class _AddToProfileDialogState extends ConsumerState<AddToProfileDialog> {
       startDate: _startDate,
       totalInstallments: count > 0 ? count : 1,
       frequency: _frequency,
+      weekendToMonday: true,
       amountPerInstallmentPaise: amountPaise > 0 ? amountPaise : 0,
       asOfDate: DateTime.now(),
     );

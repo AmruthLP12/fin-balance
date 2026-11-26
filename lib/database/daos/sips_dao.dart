@@ -178,6 +178,7 @@ class SipsDao extends DatabaseAccessor<AppDatabase> with _$SipsDaoMixin {
           endDate: endDate,
           installmentCount: installmentCount,
           frequency: freq,
+          weekendToMonday: true,
         );
 
         for (final date in dates) {
@@ -282,6 +283,7 @@ class SipsDao extends DatabaseAccessor<AppDatabase> with _$SipsDaoMixin {
           endDate: effectiveTo,
           installmentCount: installmentCount,
           frequency: freq,
+          weekendToMonday: true,
         );
 
         for (final date in dates) {
@@ -623,17 +625,17 @@ class SipsDao extends DatabaseAccessor<AppDatabase> with _$SipsDaoMixin {
 
   Future<int> unmarkInstallment(int installmentId) {
     return (update(sipInstallments)
-            ..where((tbl) => tbl.id.equals(installmentId)))
-          .write(
-        SipInstallmentsCompanion(
-          status: const Value('upcoming'),
-          transactionId: const Value(null),
-          actualInvestmentDate: const Value(null),
-          actualAmountPaise: const Value(null),
-          purchaseNavMicroPaise: const Value(null),
-          unitsMicroUnits: const Value(null),
-          updatedAt: Value(DateTime.now().toUtc()),
-        ),
+          ..where((tbl) => tbl.id.equals(installmentId)))
+        .write(
+      SipInstallmentsCompanion(
+        status: const Value('upcoming'),
+        transactionId: const Value(null),
+        actualInvestmentDate: const Value(null),
+        actualAmountPaise: const Value(null),
+        purchaseNavMicroPaise: const Value(null),
+        unitsMicroUnits: const Value(null),
+        updatedAt: Value(DateTime.now().toUtc()),
+      ),
     );
   }
 
@@ -646,70 +648,90 @@ class SipsDao extends DatabaseAccessor<AppDatabase> with _$SipsDaoMixin {
     String? notes,
   }) async {
     return transaction(() async {
-        final installment = await (select(sipInstallments)
-              ..where((tbl) => tbl.transactionId.equals(transactionId)))
-            .getSingleOrNull();
-        final transaction = await db.transactionsDao.getTransactionById(transactionId);
-        if (transaction == null) return false;
+      final installment = await (select(sipInstallments)
+            ..where((tbl) => tbl.transactionId.equals(transactionId)))
+          .getSingleOrNull();
+      final transaction =
+          await db.transactionsDao.getTransactionById(transactionId);
+      if (transaction == null) return false;
 
-        final oldAmount = transaction.amountPaise;
-        final oldUnits = transaction.unitsMicroUnits ?? 0;
-        await db.transactionsDao.updateTransaction(
-          transaction.copyWith(
-            transactionDate: date,
-            amountPaise: amountPaise,
-            netAmountPaise: Value(amountPaise),
+      final oldAmount = transaction.amountPaise;
+      final oldUnits = transaction.unitsMicroUnits ?? 0;
+      await db.transactionsDao.updateTransaction(
+        transaction.copyWith(
+          transactionDate: date,
+          amountPaise: amountPaise,
+          netAmountPaise: Value(amountPaise),
+          unitsMicroUnits: Value(unitsMicroUnits),
+          unitPriceMicroPaise: Value(purchaseNavMicroPaise),
+          notes: Value(notes?.trim().isEmpty == true ? null : notes?.trim()),
+          updatedAt: DateTime.now().toUtc(),
+        ),
+      );
+
+      if (installment != null) {
+        await (update(sipInstallments)
+              ..where((tbl) => tbl.id.equals(installment.id)))
+            .write(
+          SipInstallmentsCompanion(
+            actualInvestmentDate: Value(date),
+            actualAmountPaise: Value(amountPaise),
+            purchaseNavMicroPaise: Value(purchaseNavMicroPaise),
             unitsMicroUnits: Value(unitsMicroUnits),
-            unitPriceMicroPaise: Value(purchaseNavMicroPaise),
             notes: Value(notes?.trim().isEmpty == true ? null : notes?.trim()),
-            updatedAt: DateTime.now().toUtc(),
+            updatedAt: Value(DateTime.now().toUtc()),
           ),
         );
+      }
 
-        if (installment != null) {
-          await (update(sipInstallments)
-                ..where((tbl) => tbl.id.equals(installment.id)))
-              .write(
-            SipInstallmentsCompanion(
-              actualInvestmentDate: Value(date),
-              actualAmountPaise: Value(amountPaise),
-              purchaseNavMicroPaise: Value(purchaseNavMicroPaise),
-              unitsMicroUnits: Value(unitsMicroUnits),
-              notes: Value(notes?.trim().isEmpty == true ? null : notes?.trim()),
-              updatedAt: Value(DateTime.now().toUtc()),
-            ),
-          );
-        }
-
-        if (transaction.financialItemId != null) {
-          await _applyToHolding(
-            transaction.financialItemId!,
-            transaction.sipPlanId != null
-                ? (await getSipById(transaction.sipPlanId!))?.schemeCode ?? 0
-                : 0,
-            deltaInvested: amountPaise - oldAmount,
-            deltaUnits: (unitsMicroUnits ?? 0) - oldUnits,
-          );
-        }
-        return true;
+      if (transaction.financialItemId != null) {
+        await _applyToHolding(
+          transaction.financialItemId!,
+          transaction.sipPlanId != null
+              ? (await getSipById(transaction.sipPlanId!))?.schemeCode ?? 0
+              : 0,
+          deltaInvested: amountPaise - oldAmount,
+          deltaUnits: (unitsMicroUnits ?? 0) - oldUnits,
+        );
+      }
+      return true;
     });
+  }
+
+  /// Changes the date and amount of an installment that has not been recorded.
+  /// A Saturday or Sunday date moves to the following Monday.
+  Future<int> updatePlannedInstallment({
+    required int installmentId,
+    required DateTime date,
+    required int amountPaise,
+  }) {
+    final d = InvestmentScheduleService.nextWeekday(
+        DateTime.utc(date.year, date.month, date.day));
+    return (update(sipInstallments)
+          ..where((t) =>
+              t.id.equals(installmentId) & t.status.isNotValue('recorded')))
+        .write(SipInstallmentsCompanion(
+      scheduledDate: Value(d),
+      expectedAmountPaise: Value(amountPaise),
+      updatedAt: Value(DateTime.now().toUtc()),
+    ));
   }
 
   Future<int> pauseSip(int sipPlanId) {
     return (update(sipPlans)..where((tbl) => tbl.id.equals(sipPlanId))).write(
-        SipPlansCompanion(
-          status: const Value('paused'),
-          updatedAt: Value(DateTime.now().toUtc()),
-        ),
+      SipPlansCompanion(
+        status: const Value('paused'),
+        updatedAt: Value(DateTime.now().toUtc()),
+      ),
     );
   }
 
   Future<int> resumeSip(int sipPlanId) {
     return (update(sipPlans)..where((tbl) => tbl.id.equals(sipPlanId))).write(
-        SipPlansCompanion(
-          status: const Value('active'),
-          updatedAt: Value(DateTime.now().toUtc()),
-        ),
+      SipPlansCompanion(
+        status: const Value('active'),
+        updatedAt: Value(DateTime.now().toUtc()),
+      ),
     );
   }
 
@@ -926,6 +948,7 @@ class SipsDao extends DatabaseAccessor<AppDatabase> with _$SipsDaoMixin {
         startDate: startDate,
         installmentCount: effectiveCount,
         frequency: frequency,
+        weekendToMonday: true,
         amountPerInstallmentPaise: amountPerInstallmentPaise,
         asOfDate: asOfDate,
       );
@@ -1284,6 +1307,7 @@ class SipsDao extends DatabaseAccessor<AppDatabase> with _$SipsDaoMixin {
         startDate: normalizedEffective,
         installmentCount: remainingInstallments,
         frequency: newFrequency,
+        weekendToMonday: true,
       );
 
       final newEndDate =

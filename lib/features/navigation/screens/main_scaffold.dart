@@ -254,12 +254,15 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
         );
       }
       if (tab == 'other_deposit') {
+        final sub = ref.watch(assetsSubCategoryProvider);
+        if (sub != 'fixed_deposit' && sub != 'recurring_deposit') return null;
+        final rd = sub == 'recurring_deposit';
         return FloatingActionButton(
           shape: const CircleBorder(),
           backgroundColor: AppColors.asset,
           foregroundColor: Colors.white,
-          tooltip: 'Add Deposit',
-          onPressed: () => DepositFormScreen.showTypePicker(context),
+          tooltip: rd ? 'Add RD' : 'Add FD',
+          onPressed: () => DepositFormScreen.show(context, recurring: rd),
           child: const Icon(Icons.add_rounded, size: 28),
         );
       }

@@ -88,6 +88,9 @@ final mainTabProvider = StateProvider<int>((ref) => 0);
 final assetsActiveCategoryProvider =
     StateProvider<String>((ref) => 'mutual_fund');
 
+/// Sub-category chip selected inside the Assets tab (e.g. 'fixed_deposit').
+final assetsSubCategoryProvider = StateProvider<String>((ref) => 'all');
+
 final assetsCategoryRequestProvider = StateProvider<String?>((ref) => null);
 
 final hasSelectedInitialProfileProvider = StateProvider<bool>((ref) => false);

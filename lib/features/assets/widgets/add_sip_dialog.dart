@@ -62,6 +62,7 @@ class _AddSipDialogState extends ConsumerState<AddSipDialog> {
       startDate: _startDate,
       installmentCount: count,
       frequency: _frequency,
+      weekendToMonday: true,
       amountPerInstallmentPaise: 0,
     );
   }

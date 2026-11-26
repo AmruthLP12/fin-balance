@@ -102,14 +102,13 @@ void main() {
               .isAtSameMomentAs(DateTime.utc(2024, 1, 3)),
           isTrue);
       expect(
-          installments[1]
-              .scheduledDate
-              .isAtSameMomentAs(DateTime.utc(2024, 2, 3)),
+          installments[1].scheduledDate.isAtSameMomentAs(
+              DateTime.utc(2024, 2, 5)), // 3 Feb is a Saturday
           isTrue);
       expect(
           installments[2]
               .scheduledDate
-              .isAtSameMomentAs(DateTime.utc(2024, 3, 3)),
+              .isAtSameMomentAs(DateTime.utc(2024, 3, 4)), // 3 Mar is a Sunday
           isTrue);
       expect(
           installments[3]

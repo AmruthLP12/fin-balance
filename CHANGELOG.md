@@ -5,6 +5,17 @@ All notable changes to the FinBalance application will be documented in this fil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.29.12] - 2026-11-26
+
+### Added
+
+- **SIP installments can be edited** (date and amount) from the installments sheet. Recorded installments also update their linked investment; units follow the saved NAV.
+- SIP installment dates that fall on a **Saturday or Sunday move to the following Monday** when a schedule is created or an installment is edited. Existing installments are not changed.
+
+### Changed
+
+- **Deposits**: no add button under "All". The FD chip shows **+ Add FD** (opens only the FD form) and the RD chip shows **+ Add RD** (only the RD form); other deposit chips have no add button for now.
+
 ## [0.29.11] - 2026-11-24
 
 ### Changed

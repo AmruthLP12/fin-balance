@@ -117,8 +117,10 @@ class InvestmentScheduleService {
     required ScheduleFrequency frequency,
     required int amountPerInstallmentPaise,
     DateTime? asOfDate,
+    bool weekendToMonday = false,
   }) {
     return calculateSchedule(
+      weekendToMonday: weekendToMonday,
       startDate: startDate,
       installmentCount: totalInstallments,
       frequency: frequency,
@@ -137,6 +139,7 @@ class InvestmentScheduleService {
     required ScheduleFrequency frequency,
     required int amountPerInstallmentPaise,
     DateTime? asOfDate,
+    bool weekendToMonday = false,
   }) {
     final effectiveCount = frequency == ScheduleFrequency.oneTime
         ? 1
@@ -160,6 +163,7 @@ class InvestmentScheduleService {
       startDate: startDate,
       installmentCount: effectiveCount,
       frequency: frequency,
+      weekendToMonday: weekendToMonday,
     );
 
     final occurrences = <ScheduleOccurrence>[];
@@ -198,6 +202,16 @@ class InvestmentScheduleService {
     );
   }
 
+  /// Saturday and Sunday move to the following Monday (markets are closed).
+  static DateTime nextWeekday(DateTime d) {
+    if (d.weekday == DateTime.saturday) return d.add(const Duration(days: 2));
+    if (d.weekday == DateTime.sunday) return d.add(const Duration(days: 1));
+    return d;
+  }
+
+  static DateTime _adjust(DateTime d, ScheduleFrequency f, bool weekend) =>
+      weekend && f != ScheduleFrequency.daily ? nextWeekday(d) : d;
+
   /// The [i]th occurrence (0-based) of a schedule starting at [start] (UTC date).
   /// Month-based frequencies always derive from the original day, so there is no drift.
   static DateTime _occurrenceAt(
@@ -228,15 +242,18 @@ class InvestmentScheduleService {
     required DateTime startDate,
     required int installmentCount,
     required ScheduleFrequency frequency,
+    bool weekendToMonday = false,
   }) {
     if (installmentCount <= 0) return const [];
 
     final start = toUtcDate(startDate);
-    if (frequency == ScheduleFrequency.oneTime) return [start];
+    if (frequency == ScheduleFrequency.oneTime) {
+      return [_adjust(start, frequency, weekendToMonday)];
+    }
 
     return [
       for (int i = 0; i < installmentCount; i++)
-        _occurrenceAt(start, frequency, i),
+        _adjust(_occurrenceAt(start, frequency, i), frequency, weekendToMonday),
     ];
   }
 
@@ -250,9 +267,12 @@ class InvestmentScheduleService {
     DateTime? endDate,
     int? installmentCount,
     required ScheduleFrequency frequency,
+    bool weekendToMonday = false,
   }) {
     final start = toUtcDate(startDate);
-    if (frequency == ScheduleFrequency.oneTime) return [start];
+    if (frequency == ScheduleFrequency.oneTime) {
+      return [_adjust(start, frequency, weekendToMonday)];
+    }
 
     final end = endDate != null ? toUtcDate(endDate) : null;
     final hasCount = installmentCount != null && installmentCount > 0;
@@ -260,9 +280,9 @@ class InvestmentScheduleService {
 
     final dates = <DateTime>[];
     for (int i = 0; maxCount == null || i < maxCount; i++) {
-      final date = _occurrenceAt(start, frequency, i);
-      if (end != null && date.isAfter(end)) break;
-      dates.add(date);
+      final raw = _occurrenceAt(start, frequency, i);
+      if (end != null && raw.isAfter(end)) break;
+      dates.add(_adjust(raw, frequency, weekendToMonday));
       // ponytail: hard ceiling guards a runaway loop; raise if >100k installments is ever valid
       if (i >= 100000) break;
     }

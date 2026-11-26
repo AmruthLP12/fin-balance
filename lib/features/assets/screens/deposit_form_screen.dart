@@ -23,6 +23,13 @@ class DepositFormScreen extends ConsumerStatefulWidget {
     this.holding,
   });
 
+  /// Opens the form for one kind of deposit directly.
+  static Future<void> show(BuildContext context, {required bool recurring}) =>
+      Navigator.of(context).push<void>(MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (_) => DepositFormScreen(recurring: recurring),
+      ));
+
   static Future<void> showTypePicker(BuildContext context) async {
     final recurring = await showModalBottomSheet<bool>(
       context: context,

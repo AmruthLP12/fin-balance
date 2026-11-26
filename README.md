@@ -2,7 +2,9 @@
 
 > **FinBalance** is an offline-first, multi-profile personal finance and net worth management application for Android and Web, built with Flutter and SQLite (Drift).
 
-### Current Release Focus (0.29.11)
+### Current Release Focus (0.29.12)
+
+- SIP installments can be edited; weekend SIP dates move to Monday. Deposits add buttons are per FD / RD chip.
 
 - Fixed and recurring deposits can be added and edited with rate, compounding, tenure and maturity estimates. Deposit details show estimated interest and maturity amounts; FD deposits and RD installments update the ledger/cash flow, and non-cumulative FD interest posts as income.
 - Lent to Others and Other Assets can be switched when editing a record; EPF, Bonds, Gold and NPS are grouped under Deposits.

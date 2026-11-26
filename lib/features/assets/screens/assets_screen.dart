@@ -176,8 +176,7 @@ class _AssetsScreenState extends ConsumerState<AssetsScreen> {
                           ChoiceChip(
                             label: Text(label),
                             selected: _subFilter == value,
-                            onSelected: (_) =>
-                                setState(() => _subFilter = value),
+                            onSelected: (_) => _setSub(value),
                           ),
                           const SizedBox(width: AppSpacing.xs),
                         ],
@@ -370,7 +369,11 @@ class _AssetsScreenState extends ConsumerState<AssetsScreen> {
                           ? '+ Lend Money'
                           : '+ Add Asset')
                       : _selectedCategoryFilter == 'other_deposit'
-                          ? '+ Add Deposit'
+                          ? (_depositAddIsRecurring == null
+                              ? null
+                              : (_depositAddIsRecurring!
+                                  ? '+ Add RD'
+                                  : '+ Add FD'))
                           : _selectedCategoryFilter == 'mutual_fund' ||
                                   _selectedCategoryFilter == 'all'
                               ? 'Search Schemes'
@@ -379,7 +382,8 @@ class _AssetsScreenState extends ConsumerState<AssetsScreen> {
                           _selectedCategoryFilter == 'other_asset'
                       ? PersonalDebtForm.show(context, lent: true)
                       : _selectedCategoryFilter == 'other_deposit'
-                          ? DepositFormScreen.showTypePicker(context)
+                          ? DepositFormScreen.show(context,
+                              recurring: _depositAddIsRecurring ?? false)
                           : _openSearchScreen(context),
                 ),
                 const SizedBox(height: AppSpacing.sm),
@@ -614,11 +618,26 @@ class _AssetsScreenState extends ConsumerState<AssetsScreen> {
     ];
   }
 
+  void _setSub(String v) {
+    ref.read(assetsSubCategoryProvider.notifier).state = v;
+    setState(() => _subFilter = v);
+  }
+
+  /// Deposits only offer "add" inside the FD or RD chip, which opens that form.
+  bool? get _depositAddIsRecurring => _selectedCategoryFilter != 'other_deposit'
+      ? null
+      : switch (_subFilter) {
+          'fixed_deposit' => false,
+          'recurring_deposit' => true,
+          _ => null,
+        };
+
   static final _tabOrder = ['all', for (final g in assetGroups) g.value];
   final _pillKeys = {for (final v in _tabOrder) v: GlobalKey()};
 
   void _select(String category) {
     ref.read(assetsActiveCategoryProvider.notifier).state = category;
+    ref.read(assetsSubCategoryProvider.notifier).state = 'all';
     setState(() {
       _selectedCategoryFilter = category;
       _subFilter = 'all';
