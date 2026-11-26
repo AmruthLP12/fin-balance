@@ -31,11 +31,6 @@ class NavSyncService {
               AmfiProvider(),
             ];
 
-  /// Clears in-memory search query cache.
-  void clearSearchCache() {
-    _searchCache.clear();
-  }
-
   /// Determines whether NAV synchronization is due based on the last sync timestamp
   /// and the configured refresh policy ('daily', 'weekly', 'manual').
   bool isSyncDue(DateTime? lastSyncedAt, String frequency) {

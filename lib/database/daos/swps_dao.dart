@@ -369,10 +369,4 @@ class SwpsDao extends DatabaseAccessor<AppDatabase> with _$SwpsDaoMixin {
     );
     return true;
   }
-
-  /// Delete an SWP plan. Foreign keys cascade to its periods and installments and
-  /// null `swpPlanId` on any transactions, which are kept.
-  Future<void> deleteSwpCascade(int swpPlanId) async {
-    await (delete(swpPlans)..where((tbl) => tbl.id.equals(swpPlanId))).go();
-  }
 }

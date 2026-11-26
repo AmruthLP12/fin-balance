@@ -69,29 +69,6 @@ class AccountsDao extends DatabaseAccessor<AppDatabase>
     return into(financialAccounts).insert(account);
   }
 
-  /// Update an account.
-  Future<bool> updateAccount(FinancialAccount account) {
-    return update(financialAccounts).replace(account);
-  }
-
-  /// Update cached balance.
-  Future<int> updateBalance(int accountId, int newBalancePaise) {
-    return (update(financialAccounts)..where((tbl) => tbl.id.equals(accountId)))
-        .write(FinancialAccountsCompanion(
-            currentBalancePaise: Value(newBalancePaise)));
-  }
-
-  /// Soft-delete / archive an account.
-  Future<int> archiveAccount(int id) {
-    return (update(financialAccounts)..where((tbl) => tbl.id.equals(id)))
-        .write(const FinancialAccountsCompanion(isArchived: Value(true)));
-  }
-
-  /// Hard-delete an account.
-  Future<int> deleteAccount(int id) {
-    return (delete(financialAccounts)..where((tbl) => tbl.id.equals(id))).go();
-  }
-
   /// Calculate total liquid balance in Paise for a profile (bank, cash, wallet).
   Future<int> calculateTotalLiquidityForProfile(int profileId) async {
     final balanceSum = financialAccounts.currentBalancePaise.sum();

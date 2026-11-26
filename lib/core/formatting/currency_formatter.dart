@@ -10,12 +10,6 @@ class CurrencyFormatter {
     decimalDigits: 2,
   );
 
-  static final NumberFormat _inrCompactFormat = NumberFormat.compactCurrency(
-    locale: 'en_IN',
-    symbol: '₹',
-    decimalDigits: 1,
-  );
-
   static final NumberFormat _inrWholeFormat = NumberFormat.currency(
     locale: 'en_IN',
     symbol: '₹',
@@ -60,11 +54,6 @@ class CurrencyFormatter {
       return _inrWholeFormat.format(amount);
     }
     return '$symbol${amount.round()}';
-  }
-
-  /// Format compact for large metrics: ₹1.5L, ₹2.4Cr
-  static String formatCompact(double amount) {
-    return _inrCompactFormat.format(amount);
   }
 
   /// Format with explicit + or - sign for gains/losses: +₹12,450.00

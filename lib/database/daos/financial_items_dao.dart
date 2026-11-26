@@ -127,16 +127,6 @@ class FinancialItemsDao extends DatabaseAccessor<AppDatabase>
     );
   }
 
-  /// Archive an item (soft-delete).
-  Future<int> archiveItem(int id) {
-    return (update(financialItems)..where((tbl) => tbl.id.equals(id))).write(
-      FinancialItemsCompanion(
-        status: const Value('archived'),
-        updatedAt: Value(DateTime.now().toUtc()),
-      ),
-    );
-  }
-
   /// Hard delete an item.
   Future<int> deleteItem(int id) {
     return (delete(financialItems)..where((tbl) => tbl.id.equals(id))).go();

@@ -113,32 +113,4 @@ class CategoriesDao extends DatabaseAccessor<AppDatabase>
     query.orderBy([(t) => OrderingTerm.asc(t.name)]);
     return query.watch();
   }
-
-  /// Get category by id.
-  Future<FinancialCategory?> getCategoryById(int id) {
-    return (select(financialCategories)..where((tbl) => tbl.id.equals(id)))
-        .getSingleOrNull();
-  }
-
-  /// Insert a new category.
-  Future<int> insertCategory(FinancialCategoriesCompanion category) {
-    return into(financialCategories).insert(category);
-  }
-
-  /// Update an existing category.
-  Future<bool> updateCategory(FinancialCategory category) {
-    return update(financialCategories).replace(category);
-  }
-
-  /// Archive a category safely (soft delete).
-  Future<int> archiveCategory(int id) {
-    return (update(financialCategories)..where((tbl) => tbl.id.equals(id)))
-        .write(const FinancialCategoriesCompanion(isArchived: Value(true)));
-  }
-
-  /// Hard delete a category (only if no references prevent it).
-  Future<int> deleteCategory(int id) {
-    return (delete(financialCategories)..where((tbl) => tbl.id.equals(id)))
-        .go();
-  }
 }

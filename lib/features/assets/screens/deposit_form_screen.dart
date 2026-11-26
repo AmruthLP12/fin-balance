@@ -30,37 +30,6 @@ class DepositFormScreen extends ConsumerStatefulWidget {
         builder: (_) => DepositFormScreen(recurring: recurring),
       ));
 
-  static Future<void> showTypePicker(BuildContext context) async {
-    final recurring = await showModalBottomSheet<bool>(
-      context: context,
-      builder: (sheetContext) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.savings_outlined),
-              title: const Text('Fixed Deposit (FD)'),
-              onTap: () => Navigator.pop(sheetContext, false),
-            ),
-            ListTile(
-              leading: const Icon(Icons.event_repeat_rounded),
-              title: const Text('Recurring Deposit (RD)'),
-              onTap: () => Navigator.pop(sheetContext, true),
-            ),
-          ],
-        ),
-      ),
-    );
-    if (recurring != null && context.mounted) {
-      await Navigator.of(context).push<void>(
-        MaterialPageRoute(
-          fullscreenDialog: true,
-          builder: (_) => DepositFormScreen(recurring: recurring),
-        ),
-      );
-    }
-  }
-
   @override
   ConsumerState<DepositFormScreen> createState() => _DepositFormScreenState();
 }

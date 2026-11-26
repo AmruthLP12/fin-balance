@@ -264,15 +264,6 @@ class MutualFundDao extends DatabaseAccessor<AppDatabase>
     return query.get();
   }
 
-  /// Get latest NAV record from NavHistory.
-  Future<NavHistoryData?> getLatestNavFromHistory(int schemeCode) {
-    return (select(navHistory)
-          ..where((tbl) => tbl.schemeCode.equals(schemeCode))
-          ..orderBy([(t) => OrderingTerm.desc(t.navDate)])
-          ..limit(1))
-        .getSingleOrNull();
-  }
-
   /// Find the latest available historical NAV on or before [targetDate] for a scheme.
   /// Handles weekends and public market holidays by selecting the most recent prior trading day.
   Future<NavHistoryData?> getNavOnOrBefore(

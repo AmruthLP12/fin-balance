@@ -92,17 +92,6 @@ class RecurringTransactionsDao extends DatabaseAccessor<AppDatabase>
     return update(recurringTransactions).replace(schedule);
   }
 
-  /// Update status (active, paused, completed, cancelled).
-  Future<int> updateStatus(int id, String status) {
-    return (update(recurringTransactions)..where((tbl) => tbl.id.equals(id)))
-        .write(
-      RecurringTransactionsCompanion(
-        status: Value(status),
-        updatedAt: Value(DateTime.now().toUtc()),
-      ),
-    );
-  }
-
   /// Delete a recurring schedule.
   Future<int> deleteSchedule(int id) {
     return (delete(recurringTransactions)..where((tbl) => tbl.id.equals(id)))

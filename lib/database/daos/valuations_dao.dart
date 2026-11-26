@@ -26,18 +26,6 @@ class ValuationsDao extends DatabaseAccessor<AppDatabase>
         .watch();
   }
 
-  /// Get the latest valuation record on or before a given date.
-  Future<ValuationHistoryData?> getLatestValuationOnOrBefore(
-      int financialItemId, DateTime date) {
-    return (select(valuationHistory)
-          ..where((tbl) =>
-              tbl.financialItemId.equals(financialItemId) &
-              tbl.valuationDate.isSmallerOrEqualValue(date))
-          ..orderBy([(t) => OrderingTerm.desc(t.valuationDate)])
-          ..limit(1))
-        .getSingleOrNull();
-  }
-
   /// Get latest valuation record for an item.
   Future<ValuationHistoryData?> getLatestValuation(int financialItemId) {
     return (select(valuationHistory)
@@ -59,32 +47,5 @@ class ValuationsDao extends DatabaseAccessor<AppDatabase>
         ],
       ),
     );
-  }
-
-  /// Batch insert historical valuations.
-  Future<void> insertMultipleValuations(
-      List<ValuationHistoryCompanion> entries) async {
-    await batch((b) {
-      for (final entry in entries) {
-        b.insert(
-          valuationHistory,
-          entry,
-          onConflict: DoUpdate(
-            (old) => entry,
-            target: [
-              valuationHistory.financialItemId,
-              valuationHistory.valuationDate
-            ],
-          ),
-        );
-      }
-    });
-  }
-
-  /// Delete valuations for an item.
-  Future<int> deleteValuationsForItem(int financialItemId) {
-    return (delete(valuationHistory)
-          ..where((tbl) => tbl.financialItemId.equals(financialItemId)))
-        .go();
   }
 }

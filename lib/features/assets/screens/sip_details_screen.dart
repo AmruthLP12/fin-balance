@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/calculations/financial_calculator.dart';
 import '../../../core/calculations/investment_lifecycle_summary.dart';
 import '../../../core/formatting/currency_formatter.dart';
+import '../../../core/scheduling/investment_schedule_service.dart';
 import '../../../core/formatting/date_formatter.dart';
 import '../../../core/providers/database_provider.dart';
 import '../../../core/providers/nav_providers.dart';
@@ -831,7 +832,9 @@ class _SipDetailsScreenState extends ConsumerState<SipDetailsScreen>
                             '$status${i.notes == null || i.notes!.isEmpty ? '' : ' · ${i.notes}'}'),
                         trailing: PopupMenuButton<String>(
                           onSelected: (action) {
-                            if (action == 'skip') {
+                            if (action == 'edit') {
+                              _editSipInstallment(context, i);
+                            } else if (action == 'skip') {
                               _markSipInstallmentSkipped(context, i);
                             } else if (action == 'unmark') {
                               _unmarkSipInstallment(context, i);
@@ -840,6 +843,8 @@ class _SipDetailsScreenState extends ConsumerState<SipDetailsScreen>
                             }
                           },
                           itemBuilder: (_) => [
+                            const PopupMenuItem(
+                                value: 'edit', child: Text('Edit')),
                             if (i.status != 'skipped')
                               const PopupMenuItem(
                                   value: 'skip', child: Text('Mark skipped')),
@@ -1890,6 +1895,91 @@ class _SipDetailsScreenState extends ConsumerState<SipDetailsScreen>
         const SnackBar(content: Text('SIP resumed.')),
       );
     }
+  }
+
+  /// Edit the date and amount. Recorded installments update their linked
+  /// investment too (units follow the saved NAV); weekends move to Monday.
+  Future<void> _editSipInstallment(
+      BuildContext context, SipInstallment inst) async {
+    final recorded = inst.status == 'recorded' && inst.transactionId != null;
+    var date = recorded
+        ? (inst.actualInvestmentDate ?? inst.scheduledDate)
+        : inst.scheduledDate;
+    final paise = recorded
+        ? (inst.actualAmountPaise ?? inst.expectedAmountPaise)
+        : inst.expectedAmountPaise;
+    final amount = TextEditingController(
+        text: (paise / 100).toStringAsFixed(paise % 100 == 0 ? 0 : 2));
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (c) => StatefulBuilder(
+        builder: (c, setState) => AlertDialog(
+          title: const Text('Edit installment'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: amount,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(
+                    labelText: 'Amount', prefixText: '₹ '),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              TextButton.icon(
+                icon: const Icon(Icons.calendar_today_rounded, size: 16),
+                label: Text(DateFormatter.formatDate(date)),
+                onPressed: () async {
+                  final d = await showDatePicker(
+                      context: c,
+                      initialDate: date,
+                      firstDate: DateTime(2000),
+                      lastDate: DateTime(2100));
+                  if (d != null) setState(() => date = d);
+                },
+              ),
+              const Text('A Saturday or Sunday moves to Monday.',
+                  style: TextStyle(fontSize: 12)),
+            ],
+          ),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(c, false),
+                child: const Text('Cancel')),
+            FilledButton(
+                onPressed: () => Navigator.pop(c, true),
+                child: const Text('Save')),
+          ],
+        ),
+      ),
+    );
+    final value = double.tryParse(amount.text.trim());
+    amount.dispose();
+    if (ok != true || value == null || value <= 0) return;
+    final newPaise = FinancialPrecision.rupeesToPaise(value);
+    final day = InvestmentScheduleService.nextWeekday(
+        DateTime(date.year, date.month, date.day));
+    final dao = ref.read(sipsDaoProvider);
+    if (recorded) {
+      final nav = inst.purchaseNavMicroPaise;
+      await dao.updateLinkedTransaction(
+        transactionId: inst.transactionId!,
+        date: day,
+        amountPaise: newPaise,
+        purchaseNavMicroPaise: nav,
+        unitsMicroUnits: nav != null && nav > 0
+            ? FinancialPrecision.calculateUnitsPurchased(
+                amountPaise: newPaise, navMicroPaise: nav)
+            : inst.unitsMicroUnits,
+        notes: inst.notes,
+      );
+    } else {
+      await dao.updatePlannedInstallment(
+          installmentId: inst.id, date: day, amountPaise: newPaise);
+    }
+    ref.invalidate(activeProfileAssetsProvider);
+    ref.invalidate(activeProfileTransactionsProvider);
+    ref.invalidate(sipInstallmentsProvider(inst.sipPlanId));
   }
 
   Future<void> _markSipInstallmentSkipped(

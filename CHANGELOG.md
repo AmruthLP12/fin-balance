@@ -5,6 +5,16 @@ All notable changes to the FinBalance application will be documented in this fil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.29.13] - 2026-11-26
+
+### Fixed
+
+- **SIP installment editing now appears in the app**: Edit (date and amount) is in each installment's menu on the SIP details screen. In 0.29.12 it had been added to a screen the app never opened.
+
+### Removed
+
+- Unused code: 9 unreferenced widgets/dialogs (old SIP, holding and profile widgets) and 21 unused helper methods in the account, category, valuation, SWP, NAV and formatting code.
+
 ## [0.29.12] - 2026-11-26
 
 ### Added
