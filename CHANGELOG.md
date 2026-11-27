@@ -5,6 +5,21 @@ All notable changes to the FinBalance application will be documented in this fil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.30.0] - 2026-11-27
+
+### Added
+
+- **PPF and SSS accounts** under Deposits. Add an account with its opening date, an optional opening amount, bank, maturity date (defaults to 15 years for PPF and 21 for SSS) and an optional **regular monthly deduction** that posts a deposit automatically on that day. On the account page add **deposits**, **voluntary deposits** and **interest credited** (amount and date each); every entry can be edited or deleted and the balance is recalculated.
+- **Edit any mutual fund transaction** from its menu on the Transactions tab, not just SIP installments. Cost and units follow the change; a sale keeps the average cost per unit and cannot exceed the units held.
+- **Days** as a tenure unit for FD and RD (next to Years and Months). Estimates and the maturity date use the exact days.
+- **Insurance** in the Deposits categories.
+
+### Changed
+
+- The **All Assets** tab is hidden (swiping no longer lands on it).
+- Deposits chips without a feature yet (NSC, Tax Saving Bond, KVP, EPF, Bonds, Gold, NPS, Insurance) show "Coming soon" instead of "No deposits added".
+- **+ Add PPF** / **+ Add SSS** appear only inside their own chips, like FD and RD.
+
 ## [0.29.13] - 2026-11-26
 
 ### Fixed

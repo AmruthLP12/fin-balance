@@ -31,6 +31,7 @@ const assetGroups = <CategoryGroup>[
     ('bond', 'Bonds'),
     ('gold', 'Gold'),
     ('nps', 'NPS'),
+    ('insurance', 'Insurance'),
   ], [
     'frd',
     'poss'

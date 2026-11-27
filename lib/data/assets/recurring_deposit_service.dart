@@ -4,6 +4,10 @@ import '../../database/app_database.dart';
 
 const recurringDepositType = 'recurring_deposit';
 const fixedDepositInterestType = 'fixed_deposit_interest';
+
+/// Monthly deduction into a PPF / SSS style savings account.
+const savingsDepositType = 'savings_deposit';
+const savingsDepositAutoPostSource = 'auto_savings_deposit';
 const recurringDepositAutoPostSource = 'auto_recurring_deposit';
 const fixedDepositInterestAutoPostSource = 'auto_fixed_deposit_interest';
 
@@ -13,8 +17,11 @@ Future<int> applyDueDepositTransactions(AppDatabase db,
   final day = DateTime(now.year, now.month, now.day);
   final schedules = await (db.select(db.recurringTransactions)
         ..where((t) =>
-            t.recurringType
-                .isIn([recurringDepositType, fixedDepositInterestType]) &
+            t.recurringType.isIn([
+              recurringDepositType,
+              fixedDepositInterestType,
+              savingsDepositType
+            ]) &
             t.status.equals('active')))
       .get();
   var posted = 0;
@@ -79,6 +86,16 @@ Future<int> applyDueDepositTransactions(AppDatabase db,
             ));
             posted++;
           }
+        } else if (schedule.recurringType == savingsDepositType) {
+          await db.transactionsDao.recordSavingsEntry(
+            itemId: item.id,
+            type: 'investment_purchase',
+            amountPaise: schedule.amountPaise,
+            date: dueDay,
+            notes: 'Scheduled deduction · ${item.name}',
+            source: savingsDepositAutoPostSource,
+          );
+          posted++;
         } else {
           await db.transactionsDao.insertTransaction(TransactionsCompanion(
             profileId: Value(schedule.profileId),

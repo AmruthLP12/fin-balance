@@ -52,13 +52,24 @@ class _DepositFormScreenState extends ConsumerState<DepositFormScreen> {
   String? _scheduleLoadError;
 
   bool get _recurring => widget.recurring;
+  int get _tenureValue => int.tryParse(_tenure.text.trim()) ?? 0;
+
+  /// Whole months stored on the deposit (a tenure in days is rounded, at least 1).
   int get _tenureMonths {
-    final value = int.tryParse(_tenure.text.trim()) ?? 0;
+    final value = _tenureValue;
     if (value <= 0) return 1;
+    if (_tenureUnit == 'days') {
+      return math.min(math.max(1, monthsFromDays(value).round()), 1200);
+    }
     return math.min(value * (_tenureUnit == 'years' ? 12 : 1), 1200);
   }
 
-  DateTime get _maturityDate => _addMonthsClamped(_startDate, _tenureMonths);
+  /// The maturity date: months added to the start, or whole days for a tenure in days.
+  DateTime _maturityFor(DateTime start) => _tenureUnit == 'days'
+      ? DateTime(start.year, start.month, start.day + math.max(1, _tenureValue))
+      : addMonthsClamped(start, _tenureMonths);
+
+  DateTime get _maturityDate => _maturityFor(_startDate);
 
   @override
   void initState() {
@@ -76,7 +87,12 @@ class _DepositFormScreenState extends ConsumerState<DepositFormScreen> {
     _cumulative = holding.depositCumulative ?? true;
     _taxSaving = holding.depositTaxSaving ?? false;
     final tenureMonths = holding.tenureMonths;
-    if (tenureMonths != null && tenureMonths > 0) {
+    final tenureDays = depositTenureDays(
+        holding.startDate, holding.maturityDate, tenureMonths);
+    if (tenureDays != null) {
+      _tenureUnit = 'days';
+      _tenure.text = '$tenureDays';
+    } else if (tenureMonths != null && tenureMonths > 0) {
       if (tenureMonths % 12 == 0) {
         _tenure.text = '${tenureMonths ~/ 12}';
       } else {
@@ -163,7 +179,7 @@ class _DepositFormScreenState extends ConsumerState<DepositFormScreen> {
       final rate = double.tryParse(_rate.text.trim()) ?? 0;
       final startDate =
           DateTime(_startDate.year, _startDate.month, _startDate.day);
-      final maturityDate = _addMonthsClamped(startDate, _tenureMonths);
+      final maturityDate = _maturityFor(startDate);
       final old = widget.holding;
       final int categoryId;
       if (old != null) {
@@ -259,7 +275,7 @@ class _DepositFormScreenState extends ConsumerState<DepositFormScreen> {
           );
           if (!_cumulative && rate > 0) {
             final nextInterestDate =
-                _addMonthsClamped(startDate, _compoundingMonths);
+                addMonthsClamped(startDate, _compoundingMonths);
             await db.recurringTransactionsDao.insertSchedule(
               RecurringTransactionsCompanion(
                 profileId: drift.Value(ref.read(activeProfileIdProvider)),
@@ -484,7 +500,7 @@ class _DepositFormScreenState extends ConsumerState<DepositFormScreen> {
         ? previousLastProcessed
         : null;
     var nextDue = lastProcessed == null
-        ? _addMonthsClamped(startDate, _compoundingMonths)
+        ? addMonthsClamped(startDate, _compoundingMonths)
         : nextDepositScheduledDate(
             lastProcessed, startDate.day, _compoundingMonths);
     if (nextDue.isAfter(maturityDate) &&
@@ -542,7 +558,9 @@ class _DepositFormScreenState extends ConsumerState<DepositFormScreen> {
       installmentRupees: double.tryParse(_amount.text.trim()) ?? 0,
       rateBasisPoints:
           ((double.tryParse(_rate.text.trim()) ?? 0) * 100).round(),
-      tenureMonths: _tenureMonths,
+      tenureMonths: !_recurring && _tenureUnit == 'days'
+          ? monthsFromDays(_tenureValue)
+          : _tenureMonths,
       compoundingMonths: _compoundingMonths,
       recurring: _recurring,
       cumulative: _cumulative,
@@ -702,10 +720,13 @@ class _DepositFormScreenState extends ConsumerState<DepositFormScreen> {
                     onChanged: (_) => setState(() {}),
                     validator: (value) {
                       final n = int.tryParse((value ?? '').trim());
-                      return n == null ||
-                              n <= 0 ||
-                              n * (_tenureUnit == 'years' ? 12 : 1) > 1200
-                          ? 'Enter a tenure from 1 to 1200 months'
+                      final days = switch (_tenureUnit) {
+                        'years' => (n ?? 0) * 365,
+                        'months' => (n ?? 0) * 30,
+                        _ => n ?? 0,
+                      };
+                      return n == null || n <= 0 || days > 36500
+                          ? 'Enter a tenure from 1 day to 100 years'
                           : null;
                     },
                   ),
@@ -721,6 +742,7 @@ class _DepositFormScreenState extends ConsumerState<DepositFormScreen> {
                     items: const [
                       DropdownMenuItem(value: 'years', child: Text('Years')),
                       DropdownMenuItem(value: 'months', child: Text('Months')),
+                      DropdownMenuItem(value: 'days', child: Text('Days')),
                     ],
                     onChanged: (value) {
                       if (value != null) {
@@ -765,12 +787,4 @@ class _DepositFormScreenState extends ConsumerState<DepositFormScreen> {
       ),
     );
   }
-}
-
-DateTime _addMonthsClamped(DateTime date, int months) {
-  final totalMonths = date.year * 12 + date.month - 1 + months;
-  final year = totalMonths ~/ 12;
-  final month = totalMonths % 12 + 1;
-  final lastDay = DateTime(year, month + 1, 0).day;
-  return DateTime(year, month, math.min(date.day, lastDay));
 }

@@ -1429,25 +1429,26 @@ class _SipDetailsScreenState extends ConsumerState<SipDetailsScreen>
                         color: badgeColor,
                       ),
                     ),
-                    if (tx.sipPlanId != null)
-                      PopupMenuButton<String>(
-                        padding: EdgeInsets.zero,
-                        icon: const Icon(Icons.more_vert_rounded, size: 18),
-                        onSelected: (action) {
-                          if (action == 'edit') {
-                            _editSipTransaction(context, tx);
-                          } else if (action == 'delete') {
-                            _deleteSipTransaction(context, tx);
-                          }
-                        },
-                        itemBuilder: (_) => const [
-                          PopupMenuItem(
-                              value: 'edit', child: Text('Edit transaction')),
-                          PopupMenuItem(
+                    PopupMenuButton<String>(
+                      padding: EdgeInsets.zero,
+                      icon: const Icon(Icons.more_vert_rounded, size: 18),
+                      onSelected: (action) {
+                        if (action == 'edit') {
+                          _editTransaction(context, tx);
+                        } else if (action == 'delete') {
+                          _deleteSipTransaction(context, tx);
+                        }
+                      },
+                      itemBuilder: (_) => [
+                        const PopupMenuItem(
+                            value: 'edit', child: Text('Edit transaction')),
+                        // Deleting reverses the SIP installment; other types are edit-only for now.
+                        if (tx.sipPlanId != null)
+                          const PopupMenuItem(
                               value: 'delete',
                               child: Text('Delete transaction')),
-                        ],
-                      ),
+                      ],
+                    ),
                   ],
                 ),
               ],
@@ -2019,7 +2020,7 @@ class _SipDetailsScreenState extends ConsumerState<SipDetailsScreen>
     ref.invalidate(sipInstallmentsProvider(installment.sipPlanId));
   }
 
-  Future<void> _editSipTransaction(BuildContext context, Transaction tx) async {
+  Future<void> _editTransaction(BuildContext context, Transaction tx) async {
     final amount = TextEditingController(
         text: (tx.amountPaise / 100)
             .toStringAsFixed(tx.amountPaise % 100 == 0 ? 0 : 2));
@@ -2040,7 +2041,7 @@ class _SipDetailsScreenState extends ConsumerState<SipDetailsScreen>
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setState) => AlertDialog(
-          title: const Text('Edit SIP transaction'),
+          title: const Text('Edit transaction'),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -2110,18 +2111,41 @@ class _SipDetailsScreenState extends ConsumerState<SipDetailsScreen>
     notes.dispose();
     if (saved != true || amountValue == null || amountValue <= 0) return;
 
-    await ref.read(sipsDaoProvider).updateLinkedTransaction(
-          transactionId: tx.id,
-          date: DateTime(date.year, date.month, date.day),
-          amountPaise: FinancialPrecision.rupeesToPaise(amountValue),
-          purchaseNavMicroPaise: navValue != null && navValue > 0
-              ? FinancialPrecision.navToMicroPaise(navValue)
-              : null,
-          unitsMicroUnits: unitsValue != null && unitsValue > 0
-              ? FinancialPrecision.unitsToMicroUnits(unitsValue)
-              : null,
-          notes: note,
-        );
+    final newDate = DateTime(date.year, date.month, date.day);
+    final newAmount = FinancialPrecision.rupeesToPaise(amountValue);
+    final newNav = navValue != null && navValue > 0
+        ? FinancialPrecision.navToMicroPaise(navValue)
+        : null;
+    final newUnits = unitsValue != null && unitsValue > 0
+        ? FinancialPrecision.unitsToMicroUnits(unitsValue)
+        : null;
+    try {
+      if (tx.sipPlanId != null) {
+        await ref.read(sipsDaoProvider).updateLinkedTransaction(
+              transactionId: tx.id,
+              date: newDate,
+              amountPaise: newAmount,
+              purchaseNavMicroPaise: newNav,
+              unitsMicroUnits: newUnits,
+              notes: note,
+            );
+      } else {
+        await ref.read(transactionsDaoProvider).updateInvestmentTransaction(
+              transactionId: tx.id,
+              date: newDate,
+              amountPaise: newAmount,
+              unitsMicroUnits: newUnits,
+              unitPriceMicroPaise: newNav,
+              notes: note,
+            );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Could not update: $e')));
+      }
+      return;
+    }
     ref.invalidate(activeProfileAssetsProvider);
     ref.invalidate(activeProfileTransactionsProvider);
     if (tx.sipPlanId != null) {

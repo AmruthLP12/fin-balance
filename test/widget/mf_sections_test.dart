@@ -25,6 +25,7 @@ void main() {
       'Bonds',
       'Gold',
       'NPS',
+      'Insurance',
     ]);
     expect(groupOf('frd', assetGroups).value, 'other_deposit');
     expect(groupOf('poss', assetGroups).value, 'other_deposit');
@@ -85,6 +86,54 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Alpha Fund'), findsNothing);
     expect(find.text('Zeta Fund'), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(milliseconds: 100));
+  });
+
+  testWidgets(
+      'no All tab; PPF has its own add button; unbuilt chips say coming soon',
+      (tester) async {
+    await tester.binding.setSurfaceSize(const Size(500, 1200));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final db = AppDatabase.forTesting(NativeDatabase.memory());
+    addTearDown(db.close);
+    final pId = await db.profilesDao.createProfile(
+        const FinancialProfilesCompanion(
+            name: drift.Value('Eve'),
+            relationship: drift.Value('Self'),
+            isDefault: drift.Value(true)));
+    await db.appSettingsDao.setSetting('active_profile_id', pId.toString());
+
+    await tester.pumpWidget(ProviderScope(
+      overrides: [
+        databaseProvider.overrideWithValue(db),
+        hasSelectedInitialProfileProvider.overrideWith((ref) => true),
+      ],
+      child: const FinBalanceApp(),
+    ));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(NavigationDestination, 'Assets'));
+    await tester.pumpAndSettle();
+    expect(find.text('All Assets'), findsNothing);
+
+    await tester.tap(find.text('Deposits'));
+    await tester.pumpAndSettle();
+    expect(find.text('+ Add PPF'), findsNothing);
+
+    await tester.tap(find.widgetWithText(ChoiceChip, 'PPF'));
+    await tester.pumpAndSettle();
+    expect(find.text('+ Add PPF'), findsOneWidget);
+    expect(find.text('Coming soon'), findsNothing);
+
+    await tester.tap(find.widgetWithText(ChoiceChip, 'SSS'));
+    await tester.pumpAndSettle();
+    expect(find.text('+ Add SSS'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(ChoiceChip, 'NSC'));
+    await tester.pumpAndSettle();
+    expect(find.text('Coming soon'), findsOneWidget);
+    expect(find.textContaining('+ Add'), findsNothing);
 
     await tester.pumpWidget(const SizedBox());
     await tester.pump(const Duration(milliseconds: 100));

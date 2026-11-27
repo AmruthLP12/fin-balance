@@ -21,7 +21,8 @@ import '../widgets/holding_card.dart';
 import 'mutual_fund_search_screen.dart';
 import 'sip_details_screen.dart';
 import 'deposit_details_screen.dart';
-import 'deposit_form_screen.dart';
+import '../../savings/savings_details_screen.dart';
+import '../deposit_add_actions.dart';
 
 /// Assets screen for managing Mutual Funds, Stocks, FDs, Gold, and wealth holdings scoped to the active profile.
 class AssetsScreen extends ConsumerStatefulWidget {
@@ -95,7 +96,6 @@ class _AssetsScreenState extends ConsumerState<AssetsScreen> {
       ),
       body: assetsAsync.when(
         data: (items) {
-          final totalCount = items.length;
           int countOf(String v) => items
               .where((i) => groupOf(i.subType, assetGroups).value == v)
               .length;
@@ -148,14 +148,12 @@ class _AssetsScreenState extends ConsumerState<AssetsScreen> {
                   scrollDirection: Axis.horizontal,
                   child: Row(
                     children: [
-                      for (final (value, label) in [
-                        ('all', 'All Assets'),
-                        for (final g in assetGroups) (g.value, g.label),
-                      ]) ...[
+                      // The "All Assets" tab is hidden for now (still handled by _filterItems).
+                      for (final g in assetGroups) ...[
                         _buildCategoryPill(
-                          label: label,
-                          categoryValue: value,
-                          count: value == 'all' ? totalCount : countOf(value),
+                          label: g.label,
+                          categoryValue: g.value,
+                          count: countOf(g.value),
                           isDark: isDark,
                         ),
                         const SizedBox(width: AppSpacing.xs),
@@ -369,11 +367,9 @@ class _AssetsScreenState extends ConsumerState<AssetsScreen> {
                           ? '+ Lend Money'
                           : '+ Add Asset')
                       : _selectedCategoryFilter == 'other_deposit'
-                          ? (_depositAddIsRecurring == null
+                          ? (_depositAdd == null
                               ? null
-                              : (_depositAddIsRecurring!
-                                  ? '+ Add RD'
-                                  : '+ Add FD'))
+                              : '+ ${_depositAdd!.label}')
                           : _selectedCategoryFilter == 'mutual_fund' ||
                                   _selectedCategoryFilter == 'all'
                               ? 'Search Schemes'
@@ -382,8 +378,7 @@ class _AssetsScreenState extends ConsumerState<AssetsScreen> {
                           _selectedCategoryFilter == 'other_asset'
                       ? PersonalDebtForm.show(context, lent: true)
                       : _selectedCategoryFilter == 'other_deposit'
-                          ? DepositFormScreen.show(context,
-                              recurring: _depositAddIsRecurring ?? false)
+                          ? _depositAdd?.open(context)
                           : _openSearchScreen(context),
                 ),
                 const SizedBox(height: AppSpacing.sm),
@@ -429,6 +424,9 @@ class _AssetsScreenState extends ConsumerState<AssetsScreen> {
       onTap: () {
         if (item.subType == 'other_asset') {
           PersonalDebtForm.show(context, lent: true, item: item);
+        } else if (item.subType == 'ppf' || item.subType == 'sss') {
+          Navigator.of(context).push(MaterialPageRoute<void>(
+              builder: (_) => SavingsDetailsScreen(itemId: item.id)));
         } else if (item.subType == 'fixed_deposit' ||
             item.subType == 'recurring_deposit') {
           Navigator.of(context).push(MaterialPageRoute<void>(
@@ -623,16 +621,13 @@ class _AssetsScreenState extends ConsumerState<AssetsScreen> {
     setState(() => _subFilter = v);
   }
 
-  /// Deposits only offer "add" inside the FD or RD chip, which opens that form.
-  bool? get _depositAddIsRecurring => _selectedCategoryFilter != 'other_deposit'
-      ? null
-      : switch (_subFilter) {
-          'fixed_deposit' => false,
-          'recurring_deposit' => true,
-          _ => null,
-        };
+  /// Deposits offer "add" only inside a chip that has a form (FD, RD, PPF, SSS).
+  ({String label, void Function(BuildContext) open})? get _depositAdd =>
+      _selectedCategoryFilter == 'other_deposit'
+          ? depositAddFor(_subFilter)
+          : null;
 
-  static final _tabOrder = ['all', for (final g in assetGroups) g.value];
+  static final _tabOrder = [for (final g in assetGroups) g.value];
   final _pillKeys = {for (final v in _tabOrder) v: GlobalKey()};
 
   void _select(String category) {
@@ -775,11 +770,23 @@ class _AssetsScreenState extends ConsumerState<AssetsScreen> {
               'Equity holdings for $profileName will be tracked here. Stock portfolio management is planned for upcoming milestones.',
         );
       case 'other_deposit':
+        if (!depositChipsBuilt.contains(_subFilter)) {
+          return EmptyStateView(
+            icon: Icons.hourglass_top_rounded,
+            title: 'Coming soon',
+            description:
+                '${categoryLabel(_subFilter)} tracking is not available yet.',
+          );
+        }
+        final add = _depositAdd;
         return EmptyStateView(
           icon: Icons.account_balance_rounded,
-          title: 'No Deposits Added',
-          description:
-              'FD, RD, PPF, SSS, NSC, Tax Saving Bonds, KVP, EPF, Bonds, Gold and NPS for $profileName will appear here.',
+          title: add == null
+              ? 'No Deposits Added'
+              : 'No ${categoryLabel(_subFilter)} Added',
+          description: add == null
+              ? 'FD, RD, PPF and SSS for $profileName will appear here.'
+              : 'Tap + ${add.label} to add one for $profileName.',
         );
       case 'money_lent':
         return const EmptyStateView(

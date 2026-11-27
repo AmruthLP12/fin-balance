@@ -408,6 +408,210 @@ class TransactionsDao extends DatabaseAccessor<AppDatabase>
     });
   }
 
+  // ── PPF / SSS style savings accounts ──────────────────────────────────
+  // Balance = deposits + voluntary deposits + interest. It is recomputed from
+  // the entries after every change, so edits and deletes can never drift.
+
+  static const _savingsDepositTypes = {
+    'investment_purchase',
+    'voluntary_deposit'
+  };
+  static const _savingsEntryTypes = {
+    'investment_purchase',
+    'voluntary_deposit',
+    'interest_received'
+  };
+
+  Future<void> recalcSavings(int itemId) async {
+    final item = await db.financialItemsDao.getItemById(itemId);
+    if (item == null) return;
+    final rows = await (select(transactions)
+          ..where((t) => t.financialItemId.equals(itemId)))
+        .get();
+    var deposited = 0, interest = 0;
+    for (final t in rows) {
+      if (_savingsDepositTypes.contains(t.transactionType)) {
+        deposited += t.amountPaise;
+      } else if (t.transactionType == 'interest_received') {
+        interest += t.amountPaise;
+      }
+    }
+    await db.financialItemsDao.updateItem(item.copyWith(
+      initialValuePaise: deposited,
+      currentValuationPaise: deposited + interest,
+      updatedAt: DateTime.now().toUtc(),
+    ));
+  }
+
+  /// [type] is 'investment_purchase' (deposit), 'voluntary_deposit' or 'interest_received'.
+  Future<int> recordSavingsEntry({
+    required int itemId,
+    required String type,
+    required int amountPaise,
+    required DateTime date,
+    String? notes,
+    String source = 'manual',
+  }) async {
+    if (amountPaise <= 0) throw ArgumentError('Amount must be above zero.');
+    if (!_savingsEntryTypes.contains(type)) {
+      throw ArgumentError('Unknown savings entry type $type.');
+    }
+    return transaction(() async {
+      final item = await db.financialItemsDao.getItemById(itemId);
+      if (item == null) throw ArgumentError('Account does not exist.');
+      final id = await insertTransaction(TransactionsCompanion(
+        profileId: Value(item.profileId),
+        financialItemId: Value(itemId),
+        transactionType: Value(type),
+        categoryId: Value(item.categoryId),
+        transactionDate: Value(date),
+        amountPaise: Value(amountPaise),
+        netAmountPaise: Value(amountPaise),
+        source: Value(source),
+        notes: notes == null || notes.trim().isEmpty
+            ? const Value.absent()
+            : Value(notes.trim()),
+      ));
+      await recalcSavings(itemId);
+      return id;
+    });
+  }
+
+  Future<void> updateSavingsEntry({
+    required int transactionId,
+    required int amountPaise,
+    required DateTime date,
+    String? notes,
+  }) async {
+    if (amountPaise <= 0) throw ArgumentError('Amount must be above zero.');
+    return transaction(() async {
+      final entry = await getTransactionById(transactionId);
+      if (entry == null || entry.financialItemId == null) {
+        throw ArgumentError('Entry does not exist.');
+      }
+      await updateTransaction(entry.copyWith(
+        transactionDate: date,
+        amountPaise: amountPaise,
+        netAmountPaise: Value(amountPaise),
+        notes:
+            Value(notes == null || notes.trim().isEmpty ? null : notes.trim()),
+        updatedAt: DateTime.now().toUtc(),
+      ));
+      await recalcSavings(entry.financialItemId!);
+    });
+  }
+
+  Future<void> deleteSavingsEntry(int transactionId) async {
+    return transaction(() async {
+      final entry = await getTransactionById(transactionId);
+      if (entry == null) return;
+      await deleteTransaction(transactionId);
+      if (entry.financialItemId != null) {
+        await recalcSavings(entry.financialItemId!);
+      }
+    });
+  }
+
+  /// Opens a PPF / SSS account ([subType] 'ppf' or 'sss'). The opening deposit
+  /// and the monthly deduction are optional.
+  Future<int> openSavingsAccount({
+    required int profileId,
+    required String subType,
+    required String name,
+    required DateTime openedOn,
+    int openingPaise = 0,
+    String? bank,
+    DateTime? maturityDate,
+    String? notes,
+    int? deductionPaise,
+    DateTime? nextDeduction,
+  }) async {
+    return transaction(() async {
+      final cats =
+          await db.categoriesDao.getCategoriesByClassification('asset');
+      final itemId = await db.financialItemsDao.insertItem(
+        FinancialItemsCompanion(
+          profileId: Value(profileId),
+          name: Value(name),
+          itemType: const Value('asset'),
+          subType: Value(subType),
+          categoryId: Value(cats.isNotEmpty ? cats.first.id : 1),
+          bankName:
+              Value(bank == null || bank.trim().isEmpty ? null : bank.trim()),
+          startDate: Value(openedOn),
+          maturityDate: Value(maturityDate),
+          notes: notes == null || notes.trim().isEmpty
+              ? const Value.absent()
+              : Value(notes.trim()),
+        ),
+      );
+      if (openingPaise > 0) {
+        await recordSavingsEntry(
+            itemId: itemId,
+            type: 'investment_purchase',
+            amountPaise: openingPaise,
+            date: openedOn,
+            notes: 'Opening deposit');
+      }
+      await setSavingsDeduction(
+          itemId: itemId, amountPaise: deductionPaise, nextDate: nextDeduction);
+      return itemId;
+    });
+  }
+
+  /// Sets, changes or (with a null/zero amount) stops the monthly deduction.
+  /// The first deduction is on [nextDate]; later ones follow on the same day.
+  Future<void> setSavingsDeduction({
+    required int itemId,
+    int? amountPaise,
+    DateTime? nextDate,
+  }) async {
+    final item = await db.financialItemsDao.getItemById(itemId);
+    if (item == null) return;
+    final dao = db.recurringTransactionsDao;
+    final existing = (await dao.getSchedulesByItem(item.profileId, itemId))
+        .where((s) => s.recurringType == 'savings_deposit')
+        .firstOrNull;
+    final on = amountPaise != null && amountPaise > 0 && nextDate != null;
+    if (!on) {
+      if (existing != null) {
+        await dao.updateSchedule(existing.copyWith(
+            status: 'cancelled',
+            nextDueDate: const Value(null),
+            updatedAt: DateTime.now().toUtc()));
+      }
+      return;
+    }
+    final day = DateTime(nextDate.year, nextDate.month, nextDate.day);
+    if (existing == null) {
+      await dao.insertSchedule(RecurringTransactionsCompanion(
+        profileId: Value(item.profileId),
+        name: Value(item.name),
+        recurringType: const Value('savings_deposit'),
+        financialItemId: Value(itemId),
+        categoryId: Value(item.categoryId),
+        amountPaise: Value(amountPaise),
+        frequency: const Value('monthly'),
+        scheduledDay: Value(day.day),
+        startDate: Value(day),
+        endDate: Value(item.maturityDate),
+        nextDueDate: Value(day),
+      ));
+    } else {
+      await dao.updateSchedule(existing.copyWith(
+        name: item.name,
+        amountPaise: amountPaise,
+        scheduledDay: day.day,
+        startDate: day,
+        endDate: Value(item.maturityDate),
+        nextDueDate: Value(day),
+        lastProcessedDate: const Value(null),
+        status: 'active',
+        updatedAt: DateTime.now().toUtc(),
+      ));
+    }
+  }
+
   /// Deletes an informal debt and every ledger entry belonging to it.
   Future<void> deletePersonalDebt(int itemId) async {
     return transaction(() async {
@@ -415,6 +619,112 @@ class TransactionsDao extends DatabaseAccessor<AppDatabase>
             ..where((tbl) => tbl.financialItemId.equals(itemId)))
           .go();
       await db.financialItemsDao.deleteItem(itemId);
+    });
+  }
+
+  static const _buyTypes = {
+    'investment_purchase',
+    'sip_investment',
+    'switch_in'
+  };
+  static const _sellTypes = {'redemption', 'swp_withdrawal', 'switch_out'};
+
+  /// What actually moved: buys include charges, sells and payouts net them off.
+  static int _netAmountFor(String type, int amountPaise, int chargesPaise) {
+    if (_buyTypes.contains(type)) return amountPaise + chargesPaise;
+    if (_sellTypes.contains(type) || type == 'dividend_payout') {
+      return amountPaise - chargesPaise;
+    }
+    return type == 'dividend_reinvestment' ? 0 : amountPaise;
+  }
+
+  /// Edits a mutual fund transaction (any type, SIP or not) and re-applies its
+  /// effect to the holding. Buys and reinvestments move cost and units by the
+  /// change; a sale keeps the average cost per unit, so it only moves units.
+  Future<void> updateInvestmentTransaction({
+    required int transactionId,
+    required DateTime date,
+    required int amountPaise,
+    int? unitsMicroUnits,
+    int? unitPriceMicroPaise,
+    String? notes,
+  }) async {
+    if (amountPaise <= 0) throw ArgumentError('Amount must be above zero.');
+    return transaction(() async {
+      final tx = await getTransactionById(transactionId);
+      final itemId = tx?.financialItemId;
+      final holding = itemId == null
+          ? null
+          : await db.financialItemsDao.getItemById(itemId);
+      if (tx == null || holding == null) {
+        throw ArgumentError('Transaction does not exist.');
+      }
+      final type = tx.transactionType.toLowerCase();
+      final oldUnits = tx.unitsMicroUnits ?? 0;
+      final newUnits = unitsMicroUnits ?? 0;
+      var units = holding.unitCountMicroUnits;
+      var invested = holding.initialValuePaise;
+
+      if (_buyTypes.contains(type)) {
+        invested += (amountPaise + tx.chargesPaise) -
+            (tx.amountPaise + tx.chargesPaise);
+        units += newUnits - oldUnits;
+      } else if (type == 'dividend_reinvestment') {
+        units += newUnits - oldUnits;
+      } else if (_sellTypes.contains(type)) {
+        final before = units + oldUnits;
+        if (newUnits > before) {
+          throw ArgumentError(
+              'Cannot sell more units than were held ($before).');
+        }
+        double avgCost = units > 0 ? invested / units : 0;
+        if (units == 0) {
+          // Fully sold: the holding no longer shows its cost, so use the average buy price.
+          final buys = await (select(transactions)
+                ..where((t) =>
+                    t.financialItemId.equals(holding.id) &
+                    t.transactionType.isIn(_buyTypes)))
+              .get();
+          final cost =
+              buys.fold<int>(0, (s, t) => s + t.amountPaise + t.chargesPaise);
+          final bought =
+              buys.fold<int>(0, (s, t) => s + (t.unitsMicroUnits ?? 0));
+          avgCost = bought > 0 ? cost / bought : 0;
+        }
+        units = before - newUnits;
+        invested = (avgCost * units).round();
+      }
+      units = units.clamp(0, 1 << 62).toInt();
+      invested = invested.clamp(0, 1 << 62).toInt();
+
+      await updateTransaction(tx.copyWith(
+        transactionDate: date,
+        amountPaise: amountPaise,
+        netAmountPaise:
+            Value(_netAmountFor(type, amountPaise, tx.chargesPaise)),
+        unitsMicroUnits: Value(unitsMicroUnits),
+        unitPriceMicroPaise: Value(unitPriceMicroPaise),
+        notes:
+            Value(notes == null || notes.trim().isEmpty ? null : notes.trim()),
+        updatedAt: DateTime.now().toUtc(),
+      ));
+
+      // Same valuation rule as a new transaction: latest NAV, else cost.
+      final scheme = int.tryParse(holding.externalCode ?? '');
+      final nav = scheme == null
+          ? 0
+          : (await db.mutualFundDao.getSchemeByCode(scheme))
+                  ?.latestNavMicroPaise ??
+              0;
+      await db.financialItemsDao.updateItem(holding.copyWith(
+        unitCountMicroUnits: units,
+        initialValuePaise: invested,
+        currentValuationPaise: nav > 0
+            ? FinancialPrecision.calculateValuationPaise(
+                unitCountMicroUnits: units, navMicroPaise: nav)
+            : invested,
+        updatedAt: DateTime.now().toUtc(),
+      ));
     });
   }
 
@@ -446,21 +756,7 @@ class TransactionsDao extends DatabaseAccessor<AppDatabase>
       }
 
       final type = transactionType.toLowerCase();
-      int? netAmount;
-      if (type == 'investment_purchase' ||
-          type == 'sip_investment' ||
-          type == 'switch_in') {
-        netAmount = amountPaise + chargesPaise;
-      } else if (type == 'redemption' ||
-          type == 'swp_withdrawal' ||
-          type == 'switch_out' ||
-          type == 'dividend_payout') {
-        netAmount = amountPaise - chargesPaise;
-      } else if (type == 'dividend_reinvestment') {
-        netAmount = 0;
-      } else {
-        netAmount = amountPaise;
-      }
+      final netAmount = _netAmountFor(type, amountPaise, chargesPaise);
 
       // Check redemption/SWP units constraint
       if (type == 'redemption' ||

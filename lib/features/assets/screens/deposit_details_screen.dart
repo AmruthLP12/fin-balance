@@ -49,9 +49,13 @@ class DepositDetailsScreen extends ConsumerWidget {
           _ => '—',
         };
         final tenureMonths = item.tenureMonths ?? 0;
-        final tenureLabel = tenureMonths >= 12
-            ? '${tenureMonths ~/ 12} years${tenureMonths % 12 == 0 ? '' : ' ${tenureMonths % 12} months'}'
-            : '$tenureMonths months';
+        final tenureDays = depositTenureDays(
+            item.startDate, item.maturityDate, item.tenureMonths);
+        final tenureLabel = tenureDays != null
+            ? '$tenureDays days'
+            : tenureMonths >= 12
+                ? '${tenureMonths ~/ 12} years${tenureMonths % 12 == 0 ? '' : ' ${tenureMonths % 12} months'}'
+                : '$tenureMonths months';
 
         return Scaffold(
           appBar: AppBar(
@@ -209,7 +213,13 @@ class DepositDetailsScreen extends ConsumerWidget {
     final estimate = estimateDeposit(
       installmentRupees: installmentPaise / 100,
       rateBasisPoints: item.interestRateBasisPoints ?? 0,
-      tenureMonths: item.tenureMonths ?? 0,
+      tenureMonths: !recurring &&
+              depositTenureDays(
+                      item.startDate, item.maturityDate, item.tenureMonths) !=
+                  null
+          ? monthsFromDays(depositTenureDays(
+              item.startDate, item.maturityDate, item.tenureMonths)!)
+          : item.tenureMonths ?? 0,
       compoundingMonths: item.depositCompoundingMonths ?? 3,
       recurring: recurring,
       cumulative: item.depositCumulative != false,

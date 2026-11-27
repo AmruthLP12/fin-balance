@@ -105,7 +105,7 @@ void main() {
       expect(find.text('Mutual Funds'), findsWidgets);
       expect(find.text('Stocks & ETFs'), findsOneWidget);
       expect(find.text('Deposits'), findsOneWidget);
-      expect(find.text('All Assets'), findsOneWidget);
+      expect(find.text('All Assets'), findsNothing); // tab hidden for now
 
       // 2. Verify Compact Portfolio Summary Card
       expect(find.text('MUTUAL FUNDS SUMMARY'), findsOneWidget);

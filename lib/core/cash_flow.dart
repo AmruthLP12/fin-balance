@@ -15,6 +15,7 @@ MoneyFlow flowOf(String type) {
     case 'investment_purchase':
     case 'sip_investment':
     case 'lend_given':
+    case 'voluntary_deposit':
       return MoneyFlow.investment;
     default:
       return MoneyFlow.none;
@@ -29,6 +30,7 @@ String? personalFlowLabel(String type) => switch (type) {
       'lend_given' => 'Money Lent',
       'lend_repaid' => 'Lent Money Returned',
       'interest_received' => 'Interest Received',
+      'voluntary_deposit' => 'Voluntary Deposit',
       _ => null,
     };
 
@@ -39,6 +41,7 @@ const _personalTypes = [
   'interest_received',
   'lend_repaid',
   'lend_given',
+  'voluntary_deposit',
 ];
 
 /// Breakdown key for loan / lending entries: negative so it never clashes

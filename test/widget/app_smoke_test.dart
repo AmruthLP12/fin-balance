@@ -58,7 +58,8 @@ void main() {
     // Tap on Assets tab
     await tester.tap(find.widgetWithText(NavigationDestination, 'Assets'));
     await tester.pumpAndSettle();
-    expect(find.text('All Assets'), findsOneWidget);
+    expect(find.text('Mutual Funds'), findsWidgets);
+    expect(find.text('All Assets'), findsNothing); // tab hidden for now
 
     // Tap on Liabilities tab
     await tester.tap(find.text('Liabilities'));

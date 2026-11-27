@@ -9,7 +9,7 @@ import '../../../core/widgets/finbalance_logo.dart';
 import '../../activity/screens/activity_screen.dart';
 import '../../assets/screens/assets_screen.dart';
 import '../../assets/screens/mutual_fund_search_screen.dart';
-import '../../assets/screens/deposit_form_screen.dart';
+import '../../assets/deposit_add_actions.dart';
 import '../../liabilities/screens/liabilities_screen.dart';
 import '../../liabilities/widgets/add_liability_dialog.dart';
 import '../../overview/screens/overview_screen.dart';
@@ -255,14 +255,14 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
       }
       if (tab == 'other_deposit') {
         final sub = ref.watch(assetsSubCategoryProvider);
-        if (sub != 'fixed_deposit' && sub != 'recurring_deposit') return null;
-        final rd = sub == 'recurring_deposit';
+        final add = depositAddFor(sub);
+        if (add == null) return null;
         return FloatingActionButton(
           shape: const CircleBorder(),
           backgroundColor: AppColors.asset,
           foregroundColor: Colors.white,
-          tooltip: rd ? 'Add RD' : 'Add FD',
-          onPressed: () => DepositFormScreen.show(context, recurring: rd),
+          tooltip: add.label,
+          onPressed: () => add.open(context),
           child: const Icon(Icons.add_rounded, size: 28),
         );
       }
