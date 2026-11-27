@@ -41,7 +41,7 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
   @override
   void initState() {
     super.initState();
-    ref.read(databaseProvider).categoriesDao.repairMutualFundCategories();
+    ref.read(databaseProvider).categoriesDao.repairHoldingCategories();
     applyDueEmis(ref.read(databaseProvider));
     // NAV refresh is handled app-wide by NavAutoRefresh.
     WidgetsBinding.instance.addPostFrameCallback((_) async {

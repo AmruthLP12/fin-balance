@@ -30,7 +30,7 @@ String? personalFlowLabel(String type) => switch (type) {
       'lend_given' => 'Money Lent',
       'lend_repaid' => 'Lent Money Returned',
       'interest_received' => 'Interest Received',
-      'voluntary_deposit' => 'Voluntary Deposit',
+      'voluntary_deposit' => 'Deposit', // older entries; one deposit type now
       _ => null,
     };
 

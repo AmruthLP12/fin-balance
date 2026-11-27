@@ -5,6 +5,7 @@ import '../../core/formatting/date_formatter.dart';
 import '../../core/providers/database_provider.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../data/assets/deposit_calculator.dart' show addMonthsClamped;
+import '../../data/assets/recurring_deposit_service.dart';
 import '../../database/app_database.dart';
 import '../../database/precision/financial_precision.dart';
 
@@ -36,6 +37,7 @@ class _SavingsFormScreenState extends ConsumerState<SavingsFormScreen> {
   DateTime? _maturity;
   bool _maturityTouched = false;
   bool _deduct = false;
+  bool _sameAsOpening = false;
   DateTime _nextDeduction = addMonthsClamped(DateTime.now(), 1);
   bool _saving = false;
 
@@ -100,24 +102,32 @@ class _SavingsFormScreenState extends ConsumerState<SavingsFormScreen> {
     try {
       final dao = ref.read(transactionsDaoProvider);
       final bank = _bank.text.trim();
-      final deductionPaise = _deduct
-          ? FinancialPrecision.rupeesToPaise(
-              double.parse(_deduction.text.trim()))
-          : null;
+      final opening = double.tryParse(_opening.text.trim()) ?? 0;
+      final opened = DateTime(_openedOn.year, _openedOn.month, _openedOn.day);
+      // "Same as opening": the opening deposit is the first one, so deductions
+      // start a month later on the same day with the same amount.
+      final same = _deduct && _sameAsOpening && !_editing;
+      final deductionPaise = !_deduct
+          ? null
+          : FinancialPrecision.rupeesToPaise(
+              same ? opening : double.parse(_deduction.text.trim()));
+      final firstDeduction =
+          same ? addMonthsClamped(opened, 1) : _nextDeduction;
+      final deductionDay = same ? opened.day : _nextDeduction.day;
       final item = widget.item;
       if (item == null) {
-        final opening = double.tryParse(_opening.text.trim()) ?? 0;
         await dao.openSavingsAccount(
           profileId: ref.read(activeProfileIdProvider),
           subType: widget.subType,
           name: _name.text.trim(),
-          openedOn: DateTime(_openedOn.year, _openedOn.month, _openedOn.day),
+          openedOn: opened,
           openingPaise: FinancialPrecision.rupeesToPaise(opening),
           bank: bank,
           maturityDate: _maturity,
           notes: _notes.text,
           deductionPaise: deductionPaise,
-          nextDeduction: _nextDeduction,
+          nextDeduction: firstDeduction,
+          deductionDay: deductionDay,
         );
       } else {
         await ref.read(financialItemsDaoProvider).updateItem(item.copyWith(
@@ -132,8 +142,11 @@ class _SavingsFormScreenState extends ConsumerState<SavingsFormScreen> {
         await dao.setSavingsDeduction(
             itemId: item.id,
             amountPaise: deductionPaise,
-            nextDate: _nextDeduction);
+            nextDate: firstDeduction,
+            day: deductionDay);
       }
+      // A first deduction in the past is posted for every month up to today.
+      await applyDueDepositTransactions(ref.read(databaseProvider));
       if (mounted) Navigator.of(context).pop();
     } catch (e) {
       if (mounted) {
@@ -202,10 +215,17 @@ class _SavingsFormScreenState extends ConsumerState<SavingsFormScreen> {
                     labelText: 'Amount deposited on that date (optional)',
                     prefixText: '₹ ',
                     border: OutlineInputBorder()),
-                validator: (v) => (v ?? '').trim().isEmpty ||
-                        (double.tryParse(v!.trim()) ?? -1) >= 0
-                    ? null
-                    : 'Enter a valid amount',
+                validator: (v) {
+                  final n = double.tryParse((v ?? '').trim());
+                  if (_deduct && _sameAsOpening) {
+                    return n == null || n <= 0
+                        ? 'Enter the amount to repeat every month'
+                        : null;
+                  }
+                  return (v ?? '').trim().isEmpty || (n ?? -1) >= 0
+                      ? null
+                      : 'Enter a valid amount';
+                },
               ),
               const SizedBox(height: AppSpacing.sm),
             ],
@@ -248,28 +268,42 @@ class _SavingsFormScreenState extends ConsumerState<SavingsFormScreen> {
               onChanged: (v) => setState(() => _deduct = v),
             ),
             if (_deduct) ...[
-              TextFormField(
-                controller: _deduction,
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(
-                    labelText: 'Amount deducted each month',
-                    prefixText: '₹ ',
-                    border: OutlineInputBorder()),
-                validator: _positive,
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              OutlinedButton.icon(
-                icon: const Icon(Icons.event_repeat_rounded, size: 16),
-                label: Text(
-                    'Next deduction ${DateFormatter.formatDate(_nextDeduction)}'),
-                onPressed: () async {
-                  final today = DateTime.now();
-                  final d = await _pick(
-                      _nextDeduction.isBefore(today) ? today : _nextDeduction,
-                      first: DateTime(today.year, today.month, today.day));
-                  if (d != null) setState(() => _nextDeduction = d);
-                },
+              if (!_editing)
+                CheckboxListTile(
+                  contentPadding: EdgeInsets.zero,
+                  controlAffinity: ListTileControlAffinity.leading,
+                  title:
+                      const Text('Same amount and day as the opening deposit'),
+                  value: _sameAsOpening,
+                  onChanged: (v) => setState(() => _sameAsOpening = v ?? false),
+                ),
+              if (!_sameAsOpening || _editing) ...[
+                TextFormField(
+                  controller: _deduction,
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  decoration: const InputDecoration(
+                      labelText: 'Amount deducted each month',
+                      prefixText: '₹ ',
+                      border: OutlineInputBorder()),
+                  validator: _positive,
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                OutlinedButton.icon(
+                  icon: const Icon(Icons.event_repeat_rounded, size: 16),
+                  label: Text(
+                      '${_editing ? 'Next' : 'First'} deduction ${DateFormatter.formatDate(_nextDeduction)}'),
+                  onPressed: () async {
+                    final d = await _pick(_nextDeduction);
+                    if (d != null) setState(() => _nextDeduction = d);
+                  },
+                ),
+              ],
+              const Padding(
+                padding: EdgeInsets.only(top: 4),
+                child: Text(
+                    'Any date works. Deductions from that date up to today are added automatically, then one each month.',
+                    style: TextStyle(fontSize: 12)),
               ),
             ],
             const SizedBox(height: AppSpacing.sm),

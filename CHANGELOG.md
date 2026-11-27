@@ -5,6 +5,18 @@ All notable changes to the FinBalance application will be documented in this fil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.30.1] - 2026-11-27
+
+### Fixed
+
+- **Ledger category for deposits.** PPF and SSS entries were filed under "Bonds". They now use their own PPF and SSS categories, and FD and RD use "Fixed & Recurring Deposits". Existing PPF, SSS, FD and RD records, their ledger entries and schedules are corrected automatically when the app opens.
+
+### Changed
+
+- **Monthly deduction can start on any date**, including years ago. Deductions from that date up to today are added automatically, then one each month. A **"Same amount and day as the opening deposit"** option repeats the opening deposit monthly without entering the details again.
+- **One deposit type** on PPF and SSS: the separate "Voluntary deposit" button is gone. Older voluntary entries show as Deposit and still count.
+- **Deposits are ordered by nearest maturity date**, then deposits without a date, then matured ones.
+
 ## [0.30.0] - 2026-11-27
 
 ### Added

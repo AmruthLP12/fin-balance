@@ -24,7 +24,7 @@ void main() {
   Future<FinancialItem> account(int id) async =>
       (await db.financialItemsDao.getItemById(id))!;
 
-  test('balance follows deposits, voluntary deposits and interest', () async {
+  test('balance follows deposits and interest', () async {
     final id = await db.transactionsDao.openSavingsAccount(
       profileId: profileId,
       subType: 'ppf',
@@ -38,7 +38,7 @@ void main() {
 
     await db.transactionsDao.recordSavingsEntry(
         itemId: id,
-        type: 'voluntary_deposit',
+        type: 'investment_purchase',
         amountPaise: 50000,
         date: DateTime(2026, 5, 1));
     final interest = await db.transactionsDao.recordSavingsEntry(
@@ -60,6 +60,13 @@ void main() {
     a = await account(id);
     expect(a.currentValuationPaise, 150000);
 
+    expect(
+        () => db.transactionsDao.recordSavingsEntry(
+            itemId: id,
+            type: 'voluntary_deposit', // folded into plain deposits
+            amountPaise: 100,
+            date: DateTime(2027, 4, 1)),
+        throwsArgumentError);
     expect(
         () => db.transactionsDao.recordSavingsEntry(
             itemId: id,
@@ -95,5 +102,76 @@ void main() {
         await applyDueDepositTransactions(db, today: DateTime(2026, 8, 1)), 0);
     a = await account(id);
     expect(a.initialValuePaise, 300000);
+  });
+
+  test('a first deduction in the past is caught up to today', () async {
+    final id = await db.transactionsDao.openSavingsAccount(
+      profileId: profileId,
+      subType: 'ppf',
+      name: 'Old PPF',
+      openedOn: DateTime(2025, 1, 15),
+      openingPaise: 50000,
+      deductionPaise: 50000,
+      nextDeduction: DateTime(2025, 2, 15), // same amount and day, one month on
+      deductionDay: 15,
+    );
+    final posted =
+        await applyDueDepositTransactions(db, today: DateTime(2025, 5, 20));
+    expect(posted, 4); // 15 Feb, Mar, Apr, May
+    final a = await account(id);
+    expect(a.initialValuePaise, 250000); // opening + 4 deductions
+  });
+
+  test('PPF and SSS are filed under their own ledger categories', () async {
+    Future<String> categoryOf(int id) async {
+      final item = await account(id);
+      return (await (db.select(db.financialCategories)
+                ..where((c) => c.id.equals(item.categoryId)))
+              .getSingle())
+          .name;
+    }
+
+    final ppf = await db.transactionsDao.openSavingsAccount(
+        profileId: profileId,
+        subType: 'ppf',
+        name: 'PPF',
+        openedOn: DateTime(2026, 1, 1),
+        openingPaise: 10000);
+    final sss = await db.transactionsDao.openSavingsAccount(
+        profileId: profileId,
+        subType: 'sss',
+        name: 'SSS',
+        openedOn: DateTime(2026, 1, 1),
+        openingPaise: 10000);
+    expect(await categoryOf(ppf), 'PPF');
+    expect(await categoryOf(sss), 'SSS');
+    final txn = await (db.select(db.transactions)
+          ..where((t) => t.financialItemId.equals(sss)))
+        .getSingle();
+    expect(txn.categoryId, (await account(sss)).categoryId);
+  });
+
+  test('repair moves misfiled deposits and their ledger entries out of Bonds',
+      () async {
+    final bonds = await (db.select(db.financialCategories)
+          ..where((c) => c.name.equals('Bonds')))
+        .getSingle();
+    final id = await db.transactionsDao.openSavingsAccount(
+        profileId: profileId,
+        subType: 'ppf',
+        name: 'PPF',
+        openedOn: DateTime(2026, 1, 1),
+        openingPaise: 10000);
+    await db.customStatement(
+        'UPDATE financial_items SET category_id = ${bonds.id}');
+    await db
+        .customStatement('UPDATE transactions SET category_id = ${bonds.id}');
+    await db.categoriesDao.repairHoldingCategories();
+    final ppfCat = await db.categoriesDao.categoryIdForSubType('ppf');
+    expect((await account(id)).categoryId, ppfCat);
+    final txn = await (db.select(db.transactions)
+          ..where((t) => t.financialItemId.equals(id)))
+        .getSingle();
+    expect(txn.categoryId, ppfCat);
   });
 }

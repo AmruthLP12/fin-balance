@@ -138,4 +138,55 @@ void main() {
     await tester.pumpWidget(const SizedBox());
     await tester.pump(const Duration(milliseconds: 100));
   });
+
+  testWidgets('deposits are ordered by nearest maturity date', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(500, 1400));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final db = AppDatabase.forTesting(NativeDatabase.memory());
+    addTearDown(db.close);
+    final pId = await db.profilesDao.createProfile(
+        const FinancialProfilesCompanion(
+            name: drift.Value('Eve'),
+            relationship: drift.Value('Self'),
+            isDefault: drift.Value(true)));
+    await db.appSettingsDao.setSetting('active_profile_id', pId.toString());
+    final cat = await (db.select(db.financialCategories)..limit(1)).getSingle();
+    final year = DateTime.now().year;
+    Future<void> deposit(String name, DateTime? matures) =>
+        db.financialItemsDao.insertItem(FinancialItemsCompanion(
+          profileId: drift.Value(pId),
+          name: drift.Value(name),
+          itemType: const drift.Value('asset'),
+          subType: const drift.Value('fixed_deposit'),
+          categoryId: drift.Value(cat.id),
+          currentValuationPaise: const drift.Value(100000),
+          initialValuePaise: const drift.Value(100000),
+          maturityDate: drift.Value(matures),
+        ));
+    await deposit('Far FD', DateTime(year + 5, 6, 1));
+    await deposit('Near FD', DateTime(year + 1, 6, 1));
+    await deposit('Undated FD', null);
+    await deposit('Matured FD', DateTime(year - 3, 6, 1));
+
+    await tester.pumpWidget(ProviderScope(
+      overrides: [
+        databaseProvider.overrideWithValue(db),
+        hasSelectedInitialProfileProvider.overrideWith((ref) => true),
+      ],
+      child: const FinBalanceApp(),
+    ));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(NavigationDestination, 'Assets'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Deposits'));
+    await tester.pumpAndSettle();
+
+    double y(String name) => tester.getTopLeft(find.text(name)).dy;
+    expect(y('Near FD'), lessThan(y('Far FD')));
+    expect(y('Far FD'), lessThan(y('Undated FD')));
+    expect(y('Undated FD'), lessThan(y('Matured FD')));
+
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(milliseconds: 100));
+  });
 }

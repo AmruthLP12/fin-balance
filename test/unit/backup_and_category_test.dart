@@ -39,7 +39,7 @@ void main() {
           ..where((t) => t.name.equals('Bonds')))
         .getSingle();
     final item = await seedFund(bonds.id);
-    await db.categoriesDao.repairMutualFundCategories();
+    await db.categoriesDao.repairHoldingCategories();
     final row = await (db.select(db.financialItems)
           ..where((t) => t.id.equals(item)))
         .getSingle();

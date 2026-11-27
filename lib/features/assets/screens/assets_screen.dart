@@ -665,6 +665,23 @@ class _AssetsScreenState extends ConsumerState<AssetsScreen> {
             .where((i) => groupOf(i.subType, assetGroups).value == filter)
             .where((i) => _subFilter == 'all' || i.subType == _subFilter)
             .toList();
+    if (filter == 'other_deposit') {
+      // Nearest maturity first, then deposits without a date, then matured ones
+      // (most recently matured first).
+      final today = DateTime.now();
+      final start = DateTime(today.year, today.month, today.day);
+      int bucket(FinancialItem i) => i.maturityDate == null
+          ? 1
+          : (i.maturityDate!.isBefore(start) ? 2 : 0);
+      filtered.sort((a, b) {
+        final c = bucket(a).compareTo(bucket(b));
+        if (c != 0) return c;
+        if (bucket(a) == 0) return a.maturityDate!.compareTo(b.maturityDate!);
+        if (bucket(a) == 2) return b.maturityDate!.compareTo(a.maturityDate!);
+        return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+      });
+      return filtered;
+    }
     filtered.sort((a, b) {
       final futureA = sips.any((s) =>
           s.financialItemId == a.id &&

@@ -51,6 +51,7 @@ void main() {
     await tester.tap(find.text('PPF').last);
     await tester.pumpAndSettle();
     expect(find.text('Balance'), findsOneWidget);
+    expect(find.text('Voluntary deposit'), findsNothing); // one deposit type
     expect(find.textContaining('Opening deposit'), findsOneWidget);
 
     await tester.tap(find.widgetWithText(OutlinedButton, 'Interest'));

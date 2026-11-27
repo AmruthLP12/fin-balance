@@ -12,12 +12,11 @@ import '../../database/precision/financial_precision.dart';
 import 'savings_form.dart';
 
 const _depositType = 'investment_purchase';
-const _voluntaryType = 'voluntary_deposit';
 const _interestType = 'interest_received';
 
 String _entryLabel(String type) => switch (type) {
       _depositType => 'Deposit',
-      _voluntaryType => 'Voluntary deposit',
+      'voluntary_deposit' => 'Deposit', // older entries; one deposit type now
       _interestType => 'Interest credited',
       _ => type,
     };
@@ -114,11 +113,6 @@ class SavingsDetailsScreen extends ConsumerWidget {
                 icon: const Icon(Icons.add_rounded),
                 label: const Text('Deposit'),
                 onPressed: () => _add(context, ref, item, _depositType),
-              ),
-              OutlinedButton.icon(
-                icon: const Icon(Icons.add_rounded),
-                label: const Text('Voluntary deposit'),
-                onPressed: () => _add(context, ref, item, _voluntaryType),
               ),
               OutlinedButton.icon(
                 icon: const Icon(Icons.add_rounded),

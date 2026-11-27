@@ -333,6 +333,18 @@ class AppDatabase extends _$AppDatabase {
         icon: Value('category'),
         colorHex: Value('#64748B'),
       ),
+      const FinancialCategoriesCompanion(
+        name: Value('SSS'),
+        classification: Value('asset'),
+        icon: Value('savings'),
+        colorHex: Value('#EC4899'),
+      ),
+      const FinancialCategoriesCompanion(
+        name: Value('Fixed & Recurring Deposits'),
+        classification: Value('asset'),
+        icon: Value('savings'),
+        colorHex: Value('#6366F1'),
+      ),
     ];
 
     for (final cat in newSpecificCategories) {

@@ -412,13 +412,13 @@ class TransactionsDao extends DatabaseAccessor<AppDatabase>
   // Balance = deposits + voluntary deposits + interest. It is recomputed from
   // the entries after every change, so edits and deletes can never drift.
 
+  // 'voluntary_deposit' is no longer offered but still counts if it exists.
   static const _savingsDepositTypes = {
     'investment_purchase',
     'voluntary_deposit'
   };
   static const _savingsEntryTypes = {
     'investment_purchase',
-    'voluntary_deposit',
     'interest_received'
   };
 
@@ -443,7 +443,7 @@ class TransactionsDao extends DatabaseAccessor<AppDatabase>
     ));
   }
 
-  /// [type] is 'investment_purchase' (deposit), 'voluntary_deposit' or 'interest_received'.
+  /// [type] is 'investment_purchase' (deposit) or 'interest_received'.
   Future<int> recordSavingsEntry({
     required int itemId,
     required String type,
@@ -525,17 +525,17 @@ class TransactionsDao extends DatabaseAccessor<AppDatabase>
     String? notes,
     int? deductionPaise,
     DateTime? nextDeduction,
+    int? deductionDay,
   }) async {
     return transaction(() async {
-      final cats =
-          await db.categoriesDao.getCategoriesByClassification('asset');
+      final categoryId = await db.categoriesDao.categoryIdForSubType(subType);
       final itemId = await db.financialItemsDao.insertItem(
         FinancialItemsCompanion(
           profileId: Value(profileId),
           name: Value(name),
           itemType: const Value('asset'),
           subType: Value(subType),
-          categoryId: Value(cats.isNotEmpty ? cats.first.id : 1),
+          categoryId: Value(categoryId),
           bankName:
               Value(bank == null || bank.trim().isEmpty ? null : bank.trim()),
           startDate: Value(openedOn),
@@ -554,17 +554,23 @@ class TransactionsDao extends DatabaseAccessor<AppDatabase>
             notes: 'Opening deposit');
       }
       await setSavingsDeduction(
-          itemId: itemId, amountPaise: deductionPaise, nextDate: nextDeduction);
+          itemId: itemId,
+          amountPaise: deductionPaise,
+          nextDate: nextDeduction,
+          day: deductionDay);
       return itemId;
     });
   }
 
   /// Sets, changes or (with a null/zero amount) stops the monthly deduction.
-  /// The first deduction is on [nextDate]; later ones follow on the same day.
+  /// The first deduction is on [nextDate]; later ones follow on [day]
+  /// (default: the day of [nextDate]). A past [nextDate] is caught up by the
+  /// auto-poster.
   Future<void> setSavingsDeduction({
     required int itemId,
     int? amountPaise,
     DateTime? nextDate,
+    int? day,
   }) async {
     final item = await db.financialItemsDao.getItemById(itemId);
     if (item == null) return;
@@ -582,7 +588,7 @@ class TransactionsDao extends DatabaseAccessor<AppDatabase>
       }
       return;
     }
-    final day = DateTime(nextDate.year, nextDate.month, nextDate.day);
+    final first = DateTime(nextDate.year, nextDate.month, nextDate.day);
     if (existing == null) {
       await dao.insertSchedule(RecurringTransactionsCompanion(
         profileId: Value(item.profileId),
@@ -592,19 +598,19 @@ class TransactionsDao extends DatabaseAccessor<AppDatabase>
         categoryId: Value(item.categoryId),
         amountPaise: Value(amountPaise),
         frequency: const Value('monthly'),
-        scheduledDay: Value(day.day),
-        startDate: Value(day),
+        scheduledDay: Value(day ?? first.day),
+        startDate: Value(first),
         endDate: Value(item.maturityDate),
-        nextDueDate: Value(day),
+        nextDueDate: Value(first),
       ));
     } else {
       await dao.updateSchedule(existing.copyWith(
         name: item.name,
         amountPaise: amountPaise,
-        scheduledDay: day.day,
-        startDate: day,
+        scheduledDay: day ?? first.day,
+        startDate: first,
         endDate: Value(item.maturityDate),
-        nextDueDate: Value(day),
+        nextDueDate: Value(first),
         lastProcessedDate: const Value(null),
         status: 'active',
         updatedAt: DateTime.now().toUtc(),

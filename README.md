@@ -2,8 +2,9 @@
 
 > **FinBalance** is an offline-first, multi-profile personal finance and net worth management application for Android and Web, built with Flutter and SQLite (Drift).
 
-### Current Release Focus (0.30.0)
+### Current Release Focus (0.30.1)
 
+- Deposits use the right ledger categories (PPF, SSS, Fixed & Recurring Deposits). PPF/SSS monthly deductions can start on any past date and can repeat the opening deposit. One deposit type. Deposits are sorted by nearest maturity.
 - PPF and SSS accounts with deposits, voluntary deposits, interest and an optional monthly deduction. Any mutual fund transaction can be edited. FD/RD tenure can be entered in days. The All Assets tab is hidden; unbuilt deposit types say "Coming soon".
 - SIP installment Edit is on the SIP details screen; unused code removed.
 - SIP installments can be edited; weekend SIP dates move to Monday. Deposits add buttons are per FD / RD chip.

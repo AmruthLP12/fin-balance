@@ -50,30 +50,56 @@ class CategoriesDao extends DatabaseAccessor<AppDatabase>
     return row?.id ?? 1;
   }
 
-  /// Moves mutual fund holdings and their transactions that were filed under
-  /// the wrong category (older builds used "Bonds") to Mutual Funds & SIPs.
-  Future<void> repairMutualFundCategories() async {
-    final id = await mutualFundCategoryId();
-    await customUpdate(
-      'UPDATE transactions SET category_id = ? WHERE category_id != ? AND '
-      'financial_item_id IN (SELECT id FROM financial_items WHERE sub_type = ?)',
-      variables: [
+  /// The ledger category each kind of holding belongs to.
+  static const _categoryBySubType = {
+    'mutual_fund': 'Mutual Funds & SIPs',
+    'fixed_deposit': 'Fixed & Recurring Deposits',
+    'recurring_deposit': 'Fixed & Recurring Deposits',
+    'ppf': 'PPF',
+    'sss': 'SSS',
+  };
+
+  /// Category id for a holding of [subType] (falls back to the first asset category).
+  Future<int> categoryIdForSubType(String subType) async {
+    final row = await (select(financialCategories)
+          ..where((t) => t.name.equals(_categoryBySubType[subType] ?? ''))
+          ..limit(1))
+        .getSingleOrNull();
+    return row?.id ??
+        (await getCategoriesByClassification('asset')).firstOrNull?.id ??
+        1;
+  }
+
+  /// Moves holdings, their transactions and schedules that were filed under the
+  /// wrong category (older builds used "Bonds") to the right one. Safe to repeat.
+  Future<void> repairHoldingCategories() async {
+    for (final subType in _categoryBySubType.keys) {
+      final id = await categoryIdForSubType(subType);
+      final vars = [
         Variable.withInt(id),
         Variable.withInt(id),
-        Variable.withString('mutual_fund'),
-      ],
-      updates: {db.transactions},
-    );
-    await customUpdate(
-      'UPDATE financial_items SET category_id = ? WHERE category_id != ? '
-      'AND sub_type = ?',
-      variables: [
-        Variable.withInt(id),
-        Variable.withInt(id),
-        Variable.withString('mutual_fund'),
-      ],
-      updates: {db.financialItems},
-    );
+        Variable.withString(subType),
+      ];
+      const items = 'SELECT id FROM financial_items WHERE sub_type = ?';
+      await customUpdate(
+        'UPDATE transactions SET category_id = ? WHERE category_id != ? '
+        'AND financial_item_id IN ($items)',
+        variables: vars,
+        updates: {db.transactions},
+      );
+      await customUpdate(
+        'UPDATE recurring_transactions SET category_id = ? WHERE category_id != ? '
+        'AND financial_item_id IN ($items)',
+        variables: vars,
+        updates: {db.recurringTransactions},
+      );
+      await customUpdate(
+        'UPDATE financial_items SET category_id = ? WHERE category_id != ? '
+        'AND sub_type = ?',
+        variables: vars,
+        updates: {db.financialItems},
+      );
+    }
   }
 
   /// Get categories by classification ('asset', 'liability', 'income', 'expense').
